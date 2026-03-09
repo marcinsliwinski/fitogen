@@ -1,25 +1,24 @@
 package com.egen.fitogen.domain;
+
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
+@Data                   // generuje gettery, settery, toString, equals i hashCode
+@NoArgsConstructor       // generuje konstruktor bezargumentowy
+@AllArgsConstructor      // generuje konstruktor pełny z wszystkimi polami
+
 public class Contrahent {
 
     private int id;
     private String name;
-    private String country;
-    private String city;
-    private String street;
-    private String postalCode;
-    private String fitosanitaryNumber;
+    private String countryCode;
+    private String nip;
 
-    public Contrahent(int id, String name) {
-        this.id = id;
+    // jeśli chcesz, możesz też dodać konstruktor bez id:
+    public Contrahent(String name, String countryCode, String nip) {
         this.name = name;
+        this.countryCode = countryCode;
+        this.nip = nip;
     }
-
-    // Getters and Setters
 }
