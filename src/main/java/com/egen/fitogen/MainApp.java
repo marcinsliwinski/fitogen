@@ -1,11 +1,9 @@
 package com.egen.fitogen;
 
 import com.egen.fitogen.database.*;
-import com.egen.fitogen.domain.*;
-import com.egen.fitogen.repository.*;
-import com.egen.fitogen.database.DatabaseInitializer;
-
-import java.time.LocalDate;
+import com.egen.fitogen.domain.Contrahent;
+import com.egen.fitogen.repository.ContrahentRepository;
+import com.egen.fitogen.service.ContrahentService;
 
 public class MainApp {
 
@@ -15,20 +13,24 @@ public class MainApp {
 
         System.out.println("Fitogen database ready!");
 
-        ContrahentRepository contrahentRepo = new SqliteContrahentRepository();
+        ContrahentRepository repo = new SqliteContrahentRepository();
+
+        ContrahentService contrahentService =
+                new ContrahentService(repo);
 
         Contrahent c = new Contrahent();
+
         c.setName("Szkółka Zielona");
         c.setCountry("Polska");
         c.setCountryCode("PL");
         c.setCity("Warszawa");
         c.setPostalCode("00-001");
         c.setStreet("Ogrodowa 1");
-        c.setPhytosanitaryNumber("PL-12345");
+        c.setPhytosanitaryNumber("PL12345");
 
-        contrahentRepo.save(c);
+        contrahentService.addContrahent(c);
 
-        System.out.println("Test contrahent inserted");
-
+        contrahentService.getAllContrahents()
+                .forEach(System.out::println);
     }
 }
