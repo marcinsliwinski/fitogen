@@ -5,19 +5,9 @@ import java.util.List;
 
 public interface DocumentRepository {
 
-    List<Document> findAll();
+    void save(Document document);
 
     Document findById(int id);
 
-    void save(Document document);
-
-    void update(Document document);
-
-    void delete(int id);
-
-    // Optional: find by ContahentId
-    List<Document> findByContrahentId(int contrahentId);
-
-    // Optional: find by  plant batch
-    List<Document> findByPlantBatchId(int plantBatchId);
+    List<Document> findAll();
 }
