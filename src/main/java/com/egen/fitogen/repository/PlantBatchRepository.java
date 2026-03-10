@@ -15,6 +15,6 @@ public interface PlantBatchRepository {
 
     void delete(int id);
 
-    // Opcjonalnie: wyszukiwanie po kontrahencie
+    // Optional: find by ContrahentId
     List<PlantBatch> findByContrahentId(int contrahentId);
 }

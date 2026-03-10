@@ -21,23 +21,12 @@ public class ContrahentService {
         return repository.findAll();
     }
 
-    public Contrahent getContrahentById(int id) {
-        logger.info("Fetching contrahent by id {}", id);
-        return repository.findById(id);
-    }
+
 
     public void addContrahent(Contrahent contrahent) {
         logger.info("Adding new contrahent: {}", contrahent.getName());
         repository.save(contrahent);
     }
 
-    public void updateContrahent(Contrahent contrahent) {
-        logger.info("Updating contrahent id {}: {}", contrahent.getId(), contrahent.getName());
-        repository.update(contrahent);
-    }
 
-    public void deleteContrahent(int id) {
-        logger.info("Deleting contrahent id {}", id);
-        repository.delete(id);
-    }
 }

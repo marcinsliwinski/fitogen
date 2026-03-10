@@ -15,19 +15,20 @@ public class Document {
     private int plantBatchId;   // powiązanie z PlantBatch
     private int contrahentId;   // powiązanie z Contrahent
     private String documentType; // np. "Dokument dostawcy" lub "Szkółkarski"
-    private String issuedBy;     // kto wystawił dokument
+    private String createdBy;     // kto wystawił dokument
     private boolean passport;    // czy dokument zawiera paszport
     private String comments;     // uwagi
-    private LocalDate creationDate; // data wystawienia dokumentu
+    private LocalDate issueDate; // data wystawienia dokumentu
+    private String documentNumber;
 
-    // dodatkowy konstruktor bez id, np. do tworzenia nowych dokumentów
-    public Document(int plantBatchId, int contrahentId, String documentType, String issuedBy, boolean passport, String comments, LocalDate creationDate) {
+    // construuctor without id & documentNumber
+    public Document(int plantBatchId, int contrahentId, String documentType, String createdBy, boolean passport, String comments, LocalDate issueDate) {
         this.plantBatchId = plantBatchId;
         this.contrahentId = contrahentId;
         this.documentType = documentType;
-        this.issuedBy = issuedBy;
+        this.createdBy = createdBy;
         this.passport = passport;
         this.comments = comments;
-        this.creationDate = creationDate;
+        this.issueDate = issueDate;
     }
 }

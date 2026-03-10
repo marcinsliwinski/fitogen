@@ -1,11 +1,12 @@
 package com.egen.fitogen.domain;
-import lombok.AllArgsConstructor;
+//import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
+//import lombok.NoArgsConstructor;
 
-@Data               // generuje gettery, settery, toString, equals, hashCode
-@NoArgsConstructor  // konstruktor bezargumentowy
-//@AllArgsConstructor // konstruktor ze wszystkimi polami
+@Data
+//@NoArgsConstructor
+//@AllArgsConstructor
+
 public class Plant {
 
     private int id;
@@ -23,6 +24,4 @@ public class Plant {
         this.latinSpeciesName = latinSpeciesName;
         this.visibilityStatus = visibilityStatus;
     }
-
-    // Getters and Setters
 }

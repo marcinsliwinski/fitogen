@@ -97,10 +97,10 @@ public class SqliteDocumentRepository implements DocumentRepository {
             ps.setInt(1, document.getPlantBatchId());
             ps.setInt(2, document.getContrahentId());
             ps.setString(3, document.getDocumentType());
-            ps.setString(4, document.getIssuedBy());
+            ps.setString(4, document.getCreatedBy());
             ps.setBoolean(5, document.isPassport());
             ps.setString(6, document.getComments());
-            ps.setDate(7, Date.valueOf(document.getCreationDate()));
+            ps.setDate(7, Date.valueOf(document.getIssueDate()));
 
             ps.executeUpdate();
 
@@ -118,10 +118,10 @@ public class SqliteDocumentRepository implements DocumentRepository {
             ps.setInt(1, document.getPlantBatchId());
             ps.setInt(2, document.getContrahentId());
             ps.setString(3, document.getDocumentType());
-            ps.setString(4, document.getIssuedBy());
+            ps.setString(4, document.getCreatedBy());
             ps.setBoolean(5, document.isPassport());
             ps.setString(6, document.getComments());
-            ps.setDate(7, Date.valueOf(document.getCreationDate()));
+            ps.setDate(7, Date.valueOf(document.getIssueDate()));
             ps.setInt(8, document.getId());
 
             ps.executeUpdate();
@@ -151,13 +151,13 @@ public class SqliteDocumentRepository implements DocumentRepository {
         d.setPlantBatchId(rs.getInt("plant_batch_id"));
         d.setContrahentId(rs.getInt("contrahent_id"));
         d.setDocumentType(rs.getString("document_type"));
-        d.setIssuedBy(rs.getString("issued_by"));
+        d.setCreatedBy(rs.getString("issued_by"));
         d.setPassport(rs.getBoolean("passport"));
         d.setComments(rs.getString("comments"));
 
         Date date = rs.getDate("creation_date");
         if (date != null) {
-            d.setCreationDate(date.toLocalDate());
+            d.setIssueDate(date.toLocalDate());
         }
 
         return d;

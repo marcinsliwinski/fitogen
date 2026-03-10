@@ -29,6 +29,4 @@ public class PlantBatch {
         this.plantId = plantId;
         this.interiorBatchNo = interiorBatchNo;
     }
-
-    // Getters and Setters
 }

@@ -15,9 +15,9 @@ public interface DocumentRepository {
 
     void delete(int id);
 
-    // Opcjonalnie: wyszukiwanie po kontrahencie
+    // Optional: find by ContahentId
     List<Document> findByContrahentId(int contrahentId);
 
-    // Opcjonalnie: wyszukiwanie po partii roślin
+    // Optional: find by  plant batch
     List<Document> findByPlantBatchId(int plantBatchId);
 }
