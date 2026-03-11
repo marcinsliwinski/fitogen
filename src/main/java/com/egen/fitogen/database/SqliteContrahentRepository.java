@@ -1,6 +1,5 @@
 package com.egen.fitogen.database;
 
-import com.egen.fitogen.config.DatabaseConfig;
 import com.egen.fitogen.domain.Contrahent;
 import com.egen.fitogen.repository.ContrahentRepository;
 
@@ -10,16 +9,60 @@ import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.List;
 
-public class SqliteContrahentRepository implements ContrahentRepository {
+public class SqliteContrahentRepository
+        extends BaseSqliteRepository
+        implements ContrahentRepository {
+
+    @Override
+    public void save(Contrahent c) {
+
+        String sql = """
+                INSERT INTO contrahents
+                (name,country,country_code,postal_code,city,street,phytosanitary_number)
+                VALUES(?,?,?,?,?,?,?)
+                """;
+
+        Connection conn = null;
+        PreparedStatement stmt = null;
+
+        try {
+
+            conn = getConnection();
+            stmt = prepare(conn, sql);
+
+            stmt.setString(1, c.getName());
+            stmt.setString(2, c.getCountry());
+            stmt.setString(3, c.getCountryCode());
+            stmt.setString(4, c.getPostalCode());
+            stmt.setString(5, c.getCity());
+            stmt.setString(6, c.getStreet());
+            stmt.setString(7, c.getPhytosanitaryNumber());
+
+            executeUpdate(stmt);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            close(stmt, conn);
+        }
+    }
 
     @Override
     public List<Contrahent> findAll() {
 
         List<Contrahent> list = new ArrayList<>();
 
-        try (Connection conn = DatabaseConfig.getConnection();
-             PreparedStatement ps = conn.prepareStatement("SELECT * FROM contrahents");
-             ResultSet rs = ps.executeQuery()) {
+        String sql = "SELECT * FROM contrahents";
+
+        Connection conn = null;
+        PreparedStatement stmt = null;
+        ResultSet rs = null;
+
+        try {
+
+            conn = getConnection();
+            stmt = prepare(conn, sql);
+            rs = executeQuery(stmt);
 
             while (rs.next()) {
 
@@ -39,30 +82,10 @@ public class SqliteContrahentRepository implements ContrahentRepository {
 
         } catch (Exception e) {
             e.printStackTrace();
+        } finally {
+            close(rs, stmt, conn);
         }
 
         return list;
-    }
-
-    @Override
-    public void save(Contrahent c) {
-
-        try (Connection conn = DatabaseConfig.getConnection();
-             PreparedStatement ps = conn.prepareStatement(
-                     "INSERT INTO contrahents(name,country,country_code,postal_code,city,street,phytosanitary_number) VALUES (?,?,?,?,?,?,?)")) {
-
-            ps.setString(1, c.getName());
-            ps.setString(2, c.getCountry());
-            ps.setString(3, c.getCountryCode());
-            ps.setString(4, c.getPostalCode());
-            ps.setString(5, c.getCity());
-            ps.setString(6, c.getStreet());
-            ps.setString(7, c.getPhytosanitaryNumber());
-
-            ps.executeUpdate();
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
     }
 }

@@ -1,36 +1,53 @@
 package com.egen.fitogen.database;
 
-import com.egen.fitogen.config.DatabaseConfig;
 import com.egen.fitogen.domain.Plant;
 import com.egen.fitogen.repository.PlantRepository;
 
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.List;
 
-public class SqlitePlantRepository implements PlantRepository {
+public class SqlitePlantRepository
+        extends BaseSqliteRepository
+        implements PlantRepository {
 
     @Override
     public List<Plant> findAll() {
+
         List<Plant> plants = new ArrayList<>();
 
-        try (Connection conn = DatabaseConfig.getConnection();
-             Statement stmt = conn.createStatement();
-             ResultSet rs = stmt.executeQuery("SELECT * FROM plants")) {
+        String sql = "SELECT * FROM plants";
+
+        Connection conn = null;
+        PreparedStatement stmt = null;
+        ResultSet rs = null;
+
+        try {
+
+            conn = getConnection();
+            stmt = prepare(conn, sql);
+            rs = executeQuery(stmt);
 
             while (rs.next()) {
-                plants.add(new Plant(
+
+                Plant plant = new Plant(
                         rs.getInt("id"),
                         rs.getString("species"),
                         rs.getString("variety"),
                         rs.getString("rootstock"),
                         rs.getString("latin_species_name"),
                         rs.getString("visibility_status")
-                ));
+                );
+
+                plants.add(plant);
             }
 
-        } catch (SQLException e) {
+        } catch (Exception e) {
             e.printStackTrace();
+        } finally {
+            close(rs, stmt, conn);
         }
 
         return plants;
@@ -38,13 +55,24 @@ public class SqlitePlantRepository implements PlantRepository {
 
     @Override
     public Plant findById(int id) {
-        try (Connection conn = DatabaseConfig.getConnection();
-             PreparedStatement ps = conn.prepareStatement("SELECT * FROM plants WHERE id=?")) {
 
-            ps.setInt(1, id);
-            ResultSet rs = ps.executeQuery();
+        String sql = "SELECT * FROM plants WHERE id=?";
+
+        Connection conn = null;
+        PreparedStatement stmt = null;
+        ResultSet rs = null;
+
+        try {
+
+            conn = getConnection();
+            stmt = prepare(conn, sql);
+
+            stmt.setInt(1, id);
+
+            rs = executeQuery(stmt);
 
             if (rs.next()) {
+
                 return new Plant(
                         rs.getInt("id"),
                         rs.getString("species"),
@@ -55,8 +83,10 @@ public class SqlitePlantRepository implements PlantRepository {
                 );
             }
 
-        } catch (SQLException e) {
+        } catch (Exception e) {
             e.printStackTrace();
+        } finally {
+            close(rs, stmt, conn);
         }
 
         return null;
@@ -65,55 +95,89 @@ public class SqlitePlantRepository implements PlantRepository {
     @Override
     public void save(Plant plant) {
 
-        try (Connection conn = DatabaseConfig.getConnection();
-             PreparedStatement ps = conn.prepareStatement(
-                     "INSERT INTO plants(species,variety,rootstock,latin_species_name,visibility_status) VALUES(?,?,?,?,?)")) {
+        String sql = """
+                INSERT INTO plants
+                (species, variety, rootstock, latin_species_name, visibility_status)
+                VALUES (?, ?, ?, ?, ?)
+                """;
 
-            ps.setString(1, plant.getSpecies());
-            ps.setString(2, plant.getVariety());
-            ps.setString(3, plant.getRootstock());
-            ps.setString(4, plant.getLatinSpeciesName());
-            ps.setString(5, plant.getVisibilityStatus());
+        Connection conn = null;
+        PreparedStatement stmt = null;
 
-            ps.executeUpdate();
+        try {
 
-        } catch (SQLException e) {
+            conn = getConnection();
+            stmt = prepare(conn, sql);
+
+            stmt.setString(1, plant.getSpecies());
+            stmt.setString(2, plant.getVariety());
+            stmt.setString(3, plant.getRootstock());
+            stmt.setString(4, plant.getLatinSpeciesName());
+            stmt.setString(5, plant.getVisibilityStatus());
+
+            executeUpdate(stmt);
+
+        } catch (Exception e) {
             e.printStackTrace();
+        } finally {
+            close(stmt, conn);
         }
     }
 
     @Override
     public void update(Plant plant) {
 
-        try (Connection conn = DatabaseConfig.getConnection();
-             PreparedStatement ps = conn.prepareStatement(
-                     "UPDATE plants SET species=?, variety=?, rootstock=?, latin_species_name=?, visibility_status=? WHERE id=?")) {
+        String sql = """
+                UPDATE plants
+                SET species=?, variety=?, rootstock=?, latin_species_name=?, visibility_status=?
+                WHERE id=?
+                """;
 
-            ps.setString(1, plant.getSpecies());
-            ps.setString(2, plant.getVariety());
-            ps.setString(3, plant.getRootstock());
-            ps.setString(4, plant.getLatinSpeciesName());
-            ps.setString(5, plant.getVisibilityStatus());
-            ps.setInt(6, plant.getId());
+        Connection conn = null;
+        PreparedStatement stmt = null;
 
-            ps.executeUpdate();
+        try {
 
-        } catch (SQLException e) {
+            conn = getConnection();
+            stmt = prepare(conn, sql);
+
+            stmt.setString(1, plant.getSpecies());
+            stmt.setString(2, plant.getVariety());
+            stmt.setString(3, plant.getRootstock());
+            stmt.setString(4, plant.getLatinSpeciesName());
+            stmt.setString(5, plant.getVisibilityStatus());
+            stmt.setInt(6, plant.getId());
+
+            executeUpdate(stmt);
+
+        } catch (Exception e) {
             e.printStackTrace();
+        } finally {
+            close(stmt, conn);
         }
     }
 
     @Override
     public void delete(int id) {
 
-        try (Connection conn = DatabaseConfig.getConnection();
-             PreparedStatement ps = conn.prepareStatement("DELETE FROM plants WHERE id=?")) {
+        String sql = "DELETE FROM plants WHERE id=?";
 
-            ps.setInt(1, id);
-            ps.executeUpdate();
+        Connection conn = null;
+        PreparedStatement stmt = null;
 
-        } catch (SQLException e) {
+        try {
+
+            conn = getConnection();
+            stmt = prepare(conn, sql);
+
+            stmt.setInt(1, id);
+
+            executeUpdate(stmt);
+
+        } catch (Exception e) {
             e.printStackTrace();
+        } finally {
+            close(stmt, conn);
         }
     }
 }

@@ -1,6 +1,5 @@
 package com.egen.fitogen.database;
 
-import com.egen.fitogen.config.DatabaseConfig;
 import com.egen.fitogen.domain.Document;
 import com.egen.fitogen.repository.DocumentRepository;
 
@@ -12,19 +11,26 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
-public class SqliteDocumentRepository implements DocumentRepository {
+public class SqliteDocumentRepository
+        extends BaseSqliteRepository
+        implements DocumentRepository {
 
     @Override
     public void save(Document document) {
 
         String sql = """
                 INSERT INTO documents
-                (document_number, document_type, issue_date, contrahent_id, created_by, comments)
-                VALUES (?, ?, ?, ?, ?, ?)
+                (document_number,document_type,issue_date,contrahent_id,created_by,comments)
+                VALUES(?,?,?,?,?,?)
                 """;
 
-        try (Connection conn = DatabaseConfig.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+        Connection conn = null;
+        PreparedStatement stmt = null;
+
+        try {
+
+            conn = getConnection();
+            stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
 
             stmt.setString(1, document.getDocumentNumber());
             stmt.setString(2, document.getDocumentType());
@@ -36,44 +42,54 @@ public class SqliteDocumentRepository implements DocumentRepository {
             stmt.executeUpdate();
 
             ResultSet rs = stmt.getGeneratedKeys();
+
             if (rs.next()) {
                 document.setId(rs.getInt(1));
             }
 
         } catch (Exception e) {
             e.printStackTrace();
+        } finally {
+            close(stmt, conn);
         }
     }
 
     @Override
     public Document findById(int id) {
 
-        String sql = "SELECT * FROM documents WHERE id = ?";
+        String sql = "SELECT * FROM documents WHERE id=?";
 
-        try (Connection conn = DatabaseConfig.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
+        Connection conn = null;
+        PreparedStatement stmt = null;
+        ResultSet rs = null;
 
+        try {
+
+            conn = getConnection();
+            stmt = prepare(conn, sql);
             stmt.setInt(1, id);
 
-            ResultSet rs = stmt.executeQuery();
+            rs = executeQuery(stmt);
 
             if (rs.next()) {
 
-                Document doc = new Document();
+                Document d = new Document();
 
-                doc.setId(rs.getInt("id"));
-                doc.setDocumentNumber(rs.getString("document_number"));
-                doc.setDocumentType(rs.getString("document_type"));
-                doc.setIssueDate(LocalDate.parse(rs.getString("issue_date")));
-                doc.setContrahentId(rs.getInt("contrahent_id"));
-                doc.setCreatedBy(rs.getString("created_by"));
-                doc.setComments(rs.getString("comments"));
+                d.setId(rs.getInt("id"));
+                d.setDocumentNumber(rs.getString("document_number"));
+                d.setDocumentType(rs.getString("document_type"));
+                d.setIssueDate(LocalDate.parse(rs.getString("issue_date")));
+                d.setContrahentId(rs.getInt("contrahent_id"));
+                d.setCreatedBy(rs.getString("created_by"));
+                d.setComments(rs.getString("comments"));
 
-                return doc;
+                return d;
             }
 
         } catch (Exception e) {
             e.printStackTrace();
+        } finally {
+            close(rs, stmt, conn);
         }
 
         return null;
@@ -82,34 +98,41 @@ public class SqliteDocumentRepository implements DocumentRepository {
     @Override
     public List<Document> findAll() {
 
-        List<Document> documents = new ArrayList<>();
+        List<Document> list = new ArrayList<>();
 
         String sql = "SELECT * FROM documents";
 
-        try (Connection conn = DatabaseConfig.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
+        Connection conn = null;
+        PreparedStatement stmt = null;
+        ResultSet rs = null;
 
-            ResultSet rs = stmt.executeQuery();
+        try {
+
+            conn = getConnection();
+            stmt = prepare(conn, sql);
+            rs = executeQuery(stmt);
 
             while (rs.next()) {
 
-                Document doc = new Document();
+                Document d = new Document();
 
-                doc.setId(rs.getInt("id"));
-                doc.setDocumentNumber(rs.getString("document_number"));
-                doc.setDocumentType(rs.getString("document_type"));
-                doc.setIssueDate(LocalDate.parse(rs.getString("issue_date")));
-                doc.setContrahentId(rs.getInt("contrahent_id"));
-                doc.setCreatedBy(rs.getString("created_by"));
-                doc.setComments(rs.getString("comments"));
+                d.setId(rs.getInt("id"));
+                d.setDocumentNumber(rs.getString("document_number"));
+                d.setDocumentType(rs.getString("document_type"));
+                d.setIssueDate(LocalDate.parse(rs.getString("issue_date")));
+                d.setContrahentId(rs.getInt("contrahent_id"));
+                d.setCreatedBy(rs.getString("created_by"));
+                d.setComments(rs.getString("comments"));
 
-                documents.add(doc);
+                list.add(d);
             }
 
         } catch (Exception e) {
             e.printStackTrace();
+        } finally {
+            close(rs, stmt, conn);
         }
 
-        return documents;
+        return list;
     }
 }
