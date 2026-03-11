@@ -1,15 +1,14 @@
 package com.egen.fitogen;
 
-import com.egen.fitogen.database.*;
+import com.egen.fitogen.config.AppContext;
+import com.egen.fitogen.database.DatabaseInitializer;
 import com.egen.fitogen.domain.Contrahent;
 import com.egen.fitogen.dto.DocumentDTO;
 import com.egen.fitogen.dto.DocumentItemDTO;
-import com.egen.fitogen.repository.ContrahentRepository;
-import com.egen.fitogen.repository.DocumentItemRepository;
-import com.egen.fitogen.repository.DocumentRepository;
 import com.egen.fitogen.service.ContrahentService;
 import com.egen.fitogen.service.DocumentService;
 
+import java.time.LocalDate;
 import java.util.List;
 
 public class MainApp {
@@ -20,10 +19,18 @@ public class MainApp {
 
         System.out.println("Fitogen database ready!");
 
-        ContrahentRepository repo = new SqliteContrahentRepository();
+        // uruchomienie kontenera zależności
+        AppContext.init();
 
+        // pobranie serwisów z kontekstu
         ContrahentService contrahentService =
-                new ContrahentService(repo);
+                AppContext.getContrahentService();
+
+        DocumentService documentService =
+                AppContext.getDocumentService();
+
+
+        // ===== TEST CONTRAHENT =====
 
         Contrahent c = new Contrahent();
 
@@ -37,19 +44,18 @@ public class MainApp {
 
         contrahentService.addContrahent(c);
 
+        System.out.println("=== Contrahents ===");
+
         contrahentService.getAllContrahents()
                 .forEach(System.out::println);
 
-        DocumentRepository documentRepo = new SqliteDocumentRepository();
-        DocumentItemRepository itemRepo = new SqliteDocumentItemRepository();
 
-        DocumentService documentService =
-                new DocumentService(documentRepo, itemRepo);
+        // ===== TEST DOKUMENTU =====
 
         DocumentDTO doc = new DocumentDTO();
 
         doc.setDocumentType("SUPPLIER_DOCUMENT");
-        doc.setIssueDate(java.time.LocalDate.now());
+        doc.setIssueDate(LocalDate.now());
         doc.setContrahentId(1);
         doc.setCreatedBy("admin");
 
