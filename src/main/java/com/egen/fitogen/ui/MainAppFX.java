@@ -1,5 +1,6 @@
 package com.egen.fitogen.ui;
 
+import atlantafx.base.theme.PrimerLight;
 import com.egen.fitogen.config.AppContext;
 import com.egen.fitogen.database.DatabaseInitializer;
 import javafx.application.Application;
@@ -11,14 +12,16 @@ public class MainAppFX extends Application {
 
     @Override
     public void start(Stage stage) throws Exception {
+
         DatabaseInitializer.initDatabase();
         AppContext.init();
 
-        FXMLLoader loader = new FXMLLoader(
-                getClass().getResource("/view/main.fxml")
-        );
+        Application.setUserAgentStylesheet(new PrimerLight().getUserAgentStylesheet());
 
-        Scene scene = new Scene(loader.load(), 1000, 700);
+        FXMLLoader loader =
+                new FXMLLoader(getClass().getResource("/view/main.fxml"));
+
+        Scene scene = new Scene(loader.load(), 1200, 800);
 
         stage.setTitle("Fitogen");
         stage.setScene(scene);

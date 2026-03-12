@@ -1,8 +1,7 @@
 package com.egen.fitogen.ui.controller;
 
+import com.egen.fitogen.ui.router.ViewManager;
 import javafx.fxml.FXML;
-import javafx.fxml.FXMLLoader;
-import javafx.scene.Node;
 import javafx.scene.layout.StackPane;
 
 public class MainController {
@@ -11,36 +10,68 @@ public class MainController {
     private StackPane content;
 
     @FXML
-    public void initialize() throws Exception {
-        load("/view/dashboard.fxml");
+    public void initialize() {
+
+        ViewManager.setContainer(content);
+
+        ViewManager.show("dashboard");
+
     }
 
     @FXML
-    private void openDashboard() throws Exception {
-        load("/view/dashboard.fxml");
+    private void openDashboard() {
+
+        ViewManager.show("dashboard");
+
     }
 
     @FXML
-    private void openPlantBatches() throws Exception {
-        load("/view/plant_batches.fxml");
+    private void openPlantBatches() {
+
+        ViewManager.show("batches");
+
     }
 
     @FXML
-    private void openDocuments() {
-        System.out.println("Documents view");
+    private void openPlants() {
+
+        System.out.println("Plants view not implemented yet");
+
     }
 
     @FXML
     private void openContrahents() {
-        System.out.println("Contrahents view");
+
+        System.out.println("Contrahents view not implemented yet");
+
     }
 
-    private void load(String path) throws Exception {
+    @FXML
+    private void openDocuments() {
 
-        Node view = FXMLLoader.load(
-                getClass().getResource(path)
-        );
+        System.out.println("Documents view not implemented yet");
 
-        content.getChildren().setAll(view);
     }
+
+    @FXML
+    private void openSettings() {
+
+        System.out.println("Settings view");
+
+    }
+
+    @FXML
+    private void openUpdates() {
+
+        System.out.println("Updates view");
+
+    }
+
+    @FXML
+    private void openHelp() {
+
+        System.out.println("Help view");
+
+    }
+
 }

@@ -1,15 +1,51 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.control.Label?>
-<VBox spacing="20"
+<VBox spacing="25"
       xmlns:fx="http://javafx.com/fxml"
-      alignment="CENTER"
-      style="-fx-padding: 20;">
+      alignment="TOP_LEFT"
+      style="-fx-padding:30;">
 
     <Label text="Dashboard"
-           style="-fx-font-size: 24px;" />
+           style="-fx-font-size:26px;" />
 
-    <Label text="Witaj w systemie Fitogen" />
+    <HBox spacing="20">
+
+        <VBox spacing="5"
+              prefWidth="200"
+              style="-fx-padding:20; -fx-background-color:white; -fx-background-radius:10;">
+
+            <Label text="Partie roślin"
+                   style="-fx-font-size:16px;"/>
+
+            <Label text="Zarządzaj partiami"/>
+
+        </VBox>
+
+        <VBox spacing="5"
+              prefWidth="200"
+              style="-fx-padding:20; -fx-background-color:white; -fx-background-radius:10;">
+
+            <Label text="Dokumenty"
+                   style="-fx-font-size:16px;"/>
+
+            <Label text="Dokumenty dostaw"/>
+
+        </VBox>
+
+        <VBox spacing="5"
+              prefWidth="200"
+              style="-fx-padding:20; -fx-background-color:white; -fx-background-radius:10;">
+
+            <Label text="Kontrahenci"
+                   style="-fx-font-size:16px;"/>
+
+            <Label text="Lista kontrahentów"/>
+
+        </VBox>
+
+    </HBox>
 
 </VBox>
