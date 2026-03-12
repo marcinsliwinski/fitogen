@@ -15,7 +15,7 @@ public class MainAppFX extends Application {
         AppContext.init();
 
         FXMLLoader loader = new FXMLLoader(
-                getClass().getResource("/view/dashboard.fxml")
+                getClass().getResource("/view/main.fxml")
         );
 
         Scene scene = new Scene(loader.load(), 1000, 700);

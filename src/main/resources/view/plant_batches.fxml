@@ -1,14 +1,45 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import java.lang.*?>
-<?import java.util.*?>
-<?import javafx.scene.*?>
-<?import javafx.scene.control.*?>
-<?import javafx.scene.layout.*?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.control.Button?>
+<VBox spacing="10"
+      xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.egen.fitogen.ui.controller.PlantBatchController">
 
-<AnchorPane xmlns="http://javafx.com/javafx"
-            xmlns:fx="http://javafx.com/fxml"
-            fx:controller="CONTROLLER_NAME"
-            prefHeight="400.0" prefWidth="600.0">
+    <Label text="Partie roślin"
+           style="-fx-font-size: 20px;" />
 
-</AnchorPane>
+    <TableView fx:id="table">
+
+        <columns>
+
+            <TableColumn text="ID" fx:id="colId"/>
+
+            <TableColumn text="Batch no"
+                         fx:id="colBatch"/>
+
+            <TableColumn text="Qty"
+                         fx:id="colQty"/>
+
+            <TableColumn text="Country"
+                         fx:id="colCountry"/>
+
+        </columns>
+
+    </TableView>
+
+    <HBox spacing="10">
+
+        <Button text="Dodaj"
+                onAction="#addBatch"/>
+
+        <Button text="Usuń"
+                onAction="#deleteBatch"/>
+
+    </HBox>
+
+</VBox>
