@@ -4,6 +4,7 @@
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.layout.GridPane?>
 <?import javafx.scene.control.TextField?>
+<?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.control.Button?>
 <VBox spacing="10"
@@ -31,15 +32,15 @@
                    GridPane.rowIndex="2"
                    GridPane.columnIndex="1"/>
 
-        <Label text="Plant ID" GridPane.rowIndex="3"/>
-        <TextField fx:id="plantId"
-                   GridPane.rowIndex="3"
-                   GridPane.columnIndex="1"/>
+        <Label text="Plant" GridPane.rowIndex="3"/>
+        <ComboBox fx:id="plantBox"
+                  GridPane.rowIndex="3"
+                  GridPane.columnIndex="1"/>
 
-        <Label text="Contrahent ID" GridPane.rowIndex="4"/>
-        <TextField fx:id="contrahentId"
-                   GridPane.rowIndex="4"
-                   GridPane.columnIndex="1"/>
+        <Label text="Contrahent" GridPane.rowIndex="4"/>
+        <ComboBox fx:id="contrahentBox"
+                  GridPane.rowIndex="4"
+                  GridPane.columnIndex="1"/>
 
     </GridPane>
 

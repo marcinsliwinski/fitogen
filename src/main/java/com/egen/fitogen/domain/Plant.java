@@ -24,4 +24,8 @@ public class Plant {
         this.latinSpeciesName = latinSpeciesName;
         this.visibilityStatus = visibilityStatus;
     }
+    @Override
+    public String toString() {
+        return species + " " + variety;
+    }
 }

@@ -22,4 +22,9 @@ public class Contrahent {
     private String street;
 
     private String phytosanitaryNumber;
+
+    @Override
+    public String toString() {
+        return name + " (" + country + ")";
+    }
 }
