@@ -42,7 +42,7 @@ public class MainController {
     @FXML
     private void openContrahents() {
 
-        System.out.println("Contrahents view not implemented yet");
+        ViewManager.show("contrahents");
 
     }
 

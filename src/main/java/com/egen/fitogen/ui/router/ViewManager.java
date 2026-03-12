@@ -21,6 +21,7 @@ public class ViewManager {
         views.put("plants", "/view/plants.fxml");
         views.put("contrahents", "/view/contrahents.fxml");
         views.put("plants", "/view/plants.fxml");
+        views.put("contrahents", "/view/contrahents.fxml");
     }
 
     public static void setContainer(StackPane pane) {
