@@ -76,7 +76,7 @@ public class PlantBatchController {
 
         stage.showAndWait();
 
-        refresh();
+        refresh();   // ← KLUCZOWE
     }
 
     @FXML
