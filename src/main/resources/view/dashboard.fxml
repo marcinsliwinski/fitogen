@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.control.Button?>
+<VBox spacing="20"
+      xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.egen.fitogen.ui.controller.DashboardController"
+      alignment="CENTER">
+
+    <Label text="FITOGEN"
+           style="-fx-font-size: 28px;" />
+
+    <HBox spacing="20">
+
+        <Button text="Partie roślin"
+                onAction="#openPlantBatches"/>
+
+        <Button text="Dokumenty"
+                onAction="#openDocuments"/>
+
+        <Button text="Kontrahenci"
+                onAction="#openContrahents"/>
+
+    </HBox>
+
+</VBox>
