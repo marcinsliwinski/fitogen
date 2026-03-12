@@ -1,0 +1,27 @@
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.Label?>
+<VBox spacing="10"
+      xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.egen.fitogen.ui.controller.PlantsController"
+      style="-fx-padding:20;">
+
+    <Label text="Rośliny"
+           style="-fx-font-size:22px;" />
+
+    <TableView fx:id="table">
+
+        <columns>
+
+            <TableColumn text="ID" fx:id="colId"/>
+            <TableColumn text="Gatunek" fx:id="colSpecies"/>
+            <TableColumn text="Odmiana" fx:id="colVariety"/>
+            <TableColumn text="Podkładka" fx:id="colRootstock"/>
+            <TableColumn text="Nazwa łacińska" fx:id="colLatin"/>
+
+        </columns>
+
+    </TableView>
+
+</VBox>

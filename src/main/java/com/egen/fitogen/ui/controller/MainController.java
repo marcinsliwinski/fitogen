@@ -35,7 +35,7 @@ public class MainController {
     @FXML
     private void openPlants() {
 
-        System.out.println("Plants view not implemented yet");
+        ViewManager.show("plants");
 
     }
 

@@ -8,7 +8,7 @@
 <?import javafx.scene.control.Button?>
 <VBox spacing="10"
       xmlns:fx="http://javafx.com/fxml"
-      fx:controller="com.egen.fitogen.ui.controller.PlantBatchController">
+      fx:controller="com.egen.fitogen.ui.controller.PlantBatchController" style="-fx-padding:20;">
 
     <Label text="Partie roślin"
            style="-fx-font-size: 20px;" />
@@ -19,13 +19,13 @@
 
             <TableColumn text="ID" fx:id="colId"/>
 
-            <TableColumn text="Batch no"
+            <TableColumn text="Partia"
                          fx:id="colBatch"/>
 
-            <TableColumn text="Qty"
+            <TableColumn text="Ilość"
                          fx:id="colQty"/>
 
-            <TableColumn text="Country"
+            <TableColumn text="Kraj pochodzenia"
                          fx:id="colCountry"/>
 
         </columns>
