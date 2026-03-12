@@ -5,9 +5,12 @@ import com.egen.fitogen.domain.PlantBatch;
 import com.egen.fitogen.service.PlantBatchService;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Scene;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.stage.Stage;
 
 public class PlantBatchController {
 
@@ -61,9 +64,19 @@ public class PlantBatchController {
     }
 
     @FXML
-    private void addBatch() {
+    private void addBatch() throws Exception {
 
-        System.out.println("Add batch clicked");
+        FXMLLoader loader =
+                new FXMLLoader(getClass().getResource("/view/add_batch.fxml"));
+
+        Stage stage = new Stage();
+
+        stage.setScene(new Scene(loader.load(), 400, 300));
+        stage.setTitle("Dodaj partię");
+
+        stage.showAndWait();
+
+        refresh();
     }
 
     @FXML
