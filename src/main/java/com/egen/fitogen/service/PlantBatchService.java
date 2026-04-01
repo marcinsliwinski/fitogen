@@ -17,34 +17,24 @@ public class PlantBatchService {
     private final PlantBatchRepository repository;
     private final DocumentItemRepository documentItemRepository;
     private final NumberingService numberingService;
-    private final AuditLogService auditLogService;
 
     public PlantBatchService(PlantBatchRepository repository) {
-        this(repository, null, null, null);
+        this(repository, null, null);
     }
 
     public PlantBatchService(
             PlantBatchRepository repository,
             NumberingService numberingService) {
-        this(repository, numberingService, null, null);
+        this(repository, numberingService, null);
     }
 
     public PlantBatchService(
             PlantBatchRepository repository,
             NumberingService numberingService,
             DocumentItemRepository documentItemRepository) {
-        this(repository, numberingService, documentItemRepository, null);
-    }
-
-    public PlantBatchService(
-            PlantBatchRepository repository,
-            NumberingService numberingService,
-            DocumentItemRepository documentItemRepository,
-            AuditLogService auditLogService) {
         this.repository = repository;
         this.numberingService = numberingService;
         this.documentItemRepository = documentItemRepository;
-        this.auditLogService = auditLogService;
     }
 
     public List<PlantBatch> getAllBatches() {
@@ -85,9 +75,6 @@ public class PlantBatchService {
         }
 
         repository.save(batch);
-        if (auditLogService != null) {
-            auditLogService.log("PLANT_BATCH", null, "CREATE", "Dodano partię: " + buildBatchSummary(batch));
-        }
     }
 
     public void updateBatch(PlantBatch batch) {
@@ -101,9 +88,6 @@ public class PlantBatchService {
 
         logger.info("Updating batch id {}", batch.getId());
         repository.update(batch);
-        if (auditLogService != null) {
-            auditLogService.log("PLANT_BATCH", batch.getId(), "UPDATE", "Zaktualizowano partię: " + buildBatchSummary(batch));
-        }
     }
 
     public void deleteBatch(int id) {
@@ -115,9 +99,6 @@ public class PlantBatchService {
         }
 
         repository.deleteById(id);
-        if (auditLogService != null) {
-            auditLogService.log("PLANT_BATCH", id, "CANCEL", "Anulowano partię o ID=" + id);
-        }
     }
 
     public boolean isBatchUsedInDocuments(int batchId) {
@@ -129,19 +110,6 @@ public class PlantBatchService {
             return List.of();
         }
         return documentItemRepository.findActiveDocumentNumbersByPlantBatchId(batchId);
-    }
-
-
-    private String buildBatchSummary(PlantBatch batch) {
-        String number = batch.getInteriorBatchNo() == null || batch.getInteriorBatchNo().isBlank()
-                ? "bez numeru"
-                : batch.getInteriorBatchNo().trim();
-        String externalNumber = batch.getExteriorBatchNo() == null || batch.getExteriorBatchNo().isBlank()
-                ? ""
-                : " | nr zewnętrzny: " + batch.getExteriorBatchNo().trim();
-        String qty = " | ilość: " + batch.getQty();
-        String status = " | status: " + (batch.getStatus() == null ? "BRAK" : batch.getStatus().name());
-        return number + externalNumber + qty + status;
     }
 
     private String buildBatchUsedMessage(List<String> documentNumbers) {

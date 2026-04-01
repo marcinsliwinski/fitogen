@@ -41,13 +41,7 @@
                         <Label text="Liczba roślin w słowniku:" styleClass="stat-title"/>
                         <Label fx:id="plantCountLabel"/>
                     </HBox>
-                    <HBox spacing="8">
-                        <Label text="Wspólny słownik krajów:" styleClass="stat-title"/>
-                        <Label fx:id="sharedCountryCountLabel"/>
-                    </HBox>
                 </HBox>
-                <Label text="Poniżej widzisz cały wspólny słownik krajów używany przez EPPO, Kontrahentów i Ustawienia. Rekordy EPPO nadal pozostają osobnymi rekordami stref / krajów powiązywanymi z kodami EPPO." wrapText="true"/>
-                <ListView fx:id="sharedCountryList" prefHeight="180"/>
             </VBox>
 
             <VBox styleClass="content-card" spacing="12">
@@ -75,7 +69,7 @@
 
             <VBox styleClass="content-card" spacing="12">
                 <Label text="Baza rekordów" styleClass="section-title" style="-fx-font-size: 18px;"/>
-                <Label fx:id="selectedCodeLabel" text="Wybrany kod EPPO: —" wrapText="true"/>
+                <Label fx:id="selectedCodeLabel" text="Kliknięcie na kod EPPO nie filtruje Bazy rekordów. Użyj wyszukiwarki, aby zawęzić wyniki." wrapText="true"/>
 
                 <HBox spacing="10">
                     <TextField fx:id="recordSearchField"

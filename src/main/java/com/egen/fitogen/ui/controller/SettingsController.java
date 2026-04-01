@@ -5,10 +5,12 @@ import com.egen.fitogen.domain.NumberingConfig;
 import com.egen.fitogen.domain.NumberingSectionType;
 import com.egen.fitogen.domain.NumberingType;
 import com.egen.fitogen.model.AppUser;
+import com.egen.fitogen.model.AuditLogEntry;
 import com.egen.fitogen.model.DocumentType;
 import com.egen.fitogen.model.IssuerProfile;
 import com.egen.fitogen.service.AppSettingsService;
 import com.egen.fitogen.service.AppUserService;
+import com.egen.fitogen.service.AuditLogService;
 import com.egen.fitogen.service.BackupService;
 import com.egen.fitogen.service.CountryDirectoryService;
 import com.egen.fitogen.service.DocumentTypeService;
@@ -82,12 +84,16 @@ public class SettingsController {
     @FXML private CheckBox plantFullCatalogEnabledCheckBox;
     @FXML private Label plantCatalogModeStatusLabel;
 
+    @FXML private Label auditLogStatusLabel;
+    @FXML private ListView<String> auditLogEntriesList;
+
     private final NumberingConfigService numberingConfigService = AppContext.getNumberingConfigService();
     private final BackupService backupService = AppContext.getBackupService();
     private final DocumentTypeService documentTypeService = AppContext.getDocumentTypeService();
     private final AppUserService appUserService = AppContext.getAppUserService();
     private final AppSettingsService appSettingsService = AppContext.getAppSettingsService();
     private final CountryDirectoryService countryDirectoryService = AppContext.getCountryDirectoryService();
+    private final AuditLogService auditLogService = AppContext.getAuditLogService();
 
     private boolean loading;
     private boolean updatingDefaultUserSelection;
@@ -119,6 +125,7 @@ public class SettingsController {
         loadPlantPassportMode();
         loadPlantCatalogMode();
         refreshBackupStatus();
+        refreshAuditLogEntries();
         loadConfig(NumberingType.DOCUMENT);
     }
 
@@ -530,6 +537,52 @@ public class SettingsController {
         usersList.getSelectionModel().clearSelection();
         userFirstNameField.clear();
         userLastNameField.clear();
+    }
+
+
+    @FXML
+    private void refreshAuditLogEntries() {
+        if (auditLogEntriesList == null || auditLogStatusLabel == null) {
+            return;
+        }
+
+        try {
+            List<AuditLogEntry> entries = auditLogService == null
+                    ? List.of()
+                    : auditLogService.getRecentEntries(30);
+
+            List<String> items = new ArrayList<>();
+            for (AuditLogEntry entry : entries) {
+                items.add(formatAuditLogEntry(entry));
+            }
+
+            auditLogEntriesList.setItems(FXCollections.observableArrayList(items));
+            int total = auditLogService == null ? 0 : auditLogService.getEntryCount();
+            auditLogStatusLabel.setText(
+                    total <= 0
+                            ? "Brak wpisów audytowych. Historia zacznie się pojawiać po kolejnych operacjach zapisu, edycji lub anulowania."
+                            : "Łączna liczba wpisów audytowych: " + total
+                              + ". Widok pokazuje ostatnie " + entries.size() + " pozycji."
+            );
+        } catch (Exception e) {
+            e.printStackTrace();
+            auditLogEntriesList.setItems(FXCollections.observableArrayList());
+            auditLogStatusLabel.setText("Nie udało się odczytać historii Audit Log.");
+        }
+    }
+
+    private String formatAuditLogEntry(AuditLogEntry entry) {
+        String changedAt = safe(entry.getChangedAt());
+        String actor = safe(entry.getActor()).isBlank() ? "System" : safe(entry.getActor());
+        String entityType = safe(entry.getEntityType()).isBlank() ? "—" : safe(entry.getEntityType());
+        String actionType = safe(entry.getActionType()).isBlank() ? "—" : safe(entry.getActionType());
+        String description = safe(entry.getDescription()).isBlank() ? "Brak opisu zmiany." : safe(entry.getDescription());
+
+        return changedAt
+                + " | " + actor
+                + " | " + entityType
+                + " | " + actionType
+                + "\n" + description;
     }
 
     private void configureTypeBoxes() {

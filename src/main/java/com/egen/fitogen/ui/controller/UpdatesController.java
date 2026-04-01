@@ -1,7 +1,6 @@
 package com.egen.fitogen.ui.controller;
 
 import com.egen.fitogen.service.AppSettingsService;
-import com.egen.fitogen.service.AuditLogService;
 import com.egen.fitogen.config.AppContext;
 import com.egen.fitogen.ui.router.ViewManager;
 import javafx.fxml.FXML;
@@ -16,11 +15,8 @@ public class UpdatesController {
     @FXML private Label plantDatabaseStatusLabel;
     @FXML private Label lastBackupInfoLabel;
     @FXML private Label moduleReadinessLabel;
-    @FXML private Label auditLogStatusLabel;
-    @FXML private Label auditLogLatestEntryLabel;
 
     private final AppSettingsService appSettingsService = AppContext.getAppSettingsService();
-    private final AuditLogService auditLogService = AppContext.getAuditLogService();
 
     @FXML
     public void initialize() {
@@ -38,18 +34,6 @@ public class UpdatesController {
         moduleReadinessLabel.setText(
                 "Na tym etapie uporządkowano routing i osobny widok modułu Aktualizacje. "
                         + "Silnik aktualizacji aplikacji i bazy roślin będzie można bezpiecznie dodać w kolejnych etapach."
-        );
-
-        int auditCount = auditLogService == null ? 0 : auditLogService.getEntryCount();
-        auditLogStatusLabel.setText(
-                auditCount <= 0
-                        ? "Audit Log foundation jest gotowy, ale nie ma jeszcze zapisanych wpisów."
-                        : "Audit Log foundation jest aktywny. Liczba zapisanych wpisów: " + auditCount
-        );
-        auditLogLatestEntryLabel.setText(
-                auditLogService == null
-                        ? "Brak dostępu do serwisu audytu."
-                        : "Ostatni wpis: " + auditLogService.getLatestEntrySummary()
         );
     }
 
