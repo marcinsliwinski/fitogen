@@ -92,12 +92,20 @@ public class CountryDirectoryService {
     }
 
     public void saveCustomEntry(String country, String countryCode) {
+        saveCustomEntry(null, null, country, countryCode);
+    }
+
+    public void saveCustomEntry(String originalCountry,
+                                String originalCountryCode,
+                                String country,
+                                String countryCode) {
         CountryDirectory.CountryEntry normalized = normalizeEntry(new CountryDirectory.CountryEntry(country, countryCode));
         if (normalized == null) {
             throw new IllegalArgumentException("Kraj i kod kraju są wymagane.");
         }
 
-        CountryDirectory.CountryEntry existing = findCustomEntryByCountry(normalized.country());
+        CountryDirectory.CountryEntry original = normalizeEntry(new CountryDirectory.CountryEntry(originalCountry, originalCountryCode));
+        validateEntry(normalized, original);
 
         Map<String, CountryDirectory.CountryEntry> customMap = new LinkedHashMap<>();
         for (CountryDirectory.CountryEntry entry : getCustomEntries()) {
@@ -105,6 +113,15 @@ public class CountryDirectoryService {
             if (current != null) {
                 customMap.put(normalizeKey(current.country()), current);
             }
+        }
+
+        CountryDirectory.CountryEntry existing = original != null ? findCustomEntryByCountry(original.country()) : findCustomEntryByCountry(normalized.country());
+        if (sameEntry(existing, normalized)) {
+            return;
+        }
+
+        if (original != null) {
+            customMap.remove(normalizeKey(original.country()));
         }
 
         customMap.put(normalizeKey(normalized.country()), normalized);
@@ -163,6 +180,48 @@ public class CountryDirectoryService {
                 .filter(entry -> entry != null && key.equals(normalizeKey(entry.country())))
                 .findFirst()
                 .orElse(null);
+    }
+
+    private void validateEntry(CountryDirectory.CountryEntry candidate, CountryDirectory.CountryEntry ignoredEntry) {
+        if (candidate == null) {
+            throw new IllegalArgumentException("Kraj i kod kraju są wymagane.");
+        }
+
+        if (!candidate.countryCode().matches("[A-Z]{2}")) {
+            throw new IllegalArgumentException("Kod kraju musi składać się z dokładnie 2 liter, np. PL.");
+        }
+
+        String candidateCountryKey = normalizeKey(candidate.country());
+        String candidateCode = normalizeCode(candidate.countryCode());
+        String ignoredCountryKey = ignoredEntry == null ? null : normalizeKey(ignoredEntry.country());
+
+        for (CountryDirectory.CountryEntry entry : getEntries()) {
+            CountryDirectory.CountryEntry current = normalizeEntry(entry);
+            if (current == null) {
+                continue;
+            }
+
+            if (ignoredCountryKey != null && ignoredCountryKey.equals(normalizeKey(current.country()))) {
+                continue;
+            }
+
+            boolean sameCountry = candidateCountryKey.equals(normalizeKey(current.country()));
+            boolean sameCode = candidateCode.equals(normalizeCode(current.countryCode()));
+            if (sameCode && !sameCountry) {
+                throw new IllegalArgumentException(
+                        "Kod kraju " + candidateCode + " jest już używany dla kraju: " + current.country() + "."
+                );
+            }
+        }
+    }
+
+    private boolean sameEntry(CountryDirectory.CountryEntry first, CountryDirectory.CountryEntry second) {
+        if (first == null || second == null) {
+            return false;
+        }
+
+        return normalizeKey(first.country()).equals(normalizeKey(second.country()))
+                && normalizeCode(first.countryCode()).equals(normalizeCode(second.countryCode()));
     }
 
     private CountryDirectory.CountryEntry normalizeEntry(CountryDirectory.CountryEntry entry) {

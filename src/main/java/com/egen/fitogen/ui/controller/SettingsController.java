@@ -66,6 +66,7 @@ public class SettingsController {
     @FXML private TextField documentTypeNameField;
     @FXML private TextField documentTypeCodeField;
     @FXML private ListView<CountryDirectory.CountryEntry> customCountryEntriesList;
+    @FXML private TextField customCountrySearchField;
     @FXML private TextField customCountryNameField;
     @FXML private TextField customCountryCodeField;
     @FXML private Label countryDictionaryStatusLabel;
@@ -112,6 +113,7 @@ public class SettingsController {
     private CountryDirectory.CountryEntry editingCustomCountryEntry;
     private AppUser editingUser;
     private final ObservableList<AuditLogEntry> auditLogMasterEntries = FXCollections.observableArrayList();
+    private final ObservableList<CountryDirectory.CountryEntry> customCountryMasterEntries = FXCollections.observableArrayList();
 
     @FXML
     public void initialize() {
@@ -190,6 +192,12 @@ public class SettingsController {
                 setText(empty || item == null ? "" : item.country() + " (" + item.countryCode() + ")");
             }
         });
+
+        customCountryEntriesList.setPlaceholder(new Label("Brak własnych wpisów słownika krajów."));
+
+        if (customCountrySearchField != null) {
+            customCountrySearchField.textProperty().addListener((obs, oldVal, newVal) -> applyCustomCountryFilter());
+        }
     }
 
     private void configureIssuerCountryControls() {
@@ -451,33 +459,77 @@ public class SettingsController {
         }
 
         List<CountryDirectory.CountryEntry> entries = countryDirectoryService.getCustomEntries();
-        customCountryEntriesList.setItems(FXCollections.observableArrayList(entries));
+        customCountryMasterEntries.setAll(entries);
+        applyCustomCountryFilter();
         updateCountryDictionaryStatus();
+    }
+
+
+    private void applyCustomCountryFilter() {
+        if (customCountryEntriesList == null) {
+            return;
+        }
+
+        String filter = safe(customCountrySearchField == null ? null : customCountrySearchField.getText())
+                .toLowerCase(Locale.ROOT);
+
+        List<CountryDirectory.CountryEntry> filtered = customCountryMasterEntries.stream()
+                .filter(entry -> matchesCustomCountryFilter(entry, filter))
+                .toList();
+
+        customCountryEntriesList.setItems(FXCollections.observableArrayList(filtered));
+    }
+
+    private boolean matchesCustomCountryFilter(CountryDirectory.CountryEntry entry, String filter) {
+        if (entry == null) {
+            return false;
+        }
+
+        if (filter == null || filter.isBlank()) {
+            return true;
+        }
+
+        String haystack = (safe(entry.country()) + " " + safe(entry.countryCode())).toLowerCase(Locale.ROOT);
+        return haystack.contains(filter);
+    }
+
+    private void selectCustomCountryEntry(String country) {
+        if (customCountryEntriesList == null || country == null || country.isBlank()) {
+            return;
+        }
+
+        CountryDirectory.CountryEntry selected = customCountryMasterEntries.stream()
+                .filter(entry -> entry != null && entry.country().equalsIgnoreCase(country))
+                .findFirst()
+                .orElse(null);
+
+        if (selected == null) {
+            return;
+        }
+
+        customCountryEntriesList.getSelectionModel().select(selected);
+        customCountryEntriesList.scrollTo(selected);
     }
 
     @FXML
     private void saveCustomCountryEntry() {
         try {
             String country = ValidationUtil.requireText(customCountryNameField.getText(), "Kraj");
-            String code = ValidationUtil.requireText(customCountryCodeField.getText(), "Kod kraju").toUpperCase();
+            String code = ValidationUtil.requireText(customCountryCodeField.getText(), "Kod kraju").toUpperCase(Locale.ROOT);
 
-            if (editingCustomCountryEntry != null
-                    && !editingCustomCountryEntry.country().equalsIgnoreCase(country.trim())) {
-                countryDirectoryService.deleteCustomEntry(
+            if (editingCustomCountryEntry != null) {
+                countryDirectoryService.saveCustomEntry(
                         editingCustomCountryEntry.country(),
-                        editingCustomCountryEntry.countryCode()
+                        editingCustomCountryEntry.countryCode(),
+                        country,
+                        code
                 );
+            } else {
+                countryDirectoryService.saveCustomEntry(country, code);
             }
-
-            countryDirectoryService.saveCustomEntry(country, code);
             loadCustomCountryEntries();
             refreshSharedCountryCombos();
-            customCountryEntriesList.getSelectionModel().select(
-                    countryDirectoryService.getCustomEntries().stream()
-                            .filter(entry -> entry.country().equalsIgnoreCase(country.trim()))
-                            .findFirst()
-                            .orElse(null)
-            );
+            selectCustomCountryEntry(country.trim());
             DialogUtil.showSuccess(editingCustomCountryEntry == null
                     ? "Wpis słownika krajów został dodany."
                     : "Wpis słownika krajów został zaktualizowany.");
