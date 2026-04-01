@@ -49,12 +49,6 @@
             </VBox>
 
             <VBox styleClass="content-card" spacing="12">
-                <Label text="Audit Log" styleClass="section-title" style="-fx-font-size: 18px;"/>
-                <Label fx:id="auditLogStatusLabel" wrapText="true"/>
-                <Label fx:id="auditLogLatestEntryLabel" wrapText="true"/>
-            </VBox>
-
-            <VBox styleClass="content-card" spacing="12">
                 <Label text="Dalsze kroki" styleClass="section-title" style="-fx-font-size: 18px;"/>
                 <Label text="W kolejnych etapach można tu bezpiecznie dodać sprawdzanie nowej wersji aplikacji, pobieranie aktualizacji oraz aktualizację bazy roślin z serwera." wrapText="true"/>
                 <HBox spacing="10">

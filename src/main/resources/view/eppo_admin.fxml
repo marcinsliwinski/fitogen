@@ -3,7 +3,6 @@
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
-<?import javafx.scene.control.ListView?>
 <?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.control.TableColumn?>
 <?import javafx.scene.control.TableView?>
@@ -24,7 +23,7 @@
 
             <VBox spacing="4">
                 <Label text="Słowniki EPPO" styleClass="page-title"/>
-                <Label text="Moduł administracyjny dla referencyjnych kodów EPPO, krajów EPPO i bazy rekordów łączącej kody, gatunki i kraje." styleClass="page-subtitle" wrapText="true"/>
+                <Label text="Moduł administracyjny dla referencyjnych kodów EPPO oraz bazy rekordów łączącej kody, gatunki i kraje. Wspólny słownik krajów jest zarządzany w Ustawieniach." styleClass="page-subtitle" wrapText="true"/>
             </VBox>
 
             <VBox styleClass="content-card" spacing="12">
@@ -35,20 +34,14 @@
                         <Label fx:id="codeCountLabel"/>
                     </HBox>
                     <HBox spacing="8">
-                        <Label text="Liczba krajów EPPO:" styleClass="stat-title"/>
+                        <Label text="Liczba krajów / stref powiązanych:" styleClass="stat-title"/>
                         <Label fx:id="zoneCountLabel"/>
                     </HBox>
                     <HBox spacing="8">
                         <Label text="Liczba roślin w słowniku:" styleClass="stat-title"/>
                         <Label fx:id="plantCountLabel"/>
                     </HBox>
-                    <HBox spacing="8">
-                        <Label text="Wspólny słownik krajów:" styleClass="stat-title"/>
-                        <Label fx:id="sharedCountryCountLabel"/>
-                    </HBox>
                 </HBox>
-                <Label text="Poniżej widzisz cały wspólny słownik krajów używany przez EPPO, Kontrahentów i Ustawienia. Rekordy EPPO nadal pozostają osobnymi rekordami stref / krajów powiązywanymi z kodami EPPO." wrapText="true"/>
-                <ListView fx:id="sharedCountryList" prefHeight="180"/>
             </VBox>
 
             <VBox styleClass="content-card" spacing="12">
@@ -82,13 +75,10 @@
                     <TextField fx:id="recordSearchField"
                                HBox.hgrow="ALWAYS"
                                promptText="Szukaj po kodzie EPPO, nazwie EPPO, gatunku, nazwie łacińskiej lub kraju..."/>
-                    <Button text="Dodaj kraj" onAction="#addZone" styleClass="button-primary"/>
-                    <Button text="Edytuj kraj" onAction="#editSelectedZone" styleClass="button-secondary"/>
-                    <Button text="Usuń kraj" onAction="#deleteSelectedZone" styleClass="button-secondary"/>
-                    <Button text="Odśwież kraje" onAction="#refreshZones" styleClass="button-secondary"/>
+                    <Button text="Odśwież" onAction="#refreshCodes" styleClass="button-secondary"/>
                 </HBox>
 
-                <Label text="Tabela pokazuje wszystkie kombinacje wybranego kodu EPPO z przypisanymi gatunkami i krajami. Każda kombinacja jest wyświetlana w osobnym wierszu." wrapText="true"/>
+                <Label text="Tabela pokazuje wszystkie kombinacje kodów EPPO, przypisanych gatunków i krajów / stref. Kliknięcie na tabelę Kodów EPPO nie filtruje już tej sekcji — do zawężania wyników służy wyszukiwarka." wrapText="true"/>
                 <Label fx:id="recordSummaryLabel" wrapText="true"/>
 
                 <TableView fx:id="recordTable" prefHeight="420">
