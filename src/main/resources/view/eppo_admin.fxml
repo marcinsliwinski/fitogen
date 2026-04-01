@@ -69,7 +69,7 @@
 
             <VBox styleClass="content-card" spacing="12">
                 <Label text="Baza rekordów" styleClass="section-title" style="-fx-font-size: 18px;"/>
-                <Label fx:id="selectedCodeLabel" text="Kliknięcie na kod EPPO nie filtruje Bazy rekordów. Użyj wyszukiwarki, aby zawęzić wyniki." wrapText="true"/>
+                <Label fx:id="selectedCodeLabel" text="Wybrany kod EPPO: —" wrapText="true"/>
 
                 <HBox spacing="10">
                     <TextField fx:id="recordSearchField"

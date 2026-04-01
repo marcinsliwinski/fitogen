@@ -90,6 +90,7 @@ public class EppoAdminController {
                 860,
                 (EppoCodeFormController controller) -> controller.setEppoCode(null)
         );
+
         refresh();
     }
 
@@ -110,6 +111,7 @@ public class EppoAdminController {
                 860,
                 (EppoCodeFormController controller) -> controller.setEppoCode(selected)
         );
+
         refresh();
     }
 
@@ -118,11 +120,20 @@ public class EppoAdminController {
         refresh();
     }
 
+
+
+
+
+
     private void configureCodeTable() {
         colCodeId.setCellValueFactory(new PropertyValueFactory<>("id"));
         colCodeValue.setCellValueFactory(new PropertyValueFactory<>("code"));
-        colCodeName.setCellValueFactory(cell -> new SimpleStringProperty(buildCodePolishName(cell.getValue())));
-        colCodeLatinName.setCellValueFactory(cell -> new SimpleStringProperty(buildCodeLatinName(cell.getValue())));
+        colCodeName.setCellValueFactory(cell ->
+                new SimpleStringProperty(buildCodePolishName(cell.getValue()))
+        );
+        colCodeLatinName.setCellValueFactory(cell ->
+                new SimpleStringProperty(buildCodeLatinName(cell.getValue()))
+        );
         colStatus.setCellValueFactory(new PropertyValueFactory<>("status"));
     }
 
@@ -214,26 +225,20 @@ public class EppoAdminController {
         Integer previouslySelectedCodeId = previouslySelectedCode == null ? null : previouslySelectedCode.getId();
 
         List<EppoCode> codes = eppoCodeService == null ? List.of() : eppoCodeService.getAll().stream()
-                .filter(this::isMeaningfulCode)
-                .toList();
+                                                                     .filter(this::isMeaningfulCode)
+                                                                     .toList();
         List<EppoZone> zones = eppoZoneService == null ? List.of() : eppoZoneService.getAll().stream()
-                .filter(this::isMeaningfulZone)
-                .toList();
+                                                                     .filter(this::isMeaningfulZone)
+                                                                     .toList();
         List<Plant> plants = plantService == null ? List.of() : plantService.getAllPlants().stream()
-                .filter(this::isMeaningfulPlant)
-                .toList();
+                                                                .filter(this::isMeaningfulPlant)
+                                                                .toList();
 
         codeMasterData.setAll(codes);
 
-        if (codeCountLabel != null) {
-            codeCountLabel.setText(String.valueOf(codes.size()));
-        }
-        if (zoneCountLabel != null) {
-            zoneCountLabel.setText(String.valueOf(zones.size()));
-        }
-        if (plantCountLabel != null) {
-            plantCountLabel.setText(String.valueOf(plants.size()));
-        }
+        codeCountLabel.setText(String.valueOf(codes.size()));
+        zoneCountLabel.setText(String.valueOf(zones.size()));
+        plantCountLabel.setText(String.valueOf(plants.size()));
 
         applyCodeFilter();
         restoreCodeSelection(previouslySelectedCodeId);
@@ -390,6 +395,7 @@ public class EppoAdminController {
         recordMasterData.setAll(rows);
     }
 
+
     private String buildCountryDisplay(EppoZone zone) {
         if (zone == null) {
             return "—";
@@ -444,6 +450,7 @@ public class EppoAdminController {
                         + " | Wiersze po filtrze: " + recordTable.getItems().size()
         );
     }
+
 
     private void updateSelectedCodeHeader(EppoCode selectedCode) {
         if (selectedCodeLabel == null) {

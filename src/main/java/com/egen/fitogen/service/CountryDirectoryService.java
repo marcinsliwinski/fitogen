@@ -88,29 +88,6 @@ public class CountryDirectoryService {
         return appSettingsService.getCustomCountryEntries();
     }
 
-    public boolean isCustomEntry(String country, String countryCode) {
-        String normalizedCountry = normalizeKey(country);
-        String normalizedCode = normalizeCode(countryCode);
-        if (normalizedCountry == null) {
-            return false;
-        }
-
-        for (CountryDirectory.CountryEntry entry : getCustomEntries()) {
-            CountryDirectory.CountryEntry current = normalizeEntry(entry);
-            if (current == null) {
-                continue;
-            }
-
-            boolean sameCountry = normalizedCountry.equals(normalizeKey(current.country()));
-            boolean sameCode = normalizedCode == null || normalizedCode.equals(normalizeCode(current.countryCode()));
-            if (sameCountry && sameCode) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
     public void saveCustomEntry(String country, String countryCode) {
         CountryDirectory.CountryEntry normalized = normalizeEntry(new CountryDirectory.CountryEntry(country, countryCode));
         if (normalized == null) {
