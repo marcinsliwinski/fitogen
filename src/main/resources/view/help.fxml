@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Priority?>
+<?import javafx.scene.layout.VBox?>
+
+<ScrollPane xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.egen.fitogen.ui.controller.HelpController"
+            fitToWidth="true"
+            hbarPolicy="NEVER">
+    <content>
+        <VBox spacing="18" styleClass="content-pane">
+            <padding>
+                <Insets top="4" right="4" bottom="4" left="4"/>
+            </padding>
+
+            <VBox spacing="4">
+                <Label text="Pomoc i Quick Start" styleClass="page-title"/>
+                <Label text="Szybkie wdrożenie użytkownika oraz najważniejsze wskazówki pracy z systemem Fito Gen." styleClass="page-subtitle" wrapText="true"/>
+            </VBox>
+
+            <HBox spacing="16">
+                <VBox styleClass="content-card" spacing="10" HBox.hgrow="ALWAYS">
+                    <Label text="Quick Start" styleClass="section-title"/>
+                    <Label text="1. Uzupełnij Ustawienia: użytkownicy, typy dokumentów i konfigurację numeratora." wrapText="true"/>
+                    <Label text="2. Dodaj rośliny oraz kontrahentów. Dla dostawców zaznacz odpowiednią rolę." wrapText="true"/>
+                    <Label text="3. Dodaj partie roślin. Brak źródła pochodzenia oznacza partię wewnętrzną." wrapText="true"/>
+                    <Label text="4. Wystaw dokument, korzystając z pozycji dokumentu i wyboru partii po roślinie." wrapText="true"/>
+                    <Label text="5. Użyj Podglądu, Druku lub Eksportu PDF, aby sfinalizować dokument." wrapText="true"/>
+                </VBox>
+
+                <VBox styleClass="content-card" spacing="10" HBox.hgrow="ALWAYS">
+                    <Label text="Najczęstszy workflow" styleClass="section-title"/>
+                    <Label text="Rośliny → Kontrahenci → Partie roślin → Dokumenty → Podgląd / PDF" wrapText="true"/>
+                    <Label text="Dwuklik w wiersz tabeli otwiera edycję rekordu w głównych modułach." wrapText="true"/>
+                    <Label text="Dokumenty i partie anulowane pozostają w systemie jako soft delete i są oznaczone statusem." wrapText="true"/>
+                    <Label text="W formularzu dokumentu wybór partii zależy od wybranej rośliny." wrapText="true"/>
+                </VBox>
+            </HBox>
+
+            <VBox styleClass="content-card" spacing="12">
+                <Label text="Najczęstsze pytania" styleClass="section-title"/>
+                <Label text="Gdzie zmienić numerację? → Ustawienia → Numerator" wrapText="true"/>
+                <Label text="Jak ustawić użytkownika domyślnego? → Ustawienia → Użytkownicy" wrapText="true"/>
+                <Label text="Jak dodać nową partię z dokumentu? → W dropdownie partii wybierz „Dodaj nową partię…”" wrapText="true"/>
+                <Label text="Dlaczego nie mogę edytować anulowanego dokumentu lub partii? → Rekord anulowany jest blokowany do edycji biznesowo." wrapText="true"/>
+            </VBox>
+
+            <VBox styleClass="content-card" spacing="12">
+                <Label text="Szybka nawigacja" styleClass="section-title"/>
+                <HBox spacing="10">
+                    <Button text="Pulpit" onAction="#openDashboard" styleClass="button-secondary"/>
+                    <Button text="Ustawienia" onAction="#openSettings" styleClass="button-secondary"/>
+                    <Button text="Dokumenty" onAction="#openDocuments" styleClass="button-secondary"/>
+                    <Button text="Partie roślin" onAction="#openPlantBatches" styleClass="button-secondary"/>
+                </HBox>
+            </VBox>
+        </VBox>
+    </content>
+</ScrollPane>

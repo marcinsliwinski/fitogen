@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.CheckBox?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox spacing="16"
+      xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.egen.fitogen.ui.controller.PlantFormController"
+      styleClass="form-root">
+
+    <padding>
+        <Insets top="20" right="20" bottom="20" left="20"/>
+    </padding>
+
+    <VBox spacing="4">
+        <Label text="Roślina" styleClass="form-title"/>
+        <Label text="Dodaj lub edytuj dane rośliny w indeksie szkółki." styleClass="form-subtitle"/>
+    </VBox>
+
+    <VBox spacing="12">
+        <Label text="Dane podstawowe" styleClass="form-section-title"/>
+
+        <GridPane hgap="12" vgap="12">
+            <columnConstraints>
+                <ColumnConstraints minWidth="180" prefWidth="220"/>
+                <ColumnConstraints hgrow="ALWAYS"/>
+            </columnConstraints>
+
+            <Label text="Gatunek:" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+            <ComboBox fx:id="speciesField"
+                      promptText="Wpisz lub wybierz gatunek"
+                      editable="true"
+                      maxWidth="1.7976931348623157E308"
+                      GridPane.rowIndex="0"
+                      GridPane.columnIndex="1"/>
+
+            <Label text="Odmiana:" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+            <ComboBox fx:id="varietyField"
+                      promptText="Wpisz lub wybierz odmianę"
+                      editable="true"
+                      maxWidth="1.7976931348623157E308"
+                      GridPane.rowIndex="1"
+                      GridPane.columnIndex="1"/>
+
+            <Label text="Podkładka:" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
+            <ComboBox fx:id="rootstockField"
+                      promptText="Wpisz lub wybierz podkładkę"
+                      editable="true"
+                      maxWidth="1.7976931348623157E308"
+                      GridPane.rowIndex="2"
+                      GridPane.columnIndex="1"/>
+
+            <Label text="Nazwa łacińska:" GridPane.rowIndex="3" GridPane.columnIndex="0"/>
+            <ComboBox fx:id="latinSpeciesNameField"
+                      promptText="Wpisz lub wybierz nazwę łacińską"
+                      editable="true"
+                      maxWidth="1.7976931348623157E308"
+                      GridPane.rowIndex="3"
+                      GridPane.columnIndex="1"/>
+
+            <Label text="Kod EPPO:" GridPane.rowIndex="4" GridPane.columnIndex="0"/>
+            <Label fx:id="eppoCodeInfoLabel"
+                   wrapText="true"
+                   styleClass="form-info-label form-info-box"
+                   text="Brak wpisów dla tego gatunku w Słownikach EPPO"
+                   GridPane.rowIndex="4"
+                   GridPane.columnIndex="1"/>
+
+            <Label text="Paszport wymagany:" GridPane.rowIndex="5" GridPane.columnIndex="0"/>
+            <VBox spacing="6" GridPane.rowIndex="5" GridPane.columnIndex="1">
+                <CheckBox fx:id="passportRequiredBox"
+                          text="Tak, wymagany paszport"
+                          styleClass="form-info-box"/>
+                <Label fx:id="passportRequirementInfoLabel"
+                       wrapText="true"
+                       styleClass="form-info-label form-info-box"
+                       text="Wymaganie paszportu możesz ustawić indywidualnie dla tej rośliny."/>
+            </VBox>
+
+        </GridPane>
+    </VBox>
+
+    <Separator styleClass="form-separator"/>
+
+    <VBox spacing="12">
+        <Label text="Status" styleClass="form-section-title"/>
+
+        <GridPane hgap="12" vgap="12">
+            <columnConstraints>
+                <ColumnConstraints minWidth="180" prefWidth="220"/>
+                <ColumnConstraints hgrow="ALWAYS"/>
+            </columnConstraints>
+
+            <Label text="Status widoczności:" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+            <ComboBox fx:id="visibilityStatusBox"
+                      promptText="Wybierz status"
+                      maxWidth="1.7976931348623157E308"
+                      GridPane.rowIndex="0"
+                      GridPane.columnIndex="1"/>
+        </GridPane>
+    </VBox>
+
+    <HBox spacing="10" alignment="CENTER_RIGHT" styleClass="form-actions">
+        <Button text="Anuluj" minWidth="110" onAction="#cancel"/>
+        <Button text="Zapisz" minWidth="110" onAction="#save"/>
+    </HBox>
+
+</VBox>

@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.CheckBox?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.egen.fitogen.ui.controller.ContrahentFormController"
+      spacing="16"
+      prefWidth="760"
+      prefHeight="560"
+      styleClass="content-pane">
+
+    <padding>
+        <Insets top="20" right="20" bottom="20" left="20"/>
+    </padding>
+
+    <Label text="Kontrahent" styleClass="section-title"/>
+
+    <GridPane hgap="12" vgap="12">
+        <columnConstraints>
+            <ColumnConstraints minWidth="180" prefWidth="220"/>
+            <ColumnConstraints hgrow="ALWAYS"/>
+        </columnConstraints>
+
+        <Label text="Nazwa:" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+        <TextField fx:id="nameField" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
+
+        <Label text="Kraj:" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+        <ComboBox fx:id="countryField"
+                  editable="true"
+                  promptText="Wpisz lub wybierz kraj"
+                  maxWidth="1.7976931348623157E308"
+                  GridPane.rowIndex="1"
+                  GridPane.columnIndex="1"/>
+
+        <Label text="Kod kraju:" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
+        <ComboBox fx:id="countryCodeField"
+                  editable="true"
+                  promptText="Wpisz lub wybierz kod kraju"
+                  maxWidth="1.7976931348623157E308"
+                  GridPane.rowIndex="2"
+                  GridPane.columnIndex="1"/>
+
+        <Label text="Kod pocztowy:" GridPane.rowIndex="3" GridPane.columnIndex="0"/>
+        <TextField fx:id="postalCodeField" GridPane.rowIndex="3" GridPane.columnIndex="1"/>
+
+        <Label text="Miasto:" GridPane.rowIndex="4" GridPane.columnIndex="0"/>
+        <TextField fx:id="cityField" GridPane.rowIndex="4" GridPane.columnIndex="1"/>
+
+        <Label text="Ulica:" GridPane.rowIndex="5" GridPane.columnIndex="0"/>
+        <TextField fx:id="streetField" GridPane.rowIndex="5" GridPane.columnIndex="1"/>
+
+        <Label text="Nr fitosanitarny:" GridPane.rowIndex="6" GridPane.columnIndex="0"/>
+        <TextField fx:id="phytosanitaryNumberField" GridPane.rowIndex="6" GridPane.columnIndex="1"/>
+
+        <Label text="Role:" GridPane.rowIndex="7" GridPane.columnIndex="0"/>
+        <HBox spacing="16" GridPane.rowIndex="7" GridPane.columnIndex="1">
+            <CheckBox fx:id="supplierCheckBox" text="Dostawca"/>
+            <CheckBox fx:id="clientCheckBox" text="Klient"/>
+        </HBox>
+    </GridPane>
+
+    <HBox spacing="10" alignment="CENTER_RIGHT">
+        <Button text="Anuluj" onAction="#cancel"/>
+        <Button text="Zapisz" onAction="#saveContrahent"/>
+    </HBox>
+
+</VBox>

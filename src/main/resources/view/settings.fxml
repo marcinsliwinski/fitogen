@@ -1,0 +1,295 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.CheckBox?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ListView?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.control.Tab?>
+<?import javafx.scene.control.TabPane?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox spacing="16"
+      xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.egen.fitogen.ui.controller.SettingsController"
+      styleClass="content-pane">
+
+    <VBox spacing="4">
+        <Label text="Ustawienia" styleClass="page-title"/>
+        <Label text="Konfiguracja numeratora, słowników i ustawień technicznych systemu." styleClass="page-subtitle"/>
+    </VBox>
+
+    <TabPane tabClosingPolicy="UNAVAILABLE" VBox.vgrow="ALWAYS">
+        <tabs>
+            <Tab text="Rośliny">
+                <ScrollPane fitToWidth="true" fitToHeight="true">
+                    <content>
+                        <VBox spacing="16" styleClass="content-card">
+                            <padding><Insets top="16" right="16" bottom="16" left="16"/></padding>
+
+                            <VBox spacing="12" styleClass="stat-card">
+                                <Label text="Paszporty roślin" styleClass="stat-title"/>
+                                <Label text="To ustawienie steruje domyślnym wymogiem paszportu w formularzu rośliny. Gdy jest aktywne, pole w formularzu rośliny pozostaje zaznaczone i nieedytowalne." wrapText="true" styleClass="page-subtitle"/>
+                                <CheckBox fx:id="plantPassportRequiredForAllCheckBox"
+                                          text="Wymagaj paszportów roślin dla wszystkich roślin"/>
+                                <Label fx:id="plantPassportModeStatusLabel" wrapText="true" styleClass="page-subtitle"/>
+                                <HBox spacing="10" alignment="CENTER_RIGHT">
+                                    <Button text="Zapisz ustawienie paszportów" onAction="#savePlantPassportMode"/>
+                                </HBox>
+                            </VBox>
+
+                            <Separator/>
+
+                            <VBox spacing="12" styleClass="stat-card">
+                                <Label text="Tryb bazy roślin" styleClass="stat-title"/>
+                                <Label text="Na tym etapie przełącznik steruje widocznością pozycji nieużywanych na liście Roślin. Nie usuwa żadnych danych." wrapText="true" styleClass="page-subtitle"/>
+                                <CheckBox fx:id="plantFullCatalogEnabledCheckBox"
+                                          text="Włącz pełną bazę roślin"/>
+                                <Label fx:id="plantCatalogModeStatusLabel" wrapText="true" styleClass="page-subtitle"/>
+                                <HBox spacing="10" alignment="CENTER_RIGHT">
+                                    <Button text="Zapisz tryb bazy roślin" onAction="#savePlantCatalogMode"/>
+                                </HBox>
+                            </VBox>
+                        </VBox>
+                    </content>
+                </ScrollPane>
+            </Tab>
+
+            <Tab text="Numeracja">
+                <ScrollPane fitToWidth="true" fitToHeight="true">
+                    <content>
+                        <VBox spacing="16" styleClass="content-card">
+                            <padding><Insets top="16" right="16" bottom="16" left="16"/></padding>
+                            <VBox spacing="8">
+                                <Label text="Numerator" styleClass="stat-title"/>
+                                <HBox spacing="12" alignment="CENTER_LEFT">
+                                    <Label text="Typ numeracji:" minWidth="140"/>
+                                    <ComboBox fx:id="numberingTypeBox" prefWidth="240"/>
+                                    <Label text="Bieżący licznik:" minWidth="120"/>
+                                    <TextField fx:id="currentCounterField" prefWidth="120"/>
+                                </HBox>
+                            </VBox>
+
+                            <Separator/>
+
+                            <GridPane hgap="12" vgap="12">
+                                <columnConstraints>
+                                    <ColumnConstraints minWidth="100"/>
+                                    <ColumnConstraints minWidth="220" hgrow="ALWAYS"/>
+                                    <ColumnConstraints minWidth="220" hgrow="ALWAYS"/>
+                                    <ColumnConstraints minWidth="220" hgrow="ALWAYS"/>
+                                </columnConstraints>
+
+                                <Label text="" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+                                <Label text="Typ sekcji" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
+                                <Label text="Wartość statyczna" GridPane.rowIndex="0" GridPane.columnIndex="2"/>
+                                <Label text="Separator po sekcji" GridPane.rowIndex="0" GridPane.columnIndex="3"/>
+
+                                <Label text="Sekcja 1" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+                                <ComboBox fx:id="section1TypeBox" GridPane.rowIndex="1" GridPane.columnIndex="1" maxWidth="1.7976931348623157E308"/>
+                                <TextField fx:id="section1StaticValueField" promptText="np. FG" GridPane.rowIndex="1" GridPane.columnIndex="2"/>
+                                <TextField fx:id="section1SeparatorField" promptText="np. /" GridPane.rowIndex="1" GridPane.columnIndex="3"/>
+
+                                <Label text="Sekcja 2" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
+                                <ComboBox fx:id="section2TypeBox" GridPane.rowIndex="2" GridPane.columnIndex="1" maxWidth="1.7976931348623157E308"/>
+                                <TextField fx:id="section2StaticValueField" promptText="np. FG" GridPane.rowIndex="2" GridPane.columnIndex="2"/>
+                                <TextField fx:id="section2SeparatorField" promptText="np. -" GridPane.rowIndex="2" GridPane.columnIndex="3"/>
+
+                                <Label text="Sekcja 3" GridPane.rowIndex="3" GridPane.columnIndex="0"/>
+                                <ComboBox fx:id="section3TypeBox" GridPane.rowIndex="3" GridPane.columnIndex="1" maxWidth="1.7976931348623157E308"/>
+                                <TextField fx:id="section3StaticValueField" promptText="np. FG" GridPane.rowIndex="3" GridPane.columnIndex="2"/>
+                                <TextField fx:id="section3SeparatorField" promptText="np. brak" GridPane.rowIndex="3" GridPane.columnIndex="3"/>
+                            </GridPane>
+
+                            <VBox spacing="8" styleClass="stat-card">
+                                <Label text="Podgląd kolejnego numeru" styleClass="stat-title"/>
+                                <Label fx:id="previewLabel" text="—" styleClass="page-title"/>
+                                <Label fx:id="infoLabel" text="Podgląd pokazuje kolejny numer dla bieżącej konfiguracji." styleClass="page-subtitle" wrapText="true"/>
+                            </VBox>
+
+                            <HBox spacing="10" alignment="CENTER_RIGHT">
+                                <Button text="Przywróć domyślne" onAction="#restoreDefaults" styleClass="button-secondary"/>
+                                <Button text="Zapisz konfigurację" onAction="#save"/>
+                            </HBox>
+                        </VBox>
+                    </content>
+                </ScrollPane>
+            </Tab>
+
+            <Tab text="Słowniki">
+                <ScrollPane fitToWidth="true" fitToHeight="true">
+                    <content>
+                        <VBox spacing="16" styleClass="content-card">
+                            <padding><Insets top="16" right="16" bottom="16" left="16"/></padding>
+                            <Label text="Typy dokumentów" styleClass="stat-title"/>
+                            <HBox spacing="14">
+                                <ListView fx:id="documentTypesList" prefWidth="320" prefHeight="220"/>
+                                <VBox spacing="10" HBox.hgrow="ALWAYS">
+                                    <TextField fx:id="documentTypeNameField" promptText="Nazwa typu dokumentu"/>
+                                    <TextField fx:id="documentTypeCodeField" promptText="Kod, np. DD"/>
+                                    <HBox spacing="10">
+                                        <Button text="Nowy" onAction="#clearDocumentTypeForm" styleClass="button-secondary"/>
+                                        <Button text="Zapisz typ" onAction="#saveDocumentType"/>
+                                        <Button text="Usuń typ" onAction="#deleteDocumentType" styleClass="button-danger"/>
+                                    </HBox>
+                                </VBox>
+                            </HBox>
+
+                            <Separator/>
+
+                            <VBox spacing="12" styleClass="stat-card">
+                                <Label text="Wspólny słownik krajów" styleClass="stat-title"/>
+                                <Label text="Ten słownik jest współdzielony przez Kontrahentów, EPPO i dane podmiotu. Lista pokazuje cały wspólny słownik, a formularz poniżej służy do dopisywania i edycji wpisów własnych bez zmiany schematu bazy." wrapText="true" styleClass="page-subtitle"/>
+                                <Label fx:id="countryDictionaryStatusLabel" wrapText="true" styleClass="page-subtitle"/>
+                                <HBox spacing="14">
+                                    <ListView fx:id="customCountryEntriesList" prefWidth="320" prefHeight="220"/>
+                                    <VBox spacing="10" HBox.hgrow="ALWAYS">
+                                        <TextField fx:id="customCountryNameField" promptText="Nazwa kraju"/>
+                                        <TextField fx:id="customCountryCodeField" promptText="Kod kraju, np. PL"/>
+                                        <HBox spacing="10">
+                                            <Button text="Nowy" onAction="#clearCustomCountryEntryForm" styleClass="button-secondary"/>
+                                            <Button text="Zapisz wpis" onAction="#saveCustomCountryEntry"/>
+                                            <Button text="Usuń wpis" onAction="#deleteCustomCountryEntry" styleClass="button-danger"/>
+                                        </HBox>
+                                    </VBox>
+                                </HBox>
+                            </VBox>
+                        </VBox>
+                    </content>
+                </ScrollPane>
+            </Tab>
+
+            <Tab text="Użytkownicy">
+                <ScrollPane fitToWidth="true" fitToHeight="true">
+                    <content>
+                        <VBox spacing="16" styleClass="content-card">
+                            <padding><Insets top="16" right="16" bottom="16" left="16"/></padding>
+                            <Label text="Użytkownicy" styleClass="stat-title"/>
+                            <HBox spacing="14">
+                                <ListView fx:id="usersList" prefWidth="320" prefHeight="220"/>
+                                <VBox spacing="10" HBox.hgrow="ALWAYS">
+                                    <TextField fx:id="userFirstNameField" promptText="Imię"/>
+                                    <TextField fx:id="userLastNameField" promptText="Nazwisko"/>
+                                    <HBox spacing="10">
+                                        <Button text="Nowy" onAction="#clearUserForm" styleClass="button-secondary"/>
+                                        <Button text="Zapisz użytkownika" onAction="#saveUser"/>
+                                        <Button text="Usuń użytkownika" onAction="#deleteUser" styleClass="button-danger"/>
+                                    </HBox>
+                                </VBox>
+                            </HBox>
+
+                            <Separator/>
+
+                            <VBox spacing="10" styleClass="stat-card">
+                                <Label text="Domyślny użytkownik dokumentów" styleClass="stat-title"/>
+                                <Label text="Wybrany użytkownik będzie automatycznie podstawiany w nowych dokumentach. Pole może pozostać puste." wrapText="true" styleClass="page-subtitle"/>
+                                <ComboBox fx:id="defaultUserBox" promptText="Brak domyślnego użytkownika" maxWidth="420"/>
+                                <HBox spacing="10">
+                                    <Button text="Wyczyść" onAction="#clearDefaultUser" styleClass="button-secondary"/>
+                                </HBox>
+                            </VBox>
+                        </VBox>
+                    </content>
+                </ScrollPane>
+            </Tab>
+
+            <Tab text="Backup i baza">
+                <ScrollPane fitToWidth="true" fitToHeight="true">
+                    <content>
+                        <VBox spacing="16" styleClass="content-card">
+                            <padding><Insets top="16" right="16" bottom="16" left="16"/></padding>
+                            <Label text="Backup ręczny" styleClass="stat-title"/>
+                            <Label text="Plik bazy danych:"/>
+                            <Label fx:id="databasePathLabel" wrapText="true" styleClass="page-subtitle"/>
+                            <Label text="Stan backupu:"/>
+                            <Label fx:id="backupStatusLabel" wrapText="true" styleClass="page-subtitle"/>
+                            <HBox spacing="10">
+                                <Button text="Utwórz backup" onAction="#createBackup"/>
+                            </HBox>
+                        </VBox>
+                    </content>
+                </ScrollPane>
+            </Tab>
+
+            <Tab text="Ogólne / Dane podmiotu">
+                <ScrollPane fitToWidth="true" fitToHeight="true">
+                    <content>
+                        <VBox spacing="16" styleClass="content-card">
+                            <padding><Insets top="16" right="16" bottom="16" left="16"/></padding>
+                            <Label text="Dane szkółki / wystawcy" styleClass="stat-title"/>
+                            <Label text="Te dane będą wykorzystywane w dokumentach, backupie systemowym i na dashboardzie stanu systemu." wrapText="true" styleClass="page-subtitle"/>
+
+                            <GridPane hgap="12" vgap="12">
+                                <columnConstraints>
+                                    <ColumnConstraints minWidth="180"/>
+                                    <ColumnConstraints hgrow="ALWAYS"/>
+                                </columnConstraints>
+
+                                <Label text="Nazwa" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+                                <TextField fx:id="issuerNameField" promptText="Nazwa szkółki / wystawcy" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
+
+                                <Label text="Kraj" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+                                <ComboBox fx:id="issuerCountryField"
+                                          editable="true"
+                                          promptText="Wpisz lub wybierz kraj"
+                                          maxWidth="1.7976931348623157E308"
+                                          GridPane.rowIndex="1"
+                                          GridPane.columnIndex="1"/>
+
+                                <Label text="Kod kraju" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
+                                <ComboBox fx:id="issuerCountryCodeField"
+                                          editable="true"
+                                          promptText="Wpisz lub wybierz kod kraju"
+                                          maxWidth="1.7976931348623157E308"
+                                          GridPane.rowIndex="2"
+                                          GridPane.columnIndex="1"/>
+
+                                <Label text="Kod pocztowy" GridPane.rowIndex="3" GridPane.columnIndex="0"/>
+                                <TextField fx:id="issuerPostalCodeField" promptText="np. 00-000" GridPane.rowIndex="3" GridPane.columnIndex="1"/>
+
+                                <Label text="Miasto" GridPane.rowIndex="4" GridPane.columnIndex="0"/>
+                                <TextField fx:id="issuerCityField" promptText="Miasto" GridPane.rowIndex="4" GridPane.columnIndex="1"/>
+
+                                <Label text="Ulica i nr" GridPane.rowIndex="5" GridPane.columnIndex="0"/>
+                                <TextField fx:id="issuerStreetField" promptText="Ulica i numer" GridPane.rowIndex="5" GridPane.columnIndex="1"/>
+
+                                <Label text="Nr fitosanitarny" GridPane.rowIndex="6" GridPane.columnIndex="0"/>
+                                <TextField fx:id="issuerPhytosanitaryNumberField" promptText="Numer fitosanitarny" GridPane.rowIndex="6" GridPane.columnIndex="1"/>
+                            </GridPane>
+
+                            <VBox spacing="8" styleClass="stat-card">
+                                <Label text="Stan profilu" styleClass="stat-title"/>
+                                <Label fx:id="issuerStatusLabel" wrapText="true" styleClass="page-subtitle"/>
+                            </VBox>
+
+                            <HBox spacing="10" alignment="CENTER_RIGHT">
+                                <Button text="Wyczyść formularz" onAction="#clearIssuerProfileForm" styleClass="button-secondary"/>
+                                <Button text="Zapisz dane podmiotu" onAction="#saveIssuerProfile"/>
+                            </HBox>
+
+                        </VBox>
+                    </content>
+                </ScrollPane>
+            </Tab>
+
+            <Tab text="Pomoc">
+                <ScrollPane fitToWidth="true" fitToHeight="true">
+                    <content>
+                        <VBox spacing="16" styleClass="content-card">
+                            <padding><Insets top="16" right="16" bottom="16" left="16"/></padding>
+                            <Label text="Pomoc" styleClass="stat-title"/>
+                            <Label text="Miejsce na Quick Start, instrukcje i kolejne sekcje pomocy." wrapText="true" styleClass="page-subtitle"/>
+                        </VBox>
+                    </content>
+                </ScrollPane>
+            </Tab>
+        </tabs>
+    </TabPane>
+</VBox>

@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.CheckBox?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.DatePicker?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.egen.fitogen.ui.controller.PlantBatchFormController"
+      spacing="16"
+      prefWidth="900"
+      styleClass="content-pane">
+
+    <padding>
+        <Insets top="20" right="20" bottom="20" left="20"/>
+    </padding>
+
+    <Label text="Partia roślin" styleClass="section-title"/>
+
+    <VBox spacing="12">
+        <Label text="Dane partii" styleClass="form-section-title"/>
+
+        <GridPane hgap="12" vgap="12">
+            <columnConstraints>
+                <ColumnConstraints minWidth="210" prefWidth="240"/>
+                <ColumnConstraints hgrow="ALWAYS"/>
+            </columnConstraints>
+
+            <Label text="Roślina:" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+            <ComboBox fx:id="plantComboBox"
+                      promptText="Wybierz roślinę"
+                      maxWidth="1.7976931348623157E308"
+                      GridPane.rowIndex="0"
+                      GridPane.columnIndex="1"/>
+
+            <Label text="Wewnętrzne:" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+            <CheckBox fx:id="internalSourceCheckBox"
+                      text="Tak, partia pochodzi z własnej szkółki"
+                      GridPane.rowIndex="1"
+                      GridPane.columnIndex="1"/>
+
+            <Label text="Źródło pochodzenia:" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
+            <ComboBox fx:id="sourceOriginComboBox"
+                      promptText="Wybierz dostawcę"
+                      maxWidth="1.7976931348623157E308"
+                      GridPane.rowIndex="2"
+                      GridPane.columnIndex="1"/>
+
+            <Label text="Nr partii wewnętrzny:" GridPane.rowIndex="3" GridPane.columnIndex="0"/>
+            <TextField fx:id="interiorBatchNoField"
+                       promptText="Zostanie nadany automatycznie"
+                       maxWidth="1.7976931348623157E308"
+                       GridPane.rowIndex="3"
+                       GridPane.columnIndex="1"/>
+
+            <Label text="Nr partii zewnętrzny:" GridPane.rowIndex="4" GridPane.columnIndex="0"/>
+            <TextField fx:id="exteriorBatchNoField"
+                       promptText="Wpisz numer partii zewnętrzny"
+                       maxWidth="1.7976931348623157E308"
+                       GridPane.rowIndex="4"
+                       GridPane.columnIndex="1"/>
+
+            <Label text="Ilość:" GridPane.rowIndex="5" GridPane.columnIndex="0"/>
+            <TextField fx:id="qtyField"
+                       promptText="Wpisz ilość"
+                       maxWidth="1.7976931348623157E308"
+                       GridPane.rowIndex="5"
+                       GridPane.columnIndex="1"/>
+
+            <Label text="Data utworzenia:" GridPane.rowIndex="6" GridPane.columnIndex="0"/>
+            <DatePicker fx:id="creationDatePicker"
+                        maxWidth="1.7976931348623157E308"
+                        GridPane.rowIndex="6"
+                        GridPane.columnIndex="1"/>
+        </GridPane>
+    </VBox>
+
+    <Separator styleClass="form-separator"/>
+
+    <VBox spacing="12">
+        <Label text="Dane pochodzenia i kwalifikacji" styleClass="form-section-title"/>
+
+        <GridPane hgap="12" vgap="12">
+            <columnConstraints>
+                <ColumnConstraints minWidth="210" prefWidth="240"/>
+                <ColumnConstraints hgrow="ALWAYS"/>
+            </columnConstraints>
+
+            <Label text="Kraj pochodzenia:" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+            <TextField fx:id="manufacturerCountryCodeField"
+                       promptText="Np. PL"
+                       maxWidth="1.7976931348623157E308"
+                       GridPane.rowIndex="0"
+                       GridPane.columnIndex="1"/>
+
+            <Label text="Kategoria kwalifikacji:" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+            <TextField fx:id="fitoQualificationCategoryField"
+                       promptText="Wpisz kategorię kwalifikacji"
+                       maxWidth="1.7976931348623157E308"
+                       GridPane.rowIndex="1"
+                       GridPane.columnIndex="1"/>
+
+            <Label text="Kod EPPO:" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
+            <TextField fx:id="eppoCodeField"
+                       promptText="Wpisz kod EPPO"
+                       maxWidth="1.7976931348623157E308"
+                       GridPane.rowIndex="2"
+                       GridPane.columnIndex="1"/>
+
+            <Label text="Powiązane kody EPPO:" GridPane.rowIndex="3" GridPane.columnIndex="0"/>
+            <TextArea fx:id="eppoLinkedCodesInfoArea"
+                      promptText="Informacje pojawią się po wyborze rośliny"
+                      prefRowCount="3"
+                      wrapText="true"
+                      maxWidth="1.7976931348623157E308"
+                      GridPane.rowIndex="3"
+                      GridPane.columnIndex="1"/>
+
+            <Label text="Strefy chronione EPPO:" GridPane.rowIndex="4" GridPane.columnIndex="0"/>
+            <TextArea fx:id="eppoProtectedZonesInfoArea"
+                      promptText="Informacje pojawią się po wyborze rośliny"
+                      prefRowCount="4"
+                      wrapText="true"
+                      maxWidth="1.7976931348623157E308"
+                      GridPane.rowIndex="4"
+                      GridPane.columnIndex="1"/>
+
+            <Label text="ZP:" GridPane.rowIndex="5" GridPane.columnIndex="0"/>
+            <TextField fx:id="zpZoneField"
+                       promptText="Wpisz strefę ZP"
+                       maxWidth="1.7976931348623157E308"
+                       GridPane.rowIndex="5"
+                       GridPane.columnIndex="1"/>
+
+            <Label text="Sugestia ZP:" GridPane.rowIndex="6" GridPane.columnIndex="0"/>
+            <TextArea fx:id="eppoZpSuggestionInfoArea"
+                      promptText="Sugestia pojawi się po wyborze rośliny i kraju pochodzenia"
+                      prefRowCount="4"
+                      wrapText="true"
+                      maxWidth="1.7976931348623157E308"
+                      GridPane.rowIndex="6"
+                      GridPane.columnIndex="1"/>
+
+            <Label text="Informacja paszportowa:" GridPane.rowIndex="7" GridPane.columnIndex="0"/>
+            <TextArea fx:id="passportAdvisoryInfoArea"
+                      promptText="Informacja pojawi się po wyborze rośliny"
+                      prefRowCount="4"
+                      wrapText="true"
+                      maxWidth="1.7976931348623157E308"
+                      GridPane.rowIndex="7"
+                      GridPane.columnIndex="1"/>
+
+            <Label text="Uwagi:" GridPane.rowIndex="8" GridPane.columnIndex="0"/>
+            <TextArea fx:id="commentsArea"
+                      promptText="Dodatkowe uwagi"
+                      prefRowCount="4"
+                      wrapText="true"
+                      maxWidth="1.7976931348623157E308"
+                      GridPane.rowIndex="8"
+                      GridPane.columnIndex="1"/>
+        </GridPane>
+    </VBox>
+
+    <HBox spacing="10" alignment="CENTER_RIGHT" styleClass="form-actions">
+        <Button fx:id="cancelButton" text="Anuluj" minWidth="110" onAction="#close"/>
+        <Button fx:id="saveButton" text="Zapisz" minWidth="110" onAction="#save"/>
+    </HBox>
+
+</VBox>

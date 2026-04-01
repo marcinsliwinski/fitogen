@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.VBox?>
+
+<ScrollPane xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.egen.fitogen.ui.controller.UpdatesController"
+            fitToWidth="true"
+            hbarPolicy="NEVER">
+
+    <content>
+        <VBox spacing="18" styleClass="content-pane">
+            <padding>
+                <Insets top="4" right="4" bottom="4" left="4"/>
+            </padding>
+
+            <VBox spacing="4">
+                <Label text="Aktualizacje" styleClass="page-title"/>
+                <Label text="Osobny moduł informacji o wersji systemu i gotowości funkcji aktualizacji." styleClass="page-subtitle" wrapText="true"/>
+            </VBox>
+
+            <VBox styleClass="content-card" spacing="12">
+                <Label text="Wersja aplikacji" styleClass="section-title" style="-fx-font-size: 18px;"/>
+                <HBox spacing="10">
+                    <Label text="Aktualna wersja:" styleClass="stat-title"/>
+                    <Label fx:id="appVersionLabel"/>
+                </HBox>
+            </VBox>
+
+            <VBox styleClass="content-card" spacing="12">
+                <Label text="Status aktualizacji systemu" styleClass="section-title" style="-fx-font-size: 18px;"/>
+                <Label fx:id="systemUpdateStatusLabel" wrapText="true"/>
+            </VBox>
+
+            <VBox styleClass="content-card" spacing="12">
+                <Label text="Status aktualizacji bazy roślin" styleClass="section-title" style="-fx-font-size: 18px;"/>
+                <Label fx:id="plantDatabaseStatusLabel" wrapText="true"/>
+            </VBox>
+
+            <VBox styleClass="content-card" spacing="12">
+                <Label text="Stan techniczny" styleClass="section-title" style="-fx-font-size: 18px;"/>
+                <Label fx:id="lastBackupInfoLabel" wrapText="true"/>
+                <Label fx:id="moduleReadinessLabel" wrapText="true"/>
+            </VBox>
+
+            <VBox styleClass="content-card" spacing="12">
+                <Label text="Audit Log" styleClass="section-title" style="-fx-font-size: 18px;"/>
+                <Label fx:id="auditLogStatusLabel" wrapText="true"/>
+                <Label fx:id="auditLogLatestEntryLabel" wrapText="true"/>
+            </VBox>
+
+            <VBox styleClass="content-card" spacing="12">
+                <Label text="Dalsze kroki" styleClass="section-title" style="-fx-font-size: 18px;"/>
+                <Label text="W kolejnych etapach można tu bezpiecznie dodać sprawdzanie nowej wersji aplikacji, pobieranie aktualizacji oraz aktualizację bazy roślin z serwera." wrapText="true"/>
+                <HBox spacing="10">
+                    <Button text="Ustawienia" onAction="#openSettings" styleClass="button-secondary"/>
+                    <Button text="Pomoc" onAction="#openHelp" styleClass="button-secondary"/>
+                    <Region HBox.hgrow="ALWAYS"/>
+                </HBox>
+            </VBox>
+        </VBox>
+    </content>
+</ScrollPane>

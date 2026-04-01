@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.VBox?>
+
+<BorderPane xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.egen.fitogen.ui.controller.DocumentPreviewController"
+            styleClass="content-pane">
+
+    <top>
+        <HBox alignment="CENTER_LEFT" spacing="10" styleClass="content-card">
+            <Label text="Podgląd dokumentu" styleClass="page-title"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <Label fx:id="cancelledBadge" text="ANULOWANY" styleClass="preview-cancelled-badge" visible="false"/>
+        </HBox>
+    </top>
+
+    <center>
+        <ScrollPane fitToWidth="true" BorderPane.alignment="CENTER">
+            <content>
+                <VBox fx:id="printableRoot" spacing="16" styleClass="preview-sheet">
+                    <padding>
+                        <Insets top="20" right="24" bottom="20" left="24"/>
+                    </padding>
+
+                    <VBox spacing="6">
+                        <Label text="Fito Gen" styleClass="preview-title"/>
+                        <Label text="Podgląd dokumentu" styleClass="page-subtitle"/>
+                    </VBox>
+
+                    <GridPane hgap="16" vgap="10">
+                        <columnConstraints>
+                            <ColumnConstraints minWidth="140" prefWidth="160"/>
+                            <ColumnConstraints hgrow="ALWAYS"/>
+                            <ColumnConstraints minWidth="140" prefWidth="160"/>
+                            <ColumnConstraints hgrow="ALWAYS"/>
+                        </columnConstraints>
+
+                        <Label text="Numer dokumentu" GridPane.rowIndex="0" GridPane.columnIndex="0" styleClass="form-label"/>
+                        <Label fx:id="documentNumberLabel" GridPane.rowIndex="0" GridPane.columnIndex="1" styleClass="preview-value"/>
+                        <Label text="Typ dokumentu" GridPane.rowIndex="0" GridPane.columnIndex="2" styleClass="form-label"/>
+                        <Label fx:id="documentTypeLabel" GridPane.rowIndex="0" GridPane.columnIndex="3" styleClass="preview-value"/>
+
+                        <Label text="Status" GridPane.rowIndex="1" GridPane.columnIndex="0" styleClass="form-label"/>
+                        <Label fx:id="statusLabel" GridPane.rowIndex="1" GridPane.columnIndex="1" styleClass="preview-value"/>
+                        <Label text="Data wystawienia" GridPane.rowIndex="1" GridPane.columnIndex="2" styleClass="form-label"/>
+                        <Label fx:id="issueDateLabel" GridPane.rowIndex="1" GridPane.columnIndex="3" styleClass="preview-value"/>
+
+                        <Label text="Utworzył" GridPane.rowIndex="2" GridPane.columnIndex="0" styleClass="form-label"/>
+                        <Label fx:id="createdByLabel" GridPane.rowIndex="2" GridPane.columnIndex="1" styleClass="preview-value"/>
+                    </GridPane>
+
+                    <Separator/>
+
+                    <VBox spacing="8">
+                        <Label text="Klient" styleClass="section-title"/>
+                        <Label fx:id="contrahentNameLabel" styleClass="preview-subtitle"/>
+                        <Label fx:id="contrahentAddressLabel" wrapText="true" styleClass="preview-value"/>
+                    </VBox>
+
+                    <VBox spacing="8">
+                        <Label text="Pozycje dokumentu" styleClass="section-title"/>
+                        <TableView fx:id="itemsTable" prefHeight="320">
+                            <columns>
+                                <TableColumn fx:id="colLp" text="Lp" maxWidth="50" prefWidth="50"/>
+                                <TableColumn fx:id="colPlant" text="Roślina" prefWidth="300"/>
+                                <TableColumn fx:id="colBatch" text="Partia" prefWidth="200"/>
+                                <TableColumn fx:id="colQty" text="Ilość" prefWidth="90"/>
+                                <TableColumn fx:id="colPassport" text="Paszport" prefWidth="120"/>
+                            </columns>
+                        </TableView>
+                    </VBox>
+
+                    <VBox spacing="8">
+                        <Label fx:id="eppoInfoSummaryLabel" text="Informacje EPPO dla klienta" styleClass="section-title"/>
+                        <TextArea fx:id="eppoInfoArea"
+                                  prefRowCount="6"
+                                  wrapText="true"
+                                  editable="false"
+                                  focusTraversable="false"/>
+                    </VBox>
+
+                    <VBox fx:id="commentsSection" spacing="8" visible="false">
+                        <Label text="Uwagi" styleClass="section-title"/>
+                        <Label fx:id="commentsLabel" wrapText="true" styleClass="preview-value"/>
+                    </VBox>
+
+                    <VBox spacing="16">
+                        <Separator/>
+                        <HBox spacing="24">
+                            <VBox spacing="6" HBox.hgrow="ALWAYS">
+                                <Label text="Wystawił" styleClass="form-label"/>
+                                <Separator/>
+                            </VBox>
+                            <VBox spacing="6" HBox.hgrow="ALWAYS">
+                                <Label text="Odbiorca" styleClass="form-label"/>
+                                <Separator/>
+                            </VBox>
+                        </HBox>
+                    </VBox>
+                </VBox>
+            </content>
+        </ScrollPane>
+    </center>
+
+    <bottom>
+        <HBox spacing="10" alignment="CENTER_RIGHT" styleClass="content-card">
+            <Button text="Zamknij" onAction="#close" styleClass="button-secondary"/>
+            <Button text="PDF" onAction="#exportPdf" styleClass="button-secondary"/>
+            <Button text="Drukuj" onAction="#printDocument"/>
+        </HBox>
+    </bottom>
+</BorderPane>
