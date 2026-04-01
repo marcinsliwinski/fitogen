@@ -15,6 +15,7 @@ import javafx.stage.Stage;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 public class ContrahentFormController {
@@ -34,6 +35,7 @@ public class ContrahentFormController {
 
     private Contrahent contrahent;
     private boolean updatingCountryFields;
+    private Consumer<Contrahent> onSaved;
 
     @FXML
     public void initialize() {
@@ -69,6 +71,11 @@ public class ContrahentFormController {
         clientCheckBox.setSelected(contrahent.isClient());
     }
 
+
+    public void setOnSaved(Consumer<Contrahent> onSaved) {
+        this.onSaved = onSaved;
+    }
+
     @FXML
     private void saveContrahent() {
         try {
@@ -91,6 +98,10 @@ public class ContrahentFormController {
             } else {
                 contrahentService.updateContrahent(entity);
                 DialogUtil.showSuccess("Kontrahent został zaktualizowany.");
+            }
+
+            if (onSaved != null) {
+                onSaved.accept(copyForSelection(entity));
             }
 
             close();
@@ -258,6 +269,21 @@ public class ContrahentFormController {
         if (comboBox.isEditable() && comboBox.getEditor() != null) {
             comboBox.getEditor().setText(normalized);
         }
+    }
+
+    private Contrahent copyForSelection(Contrahent source) {
+        Contrahent copy = new Contrahent();
+        copy.setId(source.getId());
+        copy.setName(source.getName());
+        copy.setCountry(source.getCountry());
+        copy.setCountryCode(source.getCountryCode());
+        copy.setCity(source.getCity());
+        copy.setPostalCode(source.getPostalCode());
+        copy.setStreet(source.getStreet());
+        copy.setPhytosanitaryNumber(source.getPhytosanitaryNumber());
+        copy.setSupplier(source.isSupplier());
+        copy.setClient(source.isClient());
+        return copy;
     }
 
     private void close() {

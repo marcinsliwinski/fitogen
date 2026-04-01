@@ -24,9 +24,11 @@ public class AppSettingsService {
     public static final String CUSTOM_COUNTRY_DIRECTORY_ENTRIES = "dictionary.country.custom_entries";
 
     private final AppSettingsRepository appSettingsRepository;
+    private final AuditLogService auditLogService;
 
-    public AppSettingsService(AppSettingsRepository appSettingsRepository) {
+    public AppSettingsService(AppSettingsRepository appSettingsRepository, AuditLogService auditLogService) {
         this.appSettingsRepository = appSettingsRepository;
+        this.auditLogService = auditLogService;
     }
 
     public String getSetting(String key) {
@@ -34,7 +36,17 @@ public class AppSettingsService {
     }
 
     public void saveSetting(String key, String value) {
-        appSettingsRepository.upsert(key, value == null ? "" : value.trim());
+        String normalized = value == null ? "" : value.trim();
+        String previousValue = appSettingsRepository.findValueByKey(key).orElse("");
+        appSettingsRepository.upsert(key, normalized);
+        if (!previousValue.equals(normalized) && auditLogService != null) {
+            auditLogService.log(
+                    "APP_SETTING",
+                    null,
+                    "UPSERT",
+                    "Ustawienie " + key + " zmieniono z [" + compact(previousValue) + "] na [" + compact(normalized) + "]"
+            );
+        }
     }
 
     public String getValue(String key) {
@@ -176,6 +188,14 @@ public class AppSettingsService {
 
     private boolean notBlank(String value) {
         return value != null && !value.trim().isBlank();
+    }
+
+    private String compact(String value) {
+        if (value == null || value.isBlank()) {
+            return "puste";
+        }
+        String normalized = value.replaceAll("\\s+", " ").trim();
+        return normalized.length() > 120 ? normalized.substring(0, 117) + "..." : normalized;
     }
 
     private String escape(String value) {

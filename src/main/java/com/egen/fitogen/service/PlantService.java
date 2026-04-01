@@ -9,10 +9,12 @@ public class PlantService {
 
     private final PlantRepository repository;
     private final AppSettingsService appSettingsService;
+    private final AuditLogService auditLogService;
 
-    public PlantService(PlantRepository repository, AppSettingsService appSettingsService) {
+    public PlantService(PlantRepository repository, AppSettingsService appSettingsService, AuditLogService auditLogService) {
         this.repository = repository;
         this.appSettingsService = appSettingsService;
+        this.auditLogService = auditLogService;
     }
 
     public List<Plant> getAllPlants() {
@@ -22,15 +24,24 @@ public class PlantService {
     public void addPlant(Plant plant) {
         validate(plant);
         repository.save(plant);
+        if (auditLogService != null) {
+            auditLogService.log("PLANT", null, "CREATE", "Dodano roślinę: " + buildPlantSummary(plant));
+        }
     }
 
     public void updatePlant(Plant plant) {
         validate(plant);
         repository.update(plant);
+        if (auditLogService != null) {
+            auditLogService.log("PLANT", plant.getId(), "UPDATE", "Zaktualizowano roślinę: " + buildPlantSummary(plant));
+        }
     }
 
     public void deletePlant(int id) {
         repository.delete(id);
+        if (auditLogService != null) {
+            auditLogService.log("PLANT", id, "DELETE", "Usunięto roślinę o ID=" + id);
+        }
     }
 
     public List<String> getSpeciesSuggestions() {
@@ -114,6 +125,25 @@ public class PlantService {
                 candidate.getRootstock(),
                 candidate.getId()
         );
+    }
+
+
+    private String buildPlantSummary(Plant plant) {
+        String species = normalizeText(plant.getSpecies());
+        String variety = normalizeText(plant.getVariety());
+        String rootstock = normalizeText(plant.getRootstock());
+
+        StringBuilder summary = new StringBuilder();
+        summary.append(species == null || species.isBlank() ? "brak gatunku" : species);
+
+        if (variety != null && !variety.isBlank()) {
+            summary.append(" | odmiana: ").append(variety);
+        }
+        if (rootstock != null && !rootstock.isBlank()) {
+            summary.append(" | podkładka: ").append(rootstock);
+        }
+
+        return summary.toString();
     }
 
     private String normalizeText(String value) {

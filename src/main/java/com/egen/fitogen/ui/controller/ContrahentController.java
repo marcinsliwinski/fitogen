@@ -78,15 +78,17 @@ public class ContrahentController {
 
     @FXML
     private void addContrahent() {
+        final Contrahent[] savedHolder = new Contrahent[1];
+
         ModalViewUtil.openModal(
                 "/view/contrahent_form.fxml",
                 "Dodaj kontrahenta",
                 860, 660,
                 820, 620,
-                (ContrahentFormController controller) -> {
-                }
+                (ContrahentFormController controller) -> controller.setOnSaved(saved -> savedHolder[0] = saved)
         );
         refresh();
+        selectSavedContrahent(savedHolder[0]);
     }
 
     @FXML
@@ -97,14 +99,66 @@ public class ContrahentController {
             return;
         }
 
+        final Contrahent[] savedHolder = new Contrahent[1];
+
         ModalViewUtil.openModal(
                 "/view/contrahent_form.fxml",
                 "Edytuj kontrahenta",
                 860, 660,
                 820, 620,
-                (ContrahentFormController controller) -> controller.setContrahent(selected)
+                (ContrahentFormController controller) -> {
+                    controller.setContrahent(selected);
+                    controller.setOnSaved(saved -> savedHolder[0] = saved);
+                }
         );
         refresh();
+        selectSavedContrahent(savedHolder[0]);
+    }
+
+    private void selectSavedContrahent(Contrahent saved) {
+        if (saved == null || table == null || table.getItems() == null) {
+            return;
+        }
+
+        Contrahent match = null;
+        if (saved.getId() > 0) {
+            for (Contrahent item : table.getItems()) {
+                if (item != null && item.getId() == saved.getId()) {
+                    match = item;
+                    break;
+                }
+            }
+        }
+
+        if (match == null) {
+            for (Contrahent item : table.getItems()) {
+                if (item == null) {
+                    continue;
+                }
+                boolean sameName = equalsIgnoreCase(item.getName(), saved.getName());
+                boolean sameCountry = equalsIgnoreCase(item.getCountry(), saved.getCountry());
+                boolean sameCity = equalsIgnoreCase(item.getCity(), saved.getCity());
+                if (sameName && sameCountry && sameCity) {
+                    match = item;
+                    break;
+                }
+            }
+        }
+
+        if (match != null) {
+            table.getSelectionModel().select(match);
+            table.scrollTo(match);
+        }
+    }
+
+    private boolean equalsIgnoreCase(String left, String right) {
+        if (left == null && right == null) {
+            return true;
+        }
+        if (left == null || right == null) {
+            return false;
+        }
+        return left.trim().equalsIgnoreCase(right.trim());
     }
 
     @FXML

@@ -146,7 +146,7 @@
 
                             <VBox spacing="12" styleClass="stat-card">
                                 <Label text="Wspólny słownik krajów" styleClass="stat-title"/>
-                                <Label text="Ten słownik jest współdzielony przez Kontrahentów, EPPO i dane podmiotu. Możesz dopisywać własne wpisy bez zmiany schematu bazy." wrapText="true" styleClass="page-subtitle"/>
+                                <Label text="Ten słownik jest współdzielony przez Kontrahentów, EPPO i dane podmiotu. Lista pokazuje cały wspólny słownik, a formularz poniżej służy do dopisywania i edycji wpisów własnych bez zmiany schematu bazy." wrapText="true" styleClass="page-subtitle"/>
                                 <Label fx:id="countryDictionaryStatusLabel" wrapText="true" styleClass="page-subtitle"/>
                                 <HBox spacing="14">
                                     <ListView fx:id="customCountryEntriesList" prefWidth="320" prefHeight="220"/>

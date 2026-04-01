@@ -20,6 +20,8 @@ import javafx.collections.transformation.FilteredList;
 import javafx.collections.transformation.SortedList;
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
+import javafx.scene.control.ListCell;
+import javafx.scene.control.ListView;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
@@ -120,6 +122,97 @@ public class EppoAdminController {
         refresh();
     }
 
+    @FXML
+    private void addZone() {
+        ModalViewUtil.openModal(
+                "/view/eppo_zone_form.fxml",
+                "Dodaj kraj EPPO",
+                720,
+                390,
+                660,
+                350,
+                (EppoZoneFormController controller) -> controller.setEppoZone(null)
+        );
+
+        refresh();
+    }
+
+    @FXML
+    private void editSelectedZone() {
+        EppoRecordRow selectedRecord = recordTable.getSelectionModel().getSelectedItem();
+        if (selectedRecord == null || selectedRecord.getZoneId() == null) {
+            DialogUtil.showWarning("Brak wyboru", "Wybierz rekord z krajem / strefą EPPO do edycji.");
+            return;
+        }
+
+        EppoZone selectedZone = zoneById(selectedRecord.getZoneId());
+        if (selectedZone == null) {
+            DialogUtil.showWarning("Brak danych", "Nie udało się odnaleźć wybranego kraju / strefy EPPO.");
+            return;
+        }
+
+        ModalViewUtil.openModal(
+                "/view/eppo_zone_form.fxml",
+                "Edytuj kraj EPPO",
+                720,
+                390,
+                660,
+                350,
+                (EppoZoneFormController controller) -> controller.setEppoZone(selectedZone)
+        );
+
+        refresh();
+    }
+
+    @FXML
+    private void deleteSelectedZone() {
+        EppoRecordRow selectedRecord = recordTable.getSelectionModel().getSelectedItem();
+        if (selectedRecord == null || selectedRecord.getZoneId() == null) {
+            DialogUtil.showWarning("Brak wyboru", "Wybierz rekord z krajem / strefą EPPO do usunięcia.");
+            return;
+        }
+
+        EppoZone selectedZone = zoneById(selectedRecord.getZoneId());
+        if (selectedZone == null) {
+            DialogUtil.showWarning("Brak danych", "Nie udało się odnaleźć wybranego kraju / strefy EPPO.");
+            return;
+        }
+
+        String zoneLabel = selectedZone.getCode() + " - " + (selectedZone.getName() == null ? "" : selectedZone.getName());
+        if (!DialogUtil.confirmDelete(zoneLabel)) {
+            return;
+        }
+
+        try {
+            eppoCodeZoneLinkService.deleteAllForZone(selectedZone.getId());
+            eppoZoneService.delete(selectedZone.getId());
+            DialogUtil.showSuccess("Kraj / strefa EPPO została usunięta.");
+            refresh();
+
+        } catch (IllegalArgumentException e) {
+            DialogUtil.showWarning("Błędne dane", e.getMessage());
+        } catch (Exception e) {
+            e.printStackTrace();
+            DialogUtil.showError("Błąd usuwania", "Nie udało się usunąć kraju / strefy EPPO.");
+        }
+    }
+
+    @FXML
+    private void refreshZones() {
+        refresh();
+    }
+
+    private EppoZone zoneById(Integer zoneId) {
+        if (zoneId == null || eppoZoneService == null) {
+            return null;
+        }
+        return eppoZoneService.getAll().stream()
+                .filter(this::isMeaningfulZone)
+                .filter(zone -> zone.getId() == zoneId)
+                .findFirst()
+                .orElse(null);
+    }
+
     private void configureCodeTable() {
         colCodeId.setCellValueFactory(new PropertyValueFactory<>("id"));
         colCodeValue.setCellValueFactory(new PropertyValueFactory<>("code"));
@@ -143,6 +236,14 @@ public class EppoAdminController {
         colRecordSpeciesLatinName.setCellValueFactory(new PropertyValueFactory<>("speciesLatinName"));
         colRecordCountry.setCellValueFactory(new PropertyValueFactory<>("country"));
         colRecordStatus.setCellValueFactory(new PropertyValueFactory<>("status"));
+    }
+        sharedCountryList.setCellFactory(list -> new ListCell<>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(empty || item == null ? "" : item);
+            }
+        });
     }
 
     private void configureRowFactories() {
@@ -213,6 +314,7 @@ public class EppoAdminController {
         codeTable.getSelectionModel().selectedItemProperty().addListener((obs, oldValue, newValue) ->
                 updateSelectedCodeHeader(newValue)
         );
+    });
     }
 
     private void refresh() {
@@ -314,7 +416,8 @@ public class EppoAdminController {
         });
     }
 
-    private void rebuildRecordRows() {
+    
+private void rebuildRecordRows() {
         recordMasterData.clear();
 
         List<EppoCode> allCodes = eppoCodeService == null
@@ -390,6 +493,8 @@ public class EppoAdminController {
         recordMasterData.setAll(rows);
     }
 
+
+
     private String buildCountryDisplay(EppoZone zone) {
         if (zone == null) {
             return "—";
@@ -413,7 +518,8 @@ public class EppoAdminController {
         return firstNonBlank(normalizedCode, normalizedName);
     }
 
-    private void updateRecordSummary() {
+    
+private void updateRecordSummary() {
         if (recordSummaryLabel == null) {
             return;
         }
@@ -444,6 +550,8 @@ public class EppoAdminController {
                         + " | Wiersze po filtrze: " + recordTable.getItems().size()
         );
     }
+
+
 
     private void updateSelectedCodeHeader(EppoCode selectedCode) {
         if (selectedCodeLabel == null) {

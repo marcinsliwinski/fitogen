@@ -168,7 +168,15 @@ public class SettingsController {
             @Override
             protected void updateItem(CountryDirectory.CountryEntry item, boolean empty) {
                 super.updateItem(item, empty);
-                setText(empty || item == null ? "" : item.country() + " (" + item.countryCode() + ")");
+                if (empty || item == null) {
+                    setText("");
+                    return;
+                }
+
+                String sourceLabel = countryDirectoryService.isCustomEntry(item.country(), item.countryCode())
+                        ? "własny"
+                        : "bazowy";
+                setText(item.country() + " (" + item.countryCode() + ") • " + sourceLabel);
             }
         });
     }
@@ -205,7 +213,9 @@ public class SettingsController {
         });
 
         customCountryEntriesList.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
-            editingCustomCountryEntry = newVal;
+            editingCustomCountryEntry = newVal != null && countryDirectoryService.isCustomEntry(newVal.country(), newVal.countryCode())
+                    ? newVal
+                    : null;
             if (newVal == null) {
                 customCountryNameField.clear();
                 customCountryCodeField.clear();
@@ -265,7 +275,7 @@ public class SettingsController {
             return;
         }
 
-        List<CountryDirectory.CountryEntry> entries = countryDirectoryService.getCustomEntries();
+        List<CountryDirectory.CountryEntry> entries = countryDirectoryService.getEntries();
         customCountryEntriesList.setItems(FXCollections.observableArrayList(entries));
         updateCountryDictionaryStatus();
     }
@@ -288,7 +298,7 @@ public class SettingsController {
             loadCustomCountryEntries();
             refreshSharedCountryCombos();
             customCountryEntriesList.getSelectionModel().select(
-                    countryDirectoryService.getCustomEntries().stream()
+                    countryDirectoryService.getEntries().stream()
                             .filter(entry -> entry.country().equalsIgnoreCase(country.trim()))
                             .findFirst()
                             .orElse(null)
@@ -309,6 +319,11 @@ public class SettingsController {
         CountryDirectory.CountryEntry selected = customCountryEntriesList.getSelectionModel().getSelectedItem();
         if (selected == null) {
             DialogUtil.showWarning("Brak wyboru", "Wybierz wpis słownika krajów do usunięcia.");
+            return;
+        }
+
+        if (!countryDirectoryService.isCustomEntry(selected.country(), selected.countryCode())) {
+            DialogUtil.showWarning("Wpis bazowy", "Możesz usuwać tylko wpisy własne. Wpisy bazowe są częścią wspólnego katalogu krajów.");
             return;
         }
 
@@ -347,7 +362,7 @@ public class SettingsController {
         int totalCount = countryDirectoryService.getEntries().size();
         countryDictionaryStatusLabel.setText(
                 "Wspólny słownik zawiera " + totalCount + " pozycji, w tym " + customCount
-                        + " wpisów własnych. Jest używany przez Kontrahentów, EPPO i dane podmiotu."
+                        + " wpisów własnych. Lista poniżej pokazuje cały słownik: wpisy bazowe i własne. Jest używany przez Kontrahentów, EPPO i dane podmiotu."
         );
     }
 

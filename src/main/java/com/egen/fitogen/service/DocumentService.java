@@ -23,17 +23,28 @@ public class DocumentService {
     private final DocumentItemRepository itemRepository;
     private final NumberingService numberingService;
     private final PlantBatchService plantBatchService;
+    private final AuditLogService auditLogService;
 
     public DocumentService(
             DocumentRepository documentRepository,
             DocumentItemRepository itemRepository,
             NumberingService numberingService,
             PlantBatchService plantBatchService) {
+        this(documentRepository, itemRepository, numberingService, plantBatchService, null);
+    }
+
+    public DocumentService(
+            DocumentRepository documentRepository,
+            DocumentItemRepository itemRepository,
+            NumberingService numberingService,
+            PlantBatchService plantBatchService,
+            AuditLogService auditLogService) {
 
         this.documentRepository = documentRepository;
         this.itemRepository = itemRepository;
         this.numberingService = numberingService;
         this.plantBatchService = plantBatchService;
+        this.auditLogService = auditLogService;
     }
 
     public void createDocument(DocumentDTO dto) {
@@ -52,6 +63,10 @@ public class DocumentService {
         documentRepository.save(document);
 
         saveItems(document.getId(), dto.getItems());
+
+        if (auditLogService != null) {
+            auditLogService.log("DOCUMENT", document.getId(), "CREATE", "Dodano dokument: " + buildDocumentSummaryFromDtos(document, dto.getItems()));
+        }
     }
 
     public DocumentDTO getDocumentDetails(int documentId) {
@@ -91,6 +106,10 @@ public class DocumentService {
 
         itemRepository.deleteByDocumentId(dto.getId());
         saveItems(dto.getId(), dto.getItems());
+
+        if (auditLogService != null) {
+            auditLogService.log("DOCUMENT", dto.getId(), "UPDATE", "Zaktualizowano dokument: " + buildDocumentSummaryFromDtos(updated, dto.getItems()));
+        }
     }
 
     public void deleteDocument(int documentId) {
@@ -102,6 +121,10 @@ public class DocumentService {
 
         existing.setStatus(DocumentStatus.CANCELLED);
         documentRepository.update(existing);
+
+        if (auditLogService != null) {
+            auditLogService.log("DOCUMENT", documentId, "CANCEL", "Anulowano dokument: " + buildDocumentSummary(existing, itemRepository.findByDocumentId(documentId)));
+        }
     }
 
     public int getAvailableQtyForBatch(int batchId) {
@@ -118,6 +141,34 @@ public class DocumentService {
                 : itemRepository.sumQtyInActiveDocumentsByPlantBatchIdExcludingDocument(batchId, currentDocumentId);
 
         return Math.max(0, batch.getQty() - usedQty);
+    }
+
+    private String buildDocumentSummaryFromDtos(Document document, List<DocumentItemDTO> items) {
+        String number = document.getDocumentNumber() == null || document.getDocumentNumber().isBlank()
+                ? "bez numeru"
+                : document.getDocumentNumber().trim();
+        String type = document.getDocumentType() == null || document.getDocumentType().isBlank()
+                ? "bez typu"
+                : document.getDocumentType().trim();
+
+        return number
+                + " | typ: " + type
+                + " | pozycji: " + (items == null ? 0 : items.size())
+                + " | status: " + (document.getStatus() == null ? "BRAK" : document.getStatus().name());
+    }
+
+    private String buildDocumentSummary(Document document, List<DocumentItem> items) {
+        String number = document.getDocumentNumber() == null || document.getDocumentNumber().isBlank()
+                ? "bez numeru"
+                : document.getDocumentNumber().trim();
+        String type = document.getDocumentType() == null || document.getDocumentType().isBlank()
+                ? "bez typu"
+                : document.getDocumentType().trim();
+
+        return number
+                + " | typ: " + type
+                + " | pozycji: " + (items == null ? 0 : items.size())
+                + " | status: " + (document.getStatus() == null ? "BRAK" : document.getStatus().name());
     }
 
     private void validateDocument(DocumentDTO dto, Integer currentDocumentId) {
