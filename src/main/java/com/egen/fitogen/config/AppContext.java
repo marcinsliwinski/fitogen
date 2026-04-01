@@ -2,6 +2,7 @@ package com.egen.fitogen.config;
 
 import com.egen.fitogen.database.SqliteAppSettingsRepository;
 import com.egen.fitogen.database.SqliteAppUserRepository;
+import com.egen.fitogen.database.SqliteAuditLogRepository;
 import com.egen.fitogen.database.SqliteContrahentRepository;
 import com.egen.fitogen.database.SqliteDocumentItemRepository;
 import com.egen.fitogen.database.SqliteDocumentRepository;
@@ -16,6 +17,7 @@ import com.egen.fitogen.database.SqlitePlantBatchRepository;
 import com.egen.fitogen.database.SqlitePlantRepository;
 import com.egen.fitogen.repository.AppSettingsRepository;
 import com.egen.fitogen.repository.AppUserRepository;
+import com.egen.fitogen.repository.AuditLogRepository;
 import com.egen.fitogen.repository.ContrahentRepository;
 import com.egen.fitogen.repository.DocumentItemRepository;
 import com.egen.fitogen.repository.DocumentRepository;
@@ -30,6 +32,7 @@ import com.egen.fitogen.repository.PlantBatchRepository;
 import com.egen.fitogen.repository.PlantRepository;
 import com.egen.fitogen.service.AppSettingsService;
 import com.egen.fitogen.service.AppUserService;
+import com.egen.fitogen.service.AuditLogService;
 import com.egen.fitogen.service.BackupService;
 import com.egen.fitogen.service.ContrahentService;
 import com.egen.fitogen.service.CountryDirectoryService;
@@ -58,6 +61,7 @@ public class AppContext {
     private static DocumentTypeRepository documentTypeRepository;
     private static AppSettingsRepository appSettingsRepository;
     private static AppUserRepository appUserRepository;
+    private static AuditLogRepository auditLogRepository;
     private static EppoCodeRepository eppoCodeRepository;
     private static EppoCodePlantLinkRepository eppoCodePlantLinkRepository;
     private static EppoCodeSpeciesLinkRepository eppoCodeSpeciesLinkRepository;
@@ -74,6 +78,7 @@ public class AppContext {
     private static DocumentTypeService documentTypeService;
     private static AppSettingsService appSettingsService;
     private static AppUserService appUserService;
+    private static AuditLogService auditLogService;
     private static CountryDirectoryService countryDirectoryService;
     private static EppoCodeService eppoCodeService;
     private static EppoCodePlantLinkService eppoCodePlantLinkService;
@@ -93,6 +98,7 @@ public class AppContext {
         documentTypeRepository = new SqliteDocumentTypeRepository();
         appSettingsRepository = new SqliteAppSettingsRepository();
         appUserRepository = new SqliteAppUserRepository();
+        auditLogRepository = new SqliteAuditLogRepository();
         eppoCodeRepository = new SqliteEppoCodeRepository();
         eppoCodePlantLinkRepository = new SqliteEppoCodePlantLinkRepository();
         eppoCodeSpeciesLinkRepository = new SqliteEppoCodeSpeciesLinkRepository();
@@ -102,9 +108,11 @@ public class AppContext {
         numberingService = new NumberingService(numberingConfigRepository);
         numberingConfigService = new NumberingConfigService(numberingConfigRepository, numberingService);
         backupService = new BackupService();
-        documentTypeService = new DocumentTypeService(documentTypeRepository);
+        appUserService = new AppUserService(appUserRepository, auditLogService);
+        auditLogService = new AuditLogService(auditLogRepository, appUserService);
+        documentTypeService = new DocumentTypeService(documentTypeRepository, auditLogService);
         appSettingsService = new AppSettingsService(appSettingsRepository);
-        appUserService = new AppUserService(appUserRepository);
+        appUserService = new AppUserService(appUserRepository, auditLogService);
         eppoCodeService = new EppoCodeService(eppoCodeRepository);
         eppoCodeSpeciesLinkService = new EppoCodeSpeciesLinkService(
                 eppoCodeSpeciesLinkRepository,
@@ -183,6 +191,10 @@ public class AppContext {
 
     public static AppUserService getAppUserService() {
         return appUserService;
+    }
+
+    public static AuditLogService getAuditLogService() {
+        return auditLogService;
     }
 
     public static CountryDirectoryService getCountryDirectoryService() {

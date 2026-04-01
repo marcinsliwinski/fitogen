@@ -8,9 +8,11 @@ import java.util.List;
 public class DocumentTypeService {
 
     private final DocumentTypeRepository repository;
+    private final AuditLogService auditLogService;
 
-    public DocumentTypeService(DocumentTypeRepository repository) {
+    public DocumentTypeService(DocumentTypeRepository repository, AuditLogService auditLogService) {
         this.repository = repository;
+        this.auditLogService = auditLogService;
     }
 
     public List<DocumentType> getAll() {
@@ -19,15 +21,34 @@ public class DocumentTypeService {
 
     public void save(DocumentType documentType) {
         validate(documentType);
-        if (documentType.getId() > 0) {
+        boolean update = documentType.getId() > 0;
+        if (update) {
             repository.update(documentType);
         } else {
             repository.save(documentType);
+        }
+
+        if (auditLogService != null) {
+            auditLogService.log(
+                    "DOCUMENT_TYPE",
+                    documentType.getId() > 0 ? documentType.getId() : null,
+                    update ? "UPDATE" : "CREATE",
+                    (update ? "Zaktualizowano typ dokumentu: " : "Dodano typ dokumentu: ") + buildDocumentTypeSummary(documentType)
+            );
         }
     }
 
     public void delete(int id) {
         repository.deleteById(id);
+        if (auditLogService != null) {
+            auditLogService.log("DOCUMENT_TYPE", id, "DELETE", "Usunięto typ dokumentu o ID=" + id);
+        }
+    }
+
+    private String buildDocumentTypeSummary(DocumentType documentType) {
+        String name = documentType.getName() == null ? "" : documentType.getName().trim();
+        String code = documentType.getCode() == null ? "" : documentType.getCode().trim();
+        return code.isBlank() ? name : name + " / " + code;
     }
 
     private void validate(DocumentType documentType) {
