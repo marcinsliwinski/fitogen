@@ -279,6 +279,32 @@
                 </ScrollPane>
             </Tab>
 
+            <Tab text="Audit Log">
+                <ScrollPane fitToWidth="true" fitToHeight="true">
+                    <content>
+                        <VBox spacing="16" styleClass="content-card">
+                            <padding><Insets top="16" right="16" bottom="16" left="16"/></padding>
+
+                            <VBox spacing="8" styleClass="stat-card">
+                                <Label text="Audit Log" styleClass="stat-title"/>
+                                <Label text="Widok pokazuje fundament dziennika audytowego oraz ostatnie zapisane wpisy. Na tym etapie jest to odczyt bez filtrowania i paginacji." wrapText="true" styleClass="page-subtitle"/>
+                                <Label fx:id="auditLogCountLabel" wrapText="true" styleClass="page-subtitle"/>
+                                <Label fx:id="auditLogLatestEntryLabel" wrapText="true" styleClass="page-subtitle"/>
+                                <Label fx:id="auditLogReadinessLabel" wrapText="true" styleClass="page-subtitle"/>
+                            </VBox>
+
+                            <VBox spacing="10">
+                                <Label text="Ostatnie wpisy" styleClass="stat-title"/>
+                                <ListView fx:id="auditLogEntriesList" prefHeight="320"/>
+                                <HBox spacing="10" alignment="CENTER_RIGHT">
+                                    <Button text="Odśwież widok" onAction="#refreshAuditLogView" styleClass="button-secondary"/>
+                                </HBox>
+                            </VBox>
+                        </VBox>
+                    </content>
+                </ScrollPane>
+            </Tab>
+
             <Tab text="Pomoc">
                 <ScrollPane fitToWidth="true" fitToHeight="true">
                     <content>

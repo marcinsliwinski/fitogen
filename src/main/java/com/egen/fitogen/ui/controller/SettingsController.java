@@ -5,10 +5,12 @@ import com.egen.fitogen.domain.NumberingConfig;
 import com.egen.fitogen.domain.NumberingSectionType;
 import com.egen.fitogen.domain.NumberingType;
 import com.egen.fitogen.model.AppUser;
+import com.egen.fitogen.model.AuditLogEntry;
 import com.egen.fitogen.model.DocumentType;
 import com.egen.fitogen.model.IssuerProfile;
 import com.egen.fitogen.service.AppSettingsService;
 import com.egen.fitogen.service.AppUserService;
+import com.egen.fitogen.service.AuditLogService;
 import com.egen.fitogen.service.BackupService;
 import com.egen.fitogen.service.CountryDirectoryService;
 import com.egen.fitogen.service.DocumentTypeService;
@@ -68,6 +70,11 @@ public class SettingsController {
     @FXML private TextField userLastNameField;
     @FXML private ComboBox<AppUser> defaultUserBox;
 
+    @FXML private Label auditLogCountLabel;
+    @FXML private Label auditLogLatestEntryLabel;
+    @FXML private Label auditLogReadinessLabel;
+    @FXML private ListView<AuditLogEntry> auditLogEntriesList;
+
     @FXML private TextField issuerNameField;
     @FXML private ComboBox<String> issuerCountryField;
     @FXML private ComboBox<String> issuerCountryCodeField;
@@ -88,6 +95,7 @@ public class SettingsController {
     private final AppUserService appUserService = AppContext.getAppUserService();
     private final AppSettingsService appSettingsService = AppContext.getAppSettingsService();
     private final CountryDirectoryService countryDirectoryService = AppContext.getCountryDirectoryService();
+    private final AuditLogService auditLogService = AppContext.getAuditLogService();
 
     private boolean loading;
     private boolean updatingDefaultUserSelection;
@@ -104,6 +112,7 @@ public class SettingsController {
         configureUserControls();
         configureCustomCountryControls();
         configureIssuerCountryControls();
+        configureAuditLogControls();
 
         numberingTypeBox.getItems().setAll(NumberingType.values());
         numberingTypeBox.setValue(NumberingType.DOCUMENT);
@@ -119,6 +128,7 @@ public class SettingsController {
         loadPlantPassportMode();
         loadPlantCatalogMode();
         refreshBackupStatus();
+        refreshAuditLogView();
         loadConfig(NumberingType.DOCUMENT);
     }
 
@@ -190,6 +200,70 @@ public class SettingsController {
 
         issuerCountryField.valueProperty().addListener((obs, oldVal, newVal) -> syncIssuerCodeFromCountry());
         issuerCountryCodeField.valueProperty().addListener((obs, oldVal, newVal) -> syncIssuerCountryFromCode());
+    }
+
+    private void configureAuditLogControls() {
+        if (auditLogEntriesList == null) {
+            return;
+        }
+
+        auditLogEntriesList.setPlaceholder(new Label("Brak wpisów audytowych."));
+        auditLogEntriesList.setCellFactory(list -> new ListCell<>() {
+            @Override
+            protected void updateItem(AuditLogEntry item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText("");
+                    return;
+                }
+
+                String description = safe(item.getDescription());
+                if (description.isBlank()) {
+                    description = "Brak opisu zmiany.";
+                }
+
+                String entityIdPart = item.getEntityId() == null ? "" : " #" + item.getEntityId();
+
+                setText(
+                        safe(item.getChangedAt())
+                                + " | " + safe(item.getActor())
+                                + " | " + safe(item.getEntityType()) + entityIdPart
+                                + " | " + safe(item.getActionType())
+                                + "\n" + description
+                );
+            }
+        });
+    }
+
+    @FXML
+    private void refreshAuditLogView() {
+        if (auditLogEntriesList == null || auditLogService == null) {
+            return;
+        }
+
+        List<AuditLogEntry> entries = auditLogService.getRecentEntries(100);
+        auditLogEntriesList.setItems(FXCollections.observableArrayList(entries));
+
+        int totalEntries = auditLogService.getEntryCount();
+
+        if (auditLogCountLabel != null) {
+            auditLogCountLabel.setText(
+                    "Liczba wpisów w bazie: " + totalEntries
+                            + " | Widok pokazuje ostatnie " + entries.size() + " pozycji."
+            );
+        }
+
+        if (auditLogLatestEntryLabel != null) {
+            auditLogLatestEntryLabel.setText("Ostatni wpis: " + auditLogService.getLatestEntrySummary());
+        }
+
+        if (auditLogReadinessLabel != null) {
+            auditLogReadinessLabel.setText(
+                    entries.isEmpty()
+                            ? "Fundament Audit Log jest już podłączony, ale usługi biznesowe nie zapisują jeszcze wpisów w sposób pełny."
+                            : "Widok Audit Log działa w trybie podstawowym. Kolejnym krokiem będzie rozszerzenie zapisu wpisów w usługach administracyjnych i modułach CRUD."
+            );
+        }
     }
 
     private void configureDictionarySelections() {
