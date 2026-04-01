@@ -262,7 +262,7 @@ public class SettingsController {
             auditLogReadinessLabel.setText(
                     entries.isEmpty()
                             ? "Fundament Audit Log jest już podłączony. Brak wpisów oznacza, że w tej bazie nie wykonano jeszcze zmian objętych audytem."
-                            : "Audit Log zapisuje już zmiany dla usług administracyjnych w Settings. Kolejnym krokiem będzie rozszerzenie audytu na moduły CRUD i EPPO."
+                            : "Audit Log zapisuje już zmiany dla Settings, głównych modułów CRUD i EPPO. Kolejnym krokiem może być filtrowanie, wyszukiwarka i dopracowanie szczegółowości wpisów."
             );
         }
     }
@@ -452,6 +452,7 @@ public class SettingsController {
             appSettingsService.setPlantPassportRequiredForAll(enabled);
             updatePlantPassportModeStatus(enabled);
             DialogUtil.showSuccess("Ustawienie paszportów roślin zostało zapisane.");
+            refreshAuditLogView();
         } catch (Exception e) {
             e.printStackTrace();
             DialogUtil.showError("Błąd zapisu", "Nie udało się zapisać ustawienia paszportów roślin.");
@@ -485,6 +486,7 @@ public class SettingsController {
             appSettingsService.setPlantFullCatalogEnabled(enabled);
             updatePlantCatalogModeStatus(enabled);
             DialogUtil.showSuccess("Tryb bazy roślin został zapisany.");
+            refreshAuditLogView();
         } catch (Exception e) {
             e.printStackTrace();
             DialogUtil.showError("Błąd zapisu", "Nie udało się zapisać trybu bazy roślin.");
@@ -715,6 +717,7 @@ public class SettingsController {
             numberingConfigService.saveConfig(config);
             DialogUtil.showSuccess("Konfiguracja numeratora została zapisana.");
             loadConfig(config.getType());
+            refreshAuditLogView();
         } catch (IllegalArgumentException e) {
             DialogUtil.showWarning("Błędne dane", e.getMessage());
         } catch (Exception e) {
@@ -755,6 +758,7 @@ public class SettingsController {
             appSettingsService.saveIssuerProfile(buildIssuerProfileFromForm());
             loadIssuerProfile();
             DialogUtil.showSuccess("Dane podmiotu zostały zapisane.");
+            refreshAuditLogView();
         } catch (Exception e) {
             e.printStackTrace();
             DialogUtil.showError("Błąd zapisu", "Nie udało się zapisać danych podmiotu.");

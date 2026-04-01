@@ -106,11 +106,11 @@ public class AppContext {
         eppoCodeZoneLinkRepository = new SqliteEppoCodeZoneLinkRepository();
 
         numberingService = new NumberingService(numberingConfigRepository);
-        numberingConfigService = new NumberingConfigService(numberingConfigRepository, numberingService);
-        backupService = new BackupService();
-        appSettingsService = new AppSettingsService(appSettingsRepository);
         appUserService = new AppUserService(appUserRepository);
         auditLogService = new AuditLogService(auditLogRepository, appUserService);
+        numberingConfigService = new NumberingConfigService(numberingConfigRepository, numberingService, auditLogService);
+        backupService = new BackupService();
+        appSettingsService = new AppSettingsService(appSettingsRepository, auditLogService);
         appUserService.setAuditLogService(auditLogService);
         documentTypeService = new DocumentTypeService(documentTypeRepository, auditLogService);
         eppoCodeService = new EppoCodeService(eppoCodeRepository, auditLogService);

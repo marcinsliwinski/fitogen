@@ -24,9 +24,11 @@ public class AppSettingsService {
     public static final String CUSTOM_COUNTRY_DIRECTORY_ENTRIES = "dictionary.country.custom_entries";
 
     private final AppSettingsRepository appSettingsRepository;
+    private final AuditLogService auditLogService;
 
-    public AppSettingsService(AppSettingsRepository appSettingsRepository) {
+    public AppSettingsService(AppSettingsRepository appSettingsRepository, AuditLogService auditLogService) {
         this.appSettingsRepository = appSettingsRepository;
+        this.auditLogService = auditLogService;
     }
 
     public String getSetting(String key) {
@@ -66,6 +68,8 @@ public class AppSettingsService {
     }
 
     public void saveIssuerProfile(IssuerProfile profile) {
+        IssuerProfile previous = getIssuerProfile();
+
         if (profile == null) {
             profile = new IssuerProfile();
         }
@@ -77,11 +81,23 @@ public class AppSettingsService {
         saveSetting(ISSUER_CITY, profile.getCity());
         saveSetting(ISSUER_STREET, profile.getStreet());
         saveSetting(ISSUER_PHYTOSANITARY_NUMBER, profile.getPhytosanitaryNumber());
+
+        logIssuerProfileChange(previous, getIssuerProfile());
     }
 
     public void saveLastBackup(String path, String at) {
+        String previousPath = getLastBackupPath();
+        String previousAt = getLastBackupAt();
+
         saveSetting(LAST_BACKUP_PATH, path);
         saveSetting(LAST_BACKUP_AT, at);
+
+        log(
+                "BACKUP_SETTINGS",
+                "UPDATE",
+                "Zapisano informacje o backupie. Poprzednio: " + describeBackup(previousPath, previousAt)
+                        + ". Obecnie: " + describeBackup(getLastBackupPath(), getLastBackupAt())
+        );
     }
 
     public String getLastBackupPath() {
@@ -149,7 +165,16 @@ public class AppSettingsService {
     }
 
     public void setPlantFullCatalogEnabled(boolean enabled) {
+        boolean previous = isPlantFullCatalogEnabled();
         saveSetting(PLANT_FULL_CATALOG_ENABLED, String.valueOf(enabled));
+        if (previous != enabled) {
+            log(
+                    "APP_SETTINGS",
+                    "UPDATE",
+                    "Zmieniono ustawienie pełnej bazy roślin z " + booleanLabel(previous)
+                            + " na " + booleanLabel(enabled)
+            );
+        }
     }
 
     public boolean isPlantPassportRequiredForAll() {
@@ -161,7 +186,16 @@ public class AppSettingsService {
     }
 
     public void setPlantPassportRequiredForAll(boolean enabled) {
+        boolean previous = isPlantPassportRequiredForAll();
         saveSetting(PLANT_PASSPORT_REQUIRED_FOR_ALL, String.valueOf(enabled));
+        if (previous != enabled) {
+            log(
+                    "APP_SETTINGS",
+                    "UPDATE",
+                    "Zmieniono globalne wymaganie paszportów roślin z " + booleanLabel(previous)
+                            + " na " + booleanLabel(enabled)
+            );
+        }
     }
 
     public boolean isIssuerProfileComplete() {
@@ -172,6 +206,56 @@ public class AppSettingsService {
                 && notBlank(profile.getCity())
                 && notBlank(profile.getStreet())
                 && notBlank(profile.getPhytosanitaryNumber());
+    }
+
+    private void logIssuerProfileChange(IssuerProfile previous, IssuerProfile current) {
+        String previousDescription = describeIssuerProfile(previous);
+        String currentDescription = describeIssuerProfile(current);
+
+        if (previousDescription.equals(currentDescription)) {
+            return;
+        }
+
+        log(
+                "ISSUER_PROFILE",
+                "UPDATE",
+                "Zmieniono dane podmiotu. Poprzednio: " + previousDescription + ". Obecnie: " + currentDescription
+        );
+    }
+
+    private void log(String entityType, String actionType, String description) {
+        if (auditLogService == null) {
+            return;
+        }
+        auditLogService.log(entityType, null, actionType, description);
+    }
+
+    private String describeIssuerProfile(IssuerProfile profile) {
+        if (profile == null) {
+            return "[brak danych]";
+        }
+
+        return String.join(", ",
+                valueOrPlaceholder(profile.getNurseryName()),
+                valueOrPlaceholder(profile.getCountry()),
+                valueOrPlaceholder(profile.getCountryCode()),
+                valueOrPlaceholder(profile.getPostalCode()),
+                valueOrPlaceholder(profile.getCity()),
+                valueOrPlaceholder(profile.getStreet()),
+                valueOrPlaceholder(profile.getPhytosanitaryNumber())
+        );
+    }
+
+    private String describeBackup(String path, String at) {
+        return "czas=" + valueOrPlaceholder(at) + ", ścieżka=" + valueOrPlaceholder(path);
+    }
+
+    private String booleanLabel(boolean value) {
+        return value ? "włączone" : "wyłączone";
+    }
+
+    private String valueOrPlaceholder(String value) {
+        return notBlank(value) ? value.trim() : "[puste]";
     }
 
     private boolean notBlank(String value) {
