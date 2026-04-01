@@ -18,14 +18,15 @@ public class AuditLogService {
     }
 
     public void log(String entityType, Integer entityId, String actionType, String description) {
-        AuditLogEntry entry = new AuditLogEntry();
-        entry.setEntityType(normalize(entityType));
-        entry.setEntityId(entityId);
-        entry.setActionType(normalize(actionType));
-        entry.setActor(resolveActor());
-        entry.setDescription(normalize(description));
-        entry.setChangedAt(LocalDateTime.now().toString());
-        repository.save(entry);
+        saveEntry(resolveActor(), entityType, entityId, actionType, description);
+    }
+
+    public void logAsActor(String actor, String entityType, Integer entityId, String actionType, String description) {
+        saveEntry(actor, entityType, entityId, actionType, description);
+    }
+
+    public String getCurrentActor() {
+        return resolveActor();
     }
 
     public List<AuditLogEntry> getRecentEntries(int limit) {
@@ -42,6 +43,17 @@ public class AuditLogService {
                 .map(entry -> entry.getChangedAt() + " | " + entry.getActor() + " | "
                         + entry.getEntityType() + " | " + entry.getActionType())
                 .orElse("Brak wpisów audytowych.");
+    }
+
+    private void saveEntry(String actor, String entityType, Integer entityId, String actionType, String description) {
+        AuditLogEntry entry = new AuditLogEntry();
+        entry.setEntityType(normalize(entityType));
+        entry.setEntityId(entityId);
+        entry.setActionType(normalize(actionType));
+        entry.setActor(normalize(actor).isBlank() ? "System" : normalize(actor));
+        entry.setDescription(normalize(description));
+        entry.setChangedAt(LocalDateTime.now().toString());
+        repository.save(entry);
     }
 
     private String resolveActor() {

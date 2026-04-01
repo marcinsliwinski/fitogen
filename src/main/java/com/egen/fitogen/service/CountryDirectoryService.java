@@ -14,11 +14,14 @@ public class CountryDirectoryService {
 
     private final ContrahentService contrahentService;
     private final AppSettingsService appSettingsService;
+    private final AuditLogService auditLogService;
 
     public CountryDirectoryService(ContrahentService contrahentService,
-                                   AppSettingsService appSettingsService) {
+                                   AppSettingsService appSettingsService,
+                                   AuditLogService auditLogService) {
         this.contrahentService = contrahentService;
         this.appSettingsService = appSettingsService;
+        this.auditLogService = auditLogService;
     }
 
     public List<CountryDirectory.CountryEntry> getEntries() {
@@ -94,6 +97,8 @@ public class CountryDirectoryService {
             throw new IllegalArgumentException("Kraj i kod kraju są wymagane.");
         }
 
+        CountryDirectory.CountryEntry existing = findCustomEntryByCountry(normalized.country());
+
         Map<String, CountryDirectory.CountryEntry> customMap = new LinkedHashMap<>();
         for (CountryDirectory.CountryEntry entry : getCustomEntries()) {
             CountryDirectory.CountryEntry current = normalizeEntry(entry);
@@ -104,6 +109,16 @@ public class CountryDirectoryService {
 
         customMap.put(normalizeKey(normalized.country()), normalized);
         appSettingsService.saveCustomCountryEntries(new ArrayList<>(customMap.values()));
+
+        if (existing == null) {
+            log("CREATE", "Dodano własny wpis słownika krajów: " + describe(normalized));
+        } else {
+            log(
+                    "UPDATE",
+                    "Zaktualizowano własny wpis słownika krajów z " + describe(existing)
+                            + " na " + describe(normalized)
+            );
+        }
     }
 
     public void deleteCustomEntry(String country, String countryCode) {
@@ -112,6 +127,8 @@ public class CountryDirectoryService {
         if (normalizedCountry == null) {
             return;
         }
+
+        CountryDirectory.CountryEntry existing = findCustomEntryByCountry(country);
 
         List<CountryDirectory.CountryEntry> retained = new ArrayList<>();
         for (CountryDirectory.CountryEntry entry : getCustomEntries()) {
@@ -128,10 +145,24 @@ public class CountryDirectoryService {
         }
 
         appSettingsService.saveCustomCountryEntries(retained);
+        log("DELETE", "Usunięto własny wpis słownika krajów: " + describe(existing));
     }
 
     private List<Contrahent> existingContrahents() {
         return contrahentService == null ? List.of() : contrahentService.getAllContrahents();
+    }
+
+    private CountryDirectory.CountryEntry findCustomEntryByCountry(String country) {
+        String key = normalizeKey(country);
+        if (key == null) {
+            return null;
+        }
+
+        return getCustomEntries().stream()
+                .map(this::normalizeEntry)
+                .filter(entry -> entry != null && key.equals(normalizeKey(entry.country())))
+                .findFirst()
+                .orElse(null);
     }
 
     private CountryDirectory.CountryEntry normalizeEntry(CountryDirectory.CountryEntry entry) {
@@ -169,5 +200,19 @@ public class CountryDirectoryService {
 
         String normalized = value.trim().toUpperCase(Locale.ROOT);
         return normalized.isBlank() ? null : normalized;
+    }
+
+    private void log(String actionType, String description) {
+        if (auditLogService == null) {
+            return;
+        }
+        auditLogService.log("COUNTRY_DIRECTORY", null, actionType, description);
+    }
+
+    private String describe(CountryDirectory.CountryEntry entry) {
+        if (entry == null) {
+            return "[brak wpisu]";
+        }
+        return entry.country() + " (" + entry.countryCode() + ")";
     }
 }

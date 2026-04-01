@@ -166,6 +166,7 @@ public class SettingsController {
                 return;
             }
             appUserService.setDefaultUserId(newVal != null ? newVal.getId() : null);
+            refreshAuditLogView();
         });
     }
 
@@ -260,8 +261,8 @@ public class SettingsController {
         if (auditLogReadinessLabel != null) {
             auditLogReadinessLabel.setText(
                     entries.isEmpty()
-                            ? "Fundament Audit Log jest już podłączony, ale usługi biznesowe nie zapisują jeszcze wpisów w sposób pełny."
-                            : "Widok Audit Log działa w trybie podstawowym. Kolejnym krokiem będzie rozszerzenie zapisu wpisów w usługach administracyjnych i modułach CRUD."
+                            ? "Fundament Audit Log jest już podłączony. Brak wpisów oznacza, że w tej bazie nie wykonano jeszcze zmian objętych audytem."
+                            : "Audit Log zapisuje już zmiany dla usług administracyjnych w Settings. Kolejnym krokiem będzie rozszerzenie audytu na moduły CRUD i EPPO."
             );
         }
     }
@@ -370,6 +371,7 @@ public class SettingsController {
             DialogUtil.showSuccess(editingCustomCountryEntry == null
                     ? "Wpis słownika krajów został dodany."
                     : "Wpis słownika krajów został zaktualizowany.");
+            refreshAuditLogView();
         } catch (IllegalArgumentException e) {
             DialogUtil.showWarning("Błędne dane", e.getMessage());
         } catch (Exception e) {
@@ -395,6 +397,7 @@ public class SettingsController {
         refreshSharedCountryCombos();
         clearCustomCountryEntryForm();
         DialogUtil.showSuccess("Wpis słownika krajów został usunięty.");
+        refreshAuditLogView();
     }
 
     @FXML
@@ -516,6 +519,7 @@ public class SettingsController {
             refreshDocumentTypes();
             clearDocumentTypeForm();
             DialogUtil.showSuccess("Typ dokumentu został zapisany.");
+            refreshAuditLogView();
         } catch (Exception e) {
             DialogUtil.showWarning("Błędne dane", e.getMessage());
         }
@@ -537,6 +541,7 @@ public class SettingsController {
         refreshDocumentTypes();
         clearDocumentTypeForm();
         DialogUtil.showSuccess("Typ dokumentu został usunięty.");
+        refreshAuditLogView();
     }
 
     @FXML
@@ -559,6 +564,7 @@ public class SettingsController {
             clearUserForm();
             loadDefaultUser();
             DialogUtil.showSuccess("Użytkownik został zapisany.");
+            refreshAuditLogView();
         } catch (Exception e) {
             DialogUtil.showWarning("Błędne dane", e.getMessage());
         }
@@ -581,6 +587,7 @@ public class SettingsController {
         clearUserForm();
         loadDefaultUser();
         DialogUtil.showSuccess("Użytkownik został usunięty.");
+        refreshAuditLogView();
     }
 
     @FXML

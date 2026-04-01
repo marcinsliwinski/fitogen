@@ -108,10 +108,11 @@ public class AppContext {
         numberingService = new NumberingService(numberingConfigRepository);
         numberingConfigService = new NumberingConfigService(numberingConfigRepository, numberingService);
         backupService = new BackupService();
-        documentTypeService = new DocumentTypeService(documentTypeRepository);
         appSettingsService = new AppSettingsService(appSettingsRepository);
         appUserService = new AppUserService(appUserRepository);
         auditLogService = new AuditLogService(auditLogRepository, appUserService);
+        appUserService.setAuditLogService(auditLogService);
+        documentTypeService = new DocumentTypeService(documentTypeRepository, auditLogService);
         eppoCodeService = new EppoCodeService(eppoCodeRepository);
         eppoCodeSpeciesLinkService = new EppoCodeSpeciesLinkService(
                 eppoCodeSpeciesLinkRepository,
@@ -138,7 +139,7 @@ public class AppContext {
                 documentItemRepository
         );
         contrahentService = new ContrahentService(contrahentRepository);
-        countryDirectoryService = new CountryDirectoryService(contrahentService, appSettingsService);
+        countryDirectoryService = new CountryDirectoryService(contrahentService, appSettingsService, auditLogService);
         documentService = new DocumentService(
                 documentRepository,
                 documentItemRepository,
