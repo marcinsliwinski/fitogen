@@ -21,15 +21,21 @@
 
             <VBox spacing="4">
                 <Label text="Aktualizacje" styleClass="page-title"/>
-                <Label text="Osobny moduł informacji o wersji systemu i gotowości funkcji aktualizacji." styleClass="page-subtitle" wrapText="true"/>
+                <Label text="Widok gotowości operacyjnej pod przyszłą aktualizację danych i aplikacji." styleClass="page-subtitle" wrapText="true"/>
             </VBox>
 
             <VBox styleClass="content-card" spacing="12">
-                <Label text="Wersja aplikacji" styleClass="section-title" style="-fx-font-size: 18px;"/>
+                <HBox spacing="10">
+                    <Label text="Wersja aplikacji" styleClass="section-title" style="-fx-font-size: 18px;"/>
+                    <Region HBox.hgrow="ALWAYS"/>
+                    <Button text="Odśwież" onAction="#refreshStatus" styleClass="button-secondary"/>
+                </HBox>
                 <HBox spacing="10">
                     <Label text="Aktualna wersja:" styleClass="stat-title"/>
                     <Label fx:id="appVersionLabel"/>
                 </HBox>
+                <Label fx:id="moduleReadinessLabel" wrapText="true"/>
+                <Label fx:id="recommendedActionLabel" wrapText="true"/>
             </VBox>
 
             <VBox styleClass="content-card" spacing="12">
@@ -44,13 +50,24 @@
 
             <VBox styleClass="content-card" spacing="12">
                 <Label text="Stan techniczny" styleClass="section-title" style="-fx-font-size: 18px;"/>
+                <Label fx:id="databaseLocationLabel" wrapText="true"/>
+                <Label fx:id="databaseHealthLabel" wrapText="true"/>
                 <Label fx:id="lastBackupInfoLabel" wrapText="true"/>
-                <Label fx:id="moduleReadinessLabel" wrapText="true"/>
+                <Label fx:id="lastBackupPathLabel" wrapText="true"/>
+            </VBox>
+
+            <VBox styleClass="content-card" spacing="12">
+                <Label text="Gotowość konfiguracji" styleClass="section-title" style="-fx-font-size: 18px;"/>
+                <Label fx:id="issuerProfileStatusLabel" wrapText="true"/>
+                <Label fx:id="documentTypesStatusLabel" wrapText="true"/>
+                <Label fx:id="usersStatusLabel" wrapText="true"/>
+                <Label fx:id="countryDirectoryStatusLabel" wrapText="true"/>
+                <Label fx:id="plantSettingsStatusLabel" wrapText="true"/>
             </VBox>
 
             <VBox styleClass="content-card" spacing="12">
                 <Label text="Dalsze kroki" styleClass="section-title" style="-fx-font-size: 18px;"/>
-                <Label text="W kolejnych etapach można tu bezpiecznie dodać sprawdzanie nowej wersji aplikacji, pobieranie aktualizacji oraz aktualizację bazy roślin z serwera." wrapText="true"/>
+                <Label text="Ten moduł nie wykonuje jeszcze automatycznej aktualizacji, ale pokazuje, czy środowisko jest gotowe do jej bezpiecznego wdrożenia w kolejnych etapach." wrapText="true"/>
                 <HBox spacing="10">
                     <Button text="Ustawienia" onAction="#openSettings" styleClass="button-secondary"/>
                     <Button text="Pomoc" onAction="#openHelp" styleClass="button-secondary"/>
