@@ -19,6 +19,7 @@ import com.egen.fitogen.ui.util.CountryDirectory;
 import com.egen.fitogen.ui.util.DialogUtil;
 import com.egen.fitogen.ui.util.ValidationUtil;
 import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
@@ -35,7 +36,10 @@ import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 import java.util.function.Supplier;
 
 public class SettingsController {
@@ -73,6 +77,9 @@ public class SettingsController {
     @FXML private Label auditLogCountLabel;
     @FXML private Label auditLogLatestEntryLabel;
     @FXML private Label auditLogReadinessLabel;
+    @FXML private ComboBox<String> auditLogEntityTypeFilterBox;
+    @FXML private ComboBox<String> auditLogActionTypeFilterBox;
+    @FXML private TextField auditLogSearchField;
     @FXML private ListView<AuditLogEntry> auditLogEntriesList;
 
     @FXML private TextField issuerNameField;
@@ -104,6 +111,7 @@ public class SettingsController {
     private DocumentType editingDocumentType;
     private CountryDirectory.CountryEntry editingCustomCountryEntry;
     private AppUser editingUser;
+    private final ObservableList<AuditLogEntry> auditLogMasterEntries = FXCollections.observableArrayList();
 
     @FXML
     public void initialize() {
@@ -234,6 +242,18 @@ public class SettingsController {
                 );
             }
         });
+
+        if (auditLogEntityTypeFilterBox != null) {
+            auditLogEntityTypeFilterBox.valueProperty().addListener((obs, oldVal, newVal) -> applyAuditLogFilters());
+        }
+
+        if (auditLogActionTypeFilterBox != null) {
+            auditLogActionTypeFilterBox.valueProperty().addListener((obs, oldVal, newVal) -> applyAuditLogFilters());
+        }
+
+        if (auditLogSearchField != null) {
+            auditLogSearchField.textProperty().addListener((obs, oldVal, newVal) -> applyAuditLogFilters());
+        }
     }
 
     @FXML
@@ -242,15 +262,18 @@ public class SettingsController {
             return;
         }
 
-        List<AuditLogEntry> entries = auditLogService.getRecentEntries(100);
-        auditLogEntriesList.setItems(FXCollections.observableArrayList(entries));
+        List<AuditLogEntry> entries = auditLogService.getRecentEntries(200);
+        auditLogMasterEntries.setAll(entries);
+        refreshAuditLogFilterOptions(entries);
+        applyAuditLogFilters();
 
         int totalEntries = auditLogService.getEntryCount();
 
         if (auditLogCountLabel != null) {
             auditLogCountLabel.setText(
                     "Liczba wpisów w bazie: " + totalEntries
-                            + " | Widok pokazuje ostatnie " + entries.size() + " pozycji."
+                            + " | Załadowano do widoku: " + entries.size()
+                            + " | Po filtrach: " + auditLogEntriesList.getItems().size()
             );
         }
 
@@ -262,9 +285,96 @@ public class SettingsController {
             auditLogReadinessLabel.setText(
                     entries.isEmpty()
                             ? "Fundament Audit Log jest już podłączony. Brak wpisów oznacza, że w tej bazie nie wykonano jeszcze zmian objętych audytem."
-                            : "Audit Log zapisuje już zmiany dla Settings, głównych modułów CRUD i EPPO. Kolejnym krokiem może być filtrowanie, wyszukiwarka i dopracowanie szczegółowości wpisów."
+                            : "Audit Log zapisuje już zmiany dla Settings, głównych modułów CRUD i EPPO. Widok ma teraz podstawowe filtrowanie i wyszukiwarkę, nadal bez paginacji i filtrów bazodanowych."
             );
         }
+    }
+
+    private void refreshAuditLogFilterOptions(List<AuditLogEntry> entries) {
+        refreshAuditLogComboOptions(
+                auditLogEntityTypeFilterBox,
+                entries.stream().map(AuditLogEntry::getEntityType).toList(),
+                "Wszystkie encje"
+        );
+
+        refreshAuditLogComboOptions(
+                auditLogActionTypeFilterBox,
+                entries.stream().map(AuditLogEntry::getActionType).toList(),
+                "Wszystkie akcje"
+        );
+    }
+
+    private void refreshAuditLogComboOptions(ComboBox<String> comboBox, List<String> values, String allLabel) {
+        if (comboBox == null) {
+            return;
+        }
+
+        String currentValue = comboBox.getValue();
+        Set<String> distinctValues = new LinkedHashSet<>();
+        distinctValues.add(allLabel);
+
+        for (String value : values) {
+            String safeValue = safe(value).trim();
+            if (!safeValue.isBlank()) {
+                distinctValues.add(safeValue);
+            }
+        }
+
+        comboBox.setItems(FXCollections.observableArrayList(distinctValues));
+        if (currentValue != null && distinctValues.contains(currentValue)) {
+            comboBox.setValue(currentValue);
+        } else {
+            comboBox.setValue(allLabel);
+        }
+    }
+
+    private void applyAuditLogFilters() {
+        if (auditLogEntriesList == null) {
+            return;
+        }
+
+        String entityTypeFilter = selectedAuditLogFilterValue(auditLogEntityTypeFilterBox, "Wszystkie encje");
+        String actionTypeFilter = selectedAuditLogFilterValue(auditLogActionTypeFilterBox, "Wszystkie akcje");
+        String searchText = auditLogSearchField == null ? "" : safe(auditLogSearchField.getText()).trim().toLowerCase(Locale.ROOT);
+
+        List<AuditLogEntry> filteredEntries = auditLogMasterEntries.stream()
+                .filter(entry -> matchesAuditLogFilter(entry.getEntityType(), entityTypeFilter, "Wszystkie encje"))
+                .filter(entry -> matchesAuditLogFilter(entry.getActionType(), actionTypeFilter, "Wszystkie akcje"))
+                .filter(entry -> matchesAuditLogSearch(entry, searchText))
+                .toList();
+
+        auditLogEntriesList.setItems(FXCollections.observableArrayList(filteredEntries));
+    }
+
+    private String selectedAuditLogFilterValue(ComboBox<String> comboBox, String defaultValue) {
+        if (comboBox == null || comboBox.getValue() == null || comboBox.getValue().isBlank()) {
+            return defaultValue;
+        }
+        return comboBox.getValue();
+    }
+
+    private boolean matchesAuditLogFilter(String value, String selectedFilter, String allLabel) {
+        if (selectedFilter == null || selectedFilter.isBlank() || allLabel.equals(selectedFilter)) {
+            return true;
+        }
+        return safe(value).equalsIgnoreCase(selectedFilter);
+    }
+
+    private boolean matchesAuditLogSearch(AuditLogEntry entry, String searchText) {
+        if (searchText == null || searchText.isBlank()) {
+            return true;
+        }
+
+        String haystack = String.join(" ",
+                safe(entry.getChangedAt()),
+                safe(entry.getActor()),
+                safe(entry.getEntityType()),
+                safe(entry.getActionType()),
+                safe(entry.getDescription()),
+                entry.getEntityId() == null ? "" : String.valueOf(entry.getEntityId())
+        ).toLowerCase(Locale.ROOT);
+
+        return haystack.contains(searchText);
     }
 
     private void configureDictionarySelections() {
