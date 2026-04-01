@@ -8,6 +8,7 @@ import com.egen.fitogen.repository.PlantBatchRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.LocalDate;
 import java.util.List;
 
 public class PlantBatchService {
@@ -17,24 +18,34 @@ public class PlantBatchService {
     private final PlantBatchRepository repository;
     private final DocumentItemRepository documentItemRepository;
     private final NumberingService numberingService;
+    private final AuditLogService auditLogService;
 
     public PlantBatchService(PlantBatchRepository repository) {
-        this(repository, null, null);
+        this(repository, null, null, null);
     }
 
     public PlantBatchService(
             PlantBatchRepository repository,
             NumberingService numberingService) {
-        this(repository, numberingService, null);
+        this(repository, numberingService, null, null);
     }
 
     public PlantBatchService(
             PlantBatchRepository repository,
             NumberingService numberingService,
             DocumentItemRepository documentItemRepository) {
+        this(repository, numberingService, documentItemRepository, null);
+    }
+
+    public PlantBatchService(
+            PlantBatchRepository repository,
+            NumberingService numberingService,
+            DocumentItemRepository documentItemRepository,
+            AuditLogService auditLogService) {
         this.repository = repository;
         this.numberingService = numberingService;
         this.documentItemRepository = documentItemRepository;
+        this.auditLogService = auditLogService;
     }
 
     public List<PlantBatch> getAllBatches() {
@@ -75,6 +86,7 @@ public class PlantBatchService {
         }
 
         repository.save(batch);
+        log("CREATE", null, "Dodano partię roślin: " + describe(batch));
     }
 
     public void updateBatch(PlantBatch batch) {
@@ -86,8 +98,14 @@ public class PlantBatchService {
             batch.setStatus(PlantBatchStatus.ACTIVE);
         }
 
+        PlantBatch existing = repository.findById(batch.getId());
         logger.info("Updating batch id {}", batch.getId());
         repository.update(batch);
+        log(
+                "UPDATE",
+                batch.getId(),
+                "Zaktualizowano partię roślin z " + describe(existing) + " na " + describe(batch)
+        );
     }
 
     public void deleteBatch(int id) {
@@ -98,7 +116,9 @@ public class PlantBatchService {
             throw new IllegalStateException(buildBatchUsedMessage(documentNumbers));
         }
 
+        PlantBatch existing = repository.findById(id);
         repository.deleteById(id);
+        log("DELETE", id, "Anulowano partię roślin: " + describe(existing));
     }
 
     public boolean isBatchUsedInDocuments(int batchId) {
@@ -114,5 +134,70 @@ public class PlantBatchService {
 
     private String buildBatchUsedMessage(List<String> documentNumbers) {
         return "Partia została użyta w aktywnych dokumentach: " + String.join(", ", documentNumbers);
+    }
+
+    private void log(String actionType, Integer entityId, String description) {
+        if (auditLogService == null) {
+            return;
+        }
+        auditLogService.log("PLANT_BATCH", entityId, actionType, description);
+    }
+
+    private String describe(PlantBatch batch) {
+        if (batch == null) {
+            return "[brak partii]";
+        }
+
+        String batchNo = firstNotBlank(batch.getInteriorBatchNo(), batch.getExteriorBatchNo());
+        StringBuilder sb = new StringBuilder();
+
+        if (batchNo != null) {
+            sb.append(batchNo);
+        } else {
+            sb.append("ID ").append(batch.getId());
+        }
+
+        sb.append(" [plantId: ").append(batch.getPlantId()).append("]");
+        sb.append(" [qty: ").append(batch.getQty()).append("]");
+
+        LocalDate creationDate = batch.getCreationDate();
+        if (creationDate != null) {
+            sb.append(" [data: ").append(creationDate).append("]");
+        }
+
+        String countryCode = firstNotBlank(batch.getManufacturerCountryCode());
+        if (countryCode != null) {
+            sb.append(" [kraj: ").append(countryCode).append("]");
+        }
+
+        String eppoCode = firstNotBlank(batch.getEppoCode());
+        if (eppoCode != null) {
+            sb.append(" [EPPO: ").append(eppoCode).append("]");
+        }
+
+        String zpZone = firstNotBlank(batch.getZpZone());
+        if (zpZone != null) {
+            sb.append(" [ZP: ").append(zpZone).append("]");
+        }
+
+        sb.append(" [status: ").append(batch.getStatus() == null ? PlantBatchStatus.ACTIVE : batch.getStatus()).append("]");
+        return sb.toString();
+    }
+
+    private String firstNotBlank(String... values) {
+        if (values == null) {
+            return null;
+        }
+
+        for (String value : values) {
+            if (value != null) {
+                String normalized = value.trim().replaceAll("\\s+", " ");
+                if (!normalized.isBlank()) {
+                    return normalized;
+                }
+            }
+        }
+
+        return null;
     }
 }
