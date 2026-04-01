@@ -879,11 +879,14 @@ public class SettingsController {
             numberingConfigService.saveConfig(config);
             DialogUtil.showSuccess("Konfiguracja numeratora została zapisana.");
             loadConfig(config.getType());
+            infoLabel.setText("Konfiguracja numeratora została zapisana. Podgląd pokazuje kolejny numer dla bieżącej konfiguracji.");
             refreshAuditLogView();
         } catch (IllegalArgumentException e) {
+            infoLabel.setText(e.getMessage());
             DialogUtil.showWarning("Błędne dane", e.getMessage());
         } catch (Exception e) {
             e.printStackTrace();
+            infoLabel.setText("Nie udało się zapisać konfiguracji numeratora.");
             DialogUtil.showError("Błąd zapisu", "Nie udało się zapisać konfiguracji numeratora.");
         }
     }
@@ -912,15 +915,19 @@ public class SettingsController {
         currentCounterField.setText("0");
         loading = false;
         updatePreview();
+        infoLabel.setText("Przywrócono wartości domyślne w formularzu. Zapisz, aby je utrwalić.");
     }
 
     @FXML
     private void saveIssuerProfile() {
         try {
-            appSettingsService.saveIssuerProfile(buildIssuerProfileFromForm());
+            IssuerProfile profile = validateIssuerProfile(buildIssuerProfileFromForm());
+            appSettingsService.saveIssuerProfile(profile);
             loadIssuerProfile();
             DialogUtil.showSuccess("Dane podmiotu zostały zapisane.");
             refreshAuditLogView();
+        } catch (IllegalArgumentException e) {
+            DialogUtil.showWarning("Błędne dane", e.getMessage());
         } catch (Exception e) {
             e.printStackTrace();
             DialogUtil.showError("Błąd zapisu", "Nie udało się zapisać danych podmiotu.");
@@ -937,6 +944,72 @@ public class SettingsController {
         issuerStreetField.clear();
         issuerPhytosanitaryNumberField.clear();
         issuerStatusLabel.setText("Formularz wyczyszczony. Zapisz, aby usunąć dane z ustawień.");
+    }
+
+
+    private IssuerProfile validateIssuerProfile(IssuerProfile profile) {
+        if (profile == null) {
+            throw new IllegalArgumentException("Dane podmiotu nie mogą być puste.");
+        }
+
+        boolean hasAnyValue = hasText(profile.getNurseryName())
+                || hasText(profile.getCountry())
+                || hasText(profile.getCountryCode())
+                || hasText(profile.getPostalCode())
+                || hasText(profile.getCity())
+                || hasText(profile.getStreet())
+                || hasText(profile.getPhytosanitaryNumber());
+
+        if (!hasAnyValue) {
+            return profile;
+        }
+
+        if (!hasText(profile.getNurseryName())) {
+            throw new IllegalArgumentException("Nazwa podmiotu jest wymagana, jeśli uzupełniasz dane wystawcy.");
+        }
+
+        String country = safe(profile.getCountry());
+        String countryCode = safe(profile.getCountryCode()).toUpperCase(Locale.ROOT);
+
+        if (country.isBlank() && !countryCode.isBlank()) {
+            String detectedCountry = countryDirectoryService.findCountryByCode(countryCode);
+            if (detectedCountry == null || detectedCountry.isBlank()) {
+                throw new IllegalArgumentException("Nie znaleziono kraju dla kodu: " + countryCode + ".");
+            }
+            country = detectedCountry;
+        }
+
+        if (!country.isBlank() && countryCode.isBlank()) {
+            String detectedCode = countryDirectoryService.findCodeByCountry(country);
+            if (detectedCode == null || detectedCode.isBlank()) {
+                throw new IllegalArgumentException("Nie znaleziono kodu kraju dla wartości: " + country + ".");
+            }
+            countryCode = detectedCode;
+        }
+
+        if (!countryCode.isBlank() && !countryCode.matches("[A-Z]{2}")) {
+            throw new IllegalArgumentException("Kod kraju musi składać się z dokładnie 2 liter, np. PL.");
+        }
+
+        if (!country.isBlank() && !countryCode.isBlank()) {
+            String detectedCode = countryDirectoryService.findCodeByCountry(country);
+            if (detectedCode != null && !detectedCode.isBlank() && !countryCode.equalsIgnoreCase(detectedCode)) {
+                throw new IllegalArgumentException("Kraj i kod kraju nie są spójne. Dla kraju " + country + " oczekiwany kod to " + detectedCode + ".");
+            }
+
+            String detectedCountry = countryDirectoryService.findCountryByCode(countryCode);
+            if (detectedCountry != null && !detectedCountry.isBlank() && !country.equalsIgnoreCase(detectedCountry)) {
+                throw new IllegalArgumentException("Kod kraju " + countryCode + " jest przypisany do kraju: " + detectedCountry + ".");
+            }
+        }
+
+        profile.setCountry(country);
+        profile.setCountryCode(countryCode);
+        return profile;
+    }
+
+    private boolean hasText(String value) {
+        return value != null && !value.trim().isBlank();
     }
 
     private void loadIssuerProfile() {
@@ -1003,6 +1076,7 @@ public class SettingsController {
             String backupTimestamp = LocalDateTime.now().format(BACKUP_DATE_TIME_FORMATTER);
             appSettingsService.saveLastBackup(backupPath.toString(), backupTimestamp);
             refreshBackupStatus();
+            refreshAuditLogView();
             DialogUtil.showSuccess("Backup został utworzony:\n" + backupPath);
         } catch (IllegalArgumentException | IllegalStateException e) {
             backupStatusLabel.setText(e.getMessage());
