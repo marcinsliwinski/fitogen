@@ -113,10 +113,11 @@ public class AppContext {
         auditLogService = new AuditLogService(auditLogRepository, appUserService);
         appUserService.setAuditLogService(auditLogService);
         documentTypeService = new DocumentTypeService(documentTypeRepository, auditLogService);
-        eppoCodeService = new EppoCodeService(eppoCodeRepository);
+        eppoCodeService = new EppoCodeService(eppoCodeRepository, auditLogService);
         eppoCodeSpeciesLinkService = new EppoCodeSpeciesLinkService(
                 eppoCodeSpeciesLinkRepository,
-                eppoCodeRepository
+                eppoCodeRepository,
+                auditLogService
         );
         eppoCodePlantLinkService = new EppoCodePlantLinkService(
                 eppoCodePlantLinkRepository,
@@ -124,11 +125,12 @@ public class AppContext {
                 plantRepository,
                 eppoCodeSpeciesLinkService
         );
-        eppoZoneService = new EppoZoneService(eppoZoneRepository);
+        eppoZoneService = new EppoZoneService(eppoZoneRepository, auditLogService);
         eppoCodeZoneLinkService = new EppoCodeZoneLinkService(
                 eppoCodeZoneLinkRepository,
                 eppoCodeRepository,
-                eppoZoneRepository
+                eppoZoneRepository,
+                auditLogService
         );
         eppoAdvisoryService = new EppoAdvisoryService(eppoCodePlantLinkService, eppoCodeZoneLinkService);
 

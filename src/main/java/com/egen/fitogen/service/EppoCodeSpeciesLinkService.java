@@ -8,18 +8,29 @@ import com.egen.fitogen.repository.EppoCodeSpeciesLinkRepository;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class EppoCodeSpeciesLinkService {
 
     private final EppoCodeSpeciesLinkRepository repository;
     private final EppoCodeRepository eppoCodeRepository;
+    private final AuditLogService auditLogService;
 
     public EppoCodeSpeciesLinkService(
             EppoCodeSpeciesLinkRepository repository,
             EppoCodeRepository eppoCodeRepository
     ) {
+        this(repository, eppoCodeRepository, null);
+    }
+
+    public EppoCodeSpeciesLinkService(
+            EppoCodeSpeciesLinkRepository repository,
+            EppoCodeRepository eppoCodeRepository,
+            AuditLogService auditLogService
+    ) {
         this.repository = repository;
         this.eppoCodeRepository = eppoCodeRepository;
+        this.auditLogService = auditLogService;
     }
 
     public List<EppoCodeSpeciesLink> getAll() {
@@ -76,14 +87,22 @@ public class EppoCodeSpeciesLinkService {
         }
 
         repository.save(link);
+        log("UPDATE", eppoCodeId, "Dodano przypisanie gatunku do kodu EPPO " + describeCode(eppoCodeId)
+                + ": " + describeLink(link));
     }
 
     public void replaceSpeciesForCode(int eppoCodeId, List<EppoCodeSpeciesLink> speciesLinks) {
         validateEppoCodeExists(eppoCodeId);
 
+        String before = describeLinkSet(repository.findByEppoCodeId(eppoCodeId));
+
         repository.deleteByEppoCodeId(eppoCodeId);
 
         if (speciesLinks == null || speciesLinks.isEmpty()) {
+            if (!before.equals("[brak przypisań gatunków]")) {
+                log("UPDATE", eppoCodeId, "Zaktualizowano przypisania gatunków dla kodu EPPO "
+                        + describeCode(eppoCodeId) + " z " + before + " na [brak przypisań gatunków]");
+            }
             return;
         }
 
@@ -106,18 +125,38 @@ public class EppoCodeSpeciesLinkService {
                 repository.save(link);
             }
         }
+
+        String after = describeLinkSet(repository.findByEppoCodeId(eppoCodeId));
+        if (!before.equals(after)) {
+            log("UPDATE", eppoCodeId, "Zaktualizowano przypisania gatunków dla kodu EPPO "
+                    + describeCode(eppoCodeId) + " z " + before + " na " + after);
+        }
     }
 
     public void deleteById(int id) {
         if (id <= 0) {
             throw new IllegalArgumentException("Nieprawidłowe przypisanie gatunku EPPO.");
         }
+
+        EppoCodeSpeciesLink existing = repository.findAll().stream()
+                .filter(link -> link.getId() == id)
+                .findFirst()
+                .orElse(null);
         repository.deleteById(id);
+
+        Integer entityId = existing == null ? null : existing.getEppoCodeId();
+        log("DELETE", entityId, "Usunięto przypisanie gatunku EPPO dla kodu " + describeCode(entityId)
+                + ": " + describeLink(existing));
     }
 
     public void deleteAllForCode(int eppoCodeId) {
         validateEppoCodeExists(eppoCodeId);
+        String before = describeLinkSet(repository.findByEppoCodeId(eppoCodeId));
         repository.deleteByEppoCodeId(eppoCodeId);
+        if (!before.equals("[brak przypisań gatunków]")) {
+            log("DELETE", eppoCodeId, "Usunięto wszystkie przypisania gatunków dla kodu EPPO "
+                    + describeCode(eppoCodeId) + ": " + before);
+        }
     }
 
     private void validateSpeciesLink(EppoCodeSpeciesLink link) {
@@ -149,6 +188,60 @@ public class EppoCodeSpeciesLinkService {
         }
     }
 
+    private void log(String actionType, Integer entityId, String description) {
+        if (auditLogService == null) {
+            return;
+        }
+        auditLogService.log("EPPO_SPECIES_LINK", entityId, actionType, description);
+    }
+
+    private String describeCode(Integer eppoCodeId) {
+        if (eppoCodeId == null || eppoCodeId <= 0) {
+            return "[brak kodu EPPO]";
+        }
+
+        EppoCode code = eppoCodeRepository.findById(eppoCodeId);
+        if (code == null) {
+            return "[brak kodu EPPO]";
+        }
+
+        String codeValue = normalizeText(code.getCode());
+        return codeValue == null || codeValue.isBlank() ? "[brak kodu EPPO]" : codeValue;
+    }
+
+    private String describeLink(EppoCodeSpeciesLink link) {
+        if (link == null) {
+            return "[brak przypisania gatunku]";
+        }
+
+        String species = normalizeText(link.getSpeciesName());
+        String latin = normalizeText(link.getLatinSpeciesName());
+        if (species.isBlank() && latin.isBlank()) {
+            return "[brak przypisania gatunku]";
+        }
+        if (species.isBlank()) {
+            return latin;
+        }
+        if (latin.isBlank()) {
+            return species;
+        }
+        return species + " / " + latin;
+    }
+
+    private String describeLinkSet(List<EppoCodeSpeciesLink> links) {
+        if (links == null || links.isEmpty()) {
+            return "[brak przypisań gatunków]";
+        }
+
+        String joined = links.stream()
+                .map(this::normalizeLink)
+                .map(this::describeLink)
+                .distinct()
+                .collect(Collectors.joining(", "));
+
+        return joined.isBlank() ? "[brak przypisań gatunków]" : joined;
+    }
+
     private String signature(String speciesName, String latinSpeciesName) {
         return normalizeText(speciesName) + "||" + normalizeText(latinSpeciesName);
     }
@@ -158,7 +251,7 @@ public class EppoCodeSpeciesLinkService {
             return "";
         }
 
-        String normalized = value.trim().replaceAll("\\s+", " ");
+        String normalized = value.trim().replaceAll("\s+", " ");
         return normalized;
     }
 

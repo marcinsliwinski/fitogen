@@ -8,9 +8,15 @@ import java.util.List;
 public class EppoCodeService {
 
     private final EppoCodeRepository repository;
+    private final AuditLogService auditLogService;
 
     public EppoCodeService(EppoCodeRepository repository) {
+        this(repository, null);
+    }
+
+    public EppoCodeService(EppoCodeRepository repository, AuditLogService auditLogService) {
         this.repository = repository;
+        this.auditLogService = auditLogService;
     }
 
     public List<EppoCode> getAll() {
@@ -32,14 +38,22 @@ public class EppoCodeService {
         validate(eppoCode);
 
         if (eppoCode.getId() > 0) {
+            EppoCode existing = repository.findById(eppoCode.getId());
             repository.update(eppoCode);
-        } else {
-            repository.save(eppoCode);
+            log("UPDATE", eppoCode.getId(), "Zaktualizowano kod EPPO z " + describe(existing) + " na " + describe(eppoCode));
+            return;
         }
+
+        repository.save(eppoCode);
+        EppoCode persisted = repository.findByCode(eppoCode.getCode());
+        Integer entityId = persisted == null ? null : persisted.getId();
+        log("CREATE", entityId, "Dodano kod EPPO: " + describe(persisted == null ? eppoCode : persisted));
     }
 
     public void delete(int id) {
+        EppoCode existing = repository.findById(id);
         repository.deleteById(id);
+        log("DELETE", id, "Usunięto kod EPPO: " + describe(existing));
     }
 
     private void validate(EppoCode eppoCode) {
@@ -90,6 +104,57 @@ public class EppoCodeService {
         eppoCode.setStatus(normalizeStatus(eppoCode.getStatus()));
     }
 
+    private void log(String actionType, Integer entityId, String description) {
+        if (auditLogService == null) {
+            return;
+        }
+        auditLogService.log("EPPO_CODE", entityId, actionType, description);
+    }
+
+    private String describe(EppoCode eppoCode) {
+        if (eppoCode == null) {
+            return "[brak kodu EPPO]";
+        }
+
+        String code = normalizeText(eppoCode.getCode());
+        String species = firstNonBlank(eppoCode.getSpeciesName(), eppoCode.getCommonName());
+        String latin = firstNonBlank(eppoCode.getLatinSpeciesName(), eppoCode.getScientificName());
+        String status = normalizeText(eppoCode.getStatus());
+
+        StringBuilder sb = new StringBuilder();
+        if (code != null && !code.isBlank()) {
+            sb.append(code);
+        }
+        if (species != null && !species.isBlank()) {
+            if (!sb.isEmpty()) {
+                sb.append(" | ");
+            }
+            sb.append(species);
+        }
+        if (latin != null && !latin.isBlank()) {
+            if (!sb.isEmpty()) {
+                sb.append(" | ");
+            }
+            sb.append(latin);
+        }
+        if (status != null && !status.isBlank()) {
+            if (!sb.isEmpty()) {
+                sb.append(" ");
+            }
+            sb.append("[").append(status).append("]");
+        }
+
+        String description = sb.toString().trim();
+        return description.isBlank() ? "[brak kodu EPPO]" : description;
+    }
+
+    private String firstNonBlank(String first, String second) {
+        if (first != null && !first.isBlank()) {
+            return first;
+        }
+        return second;
+    }
+
     private String normalizeCode(String value) {
         String normalized = normalizeText(value);
         return normalized == null ? null : normalized.toUpperCase();
@@ -105,7 +170,7 @@ public class EppoCodeService {
             return null;
         }
 
-        String normalized = value.trim().replaceAll("\\s+", " ");
+        String normalized = value.trim().replaceAll("\s+", " ");
         return normalized.isEmpty() ? "" : normalized;
     }
 }
