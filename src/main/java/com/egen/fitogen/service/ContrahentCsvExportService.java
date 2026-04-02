@@ -47,8 +47,8 @@ public class ContrahentCsvExportService {
 
     private String escape(String value) {
         if (value == null) return "";
-        boolean needsQuotes = value.contains(";") || value.contains(""") || value.contains("\n") || value.contains("\r");
-        String escaped = value.replace(""", """");
-        return needsQuotes ? """ + escaped + """ : escaped;
+        boolean needsQuotes = value.contains(";") || value.contains("") || value.contains("\n") || value.contains("\r");
+        String escaped = value.replace("", "");
+        return needsQuotes ? "" + escaped + "" : escaped;
     }
 }

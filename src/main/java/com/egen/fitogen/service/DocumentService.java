@@ -104,6 +104,11 @@ public class DocumentService {
         documentRepository.update(existing);
     }
 
+    public List<Document> getAllDocuments() {
+        return documentRepository.findAll();
+    }
+
+
     public int getAvailableQtyForBatch(int batchId) {
         PlantBatch batch = requireBatch(batchId);
         int usedQty = itemRepository.sumQtyInActiveDocumentsByPlantBatchId(batchId);
