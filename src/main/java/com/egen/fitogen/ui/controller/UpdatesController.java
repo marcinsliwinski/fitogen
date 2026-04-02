@@ -5,8 +5,11 @@ import com.egen.fitogen.model.AppUser;
 import com.egen.fitogen.service.AppSettingsService;
 import com.egen.fitogen.service.AppUserService;
 import com.egen.fitogen.service.BackupService;
+import com.egen.fitogen.service.ContrahentService;
 import com.egen.fitogen.service.CountryDirectoryService;
 import com.egen.fitogen.service.DocumentTypeService;
+import com.egen.fitogen.service.PlantBatchService;
+import com.egen.fitogen.service.PlantService;
 import com.egen.fitogen.ui.router.ViewManager;
 import com.egen.fitogen.ui.util.CountryDirectory;
 import javafx.fxml.FXML;
@@ -36,6 +39,9 @@ public class UpdatesController {
     @FXML private Label usersStatusLabel;
     @FXML private Label countryDirectoryStatusLabel;
     @FXML private Label plantSettingsStatusLabel;
+    @FXML private Label importReadinessLabel;
+    @FXML private Label importDataScopeLabel;
+    @FXML private Label importRecommendationLabel;
     @FXML private Label moduleReadinessLabel;
     @FXML private Label recommendedActionLabel;
 
@@ -44,6 +50,9 @@ public class UpdatesController {
     private final DocumentTypeService documentTypeService = AppContext.getDocumentTypeService();
     private final AppUserService appUserService = AppContext.getAppUserService();
     private final CountryDirectoryService countryDirectoryService = AppContext.getCountryDirectoryService();
+    private final PlantService plantService = AppContext.getPlantService();
+    private final ContrahentService contrahentService = AppContext.getContrahentService();
+    private final PlantBatchService plantBatchService = AppContext.getPlantBatchService();
 
     @FXML
     public void initialize() {
@@ -60,6 +69,7 @@ public class UpdatesController {
         loadUsersStatus();
         loadCountryDirectoryStatus();
         loadPlantSettingsStatus();
+        loadImportPreparationStatus();
         loadUpdateReadiness();
     }
 
@@ -171,6 +181,39 @@ public class UpdatesController {
         );
     }
 
+    private void loadImportPreparationStatus() {
+        boolean hasBackup = trimmedOrNull(appSettingsService.getLastBackupAt()) != null;
+        boolean issuerComplete = appSettingsService.isIssuerProfileComplete();
+        boolean hasUsers = !appUserService.getAll().isEmpty();
+        boolean hasCountryDirectory = !countryDirectoryService.getEntries().isEmpty();
+
+        int plantsCount = plantService.getAllPlants().size();
+        int contrahentsCount = contrahentService.getAllContrahents().size();
+        int batchesCount = plantBatchService.getAllBatches().size();
+
+        importDataScopeLabel.setText(
+                "Zakres przygotowania pod import: rośliny (" + plantsCount + "), kontrahenci (" + contrahentsCount + "), partie roślin (" + batchesCount + "). "
+                        + "To są obszary o najniższym ryzyku wejścia dla pierwszego etapu importów."
+        );
+
+        int readinessScore = 0;
+        if (hasBackup) {
+            readinessScore++;
+        }
+        if (issuerComplete) {
+            readinessScore++;
+        }
+        if (hasUsers) {
+            readinessScore++;
+        }
+        if (hasCountryDirectory) {
+            readinessScore++;
+        }
+
+        importReadinessLabel.setText(buildImportReadinessSummary(readinessScore, hasBackup, hasCountryDirectory));
+        importRecommendationLabel.setText(buildImportRecommendation(hasBackup, issuerComplete, hasUsers, hasCountryDirectory, plantsCount, contrahentsCount, batchesCount));
+    }
+
     private void loadUpdateReadiness() {
         boolean hasBackup = trimmedOrNull(appSettingsService.getLastBackupAt()) != null;
         boolean issuerComplete = appSettingsService.isIssuerProfileComplete();
@@ -238,6 +281,52 @@ public class UpdatesController {
             return "Zalecane następne działanie: dodaj typy dokumentów w Ustawieniach, aby przygotować system do pełniejszej pracy operacyjnej.";
         }
         return "Zalecane następne działanie: można bezpiecznie przejść do budowy realnego mechanizmu aktualizacji danych referencyjnych i później aplikacji.";
+    }
+
+    private String buildImportReadinessSummary(int readinessScore, boolean hasBackup, boolean hasCountryDirectory) {
+        if (readinessScore >= 4) {
+            return "Gotowość pod import: wysoka. Środowisko ma backup, dane administracyjne i wspólny słownik krajów, więc można projektować pierwszy bezpieczny import rekordów.";
+        }
+        if (readinessScore >= 2) {
+            return "Gotowość pod import: średnia. Da się rozpocząć projektowanie importów, ale przed wdrożeniem zapisu warto domknąć backup i podstawy referencyjne.";
+        }
+        String suffix = !hasBackup
+                ? " Najpierw wykonaj backup."
+                : !hasCountryDirectory
+                  ? " Najpierw upewnij się, że wspólny słownik krajów jest gotowy."
+                  : "";
+        return "Gotowość pod import: niska. Fundament operacyjny nadal wymaga porządków." + suffix;
+    }
+
+    private String buildImportRecommendation(boolean hasBackup,
+                                             boolean issuerComplete,
+                                             boolean hasUsers,
+                                             boolean hasCountryDirectory,
+                                             int plantsCount,
+                                             int contrahentsCount,
+                                             int batchesCount) {
+        if (!hasBackup) {
+            return "Rekomendacja importowa: zanim pojawi się pierwszy importer, wykonaj backup bazy danych.";
+        }
+        if (!hasCountryDirectory) {
+            return "Rekomendacja importowa: uporządkuj wspólny słownik krajów, bo będzie potrzebny przy imporcie kontrahentów i danych referencyjnych.";
+        }
+        if (!hasUsers) {
+            return "Rekomendacja importowa: dodaj użytkownika domyślnego, aby przyszły import mógł być lepiej opisany w Audit Log.";
+        }
+        if (!issuerComplete) {
+            return "Rekomendacja importowa: uzupełnij dane podmiotu, żeby środowisko było kompletne operacyjnie przed szerszym wejściem w automatyzację.";
+        }
+        if (plantsCount == 0) {
+            return "Rekomendacja importowa: pierwszym kandydatem do wdrożenia jest import roślin. Ma najniższe ryzyko zależności i przygotuje bazę pod partie oraz dokumenty.";
+        }
+        if (contrahentsCount == 0) {
+            return "Rekomendacja importowa: pierwszym kandydatem do wdrożenia jest import kontrahentów z walidacją krajów i kodów krajów.";
+        }
+        if (batchesCount == 0) {
+            return "Rekomendacja importowa: kolejnym bezpiecznym krokiem może być import partii roślin po ustabilizowaniu mapowania roślina ↔ kontrahent.";
+        }
+        return "Rekomendacja importowa: środowisko ma już dane bazowe, więc można przejść do zaprojektowania importu CSV z walidacją, preview zmian i bezpiecznym commitowaniem danych.";
     }
 
     private String describeUser(AppUser user) {
