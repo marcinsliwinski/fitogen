@@ -67,6 +67,7 @@ Fito Gen is being developed as a desktop tool for nurseries that need a structur
 - EPPO reference model with codes, species, and zones
 - Audit Log wired through core services and settings
 - operationalized **Updates** and **Help** modules instead of static placeholders
+- first backend foundation for **Plants CSV import preview**
 
 ## Running locally
 

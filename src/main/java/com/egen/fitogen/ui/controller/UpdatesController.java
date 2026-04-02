@@ -9,6 +9,7 @@ import com.egen.fitogen.service.ContrahentService;
 import com.egen.fitogen.service.CountryDirectoryService;
 import com.egen.fitogen.service.DocumentTypeService;
 import com.egen.fitogen.service.PlantBatchService;
+import com.egen.fitogen.service.PlantCsvImportService;
 import com.egen.fitogen.service.PlantService;
 import com.egen.fitogen.ui.router.ViewManager;
 import com.egen.fitogen.ui.util.CountryDirectory;
@@ -42,6 +43,7 @@ public class UpdatesController {
     @FXML private Label importReadinessLabel;
     @FXML private Label importDataScopeLabel;
     @FXML private Label importRecommendationLabel;
+    @FXML private Label plantImportPreviewStatusLabel;
     @FXML private Label moduleReadinessLabel;
     @FXML private Label recommendedActionLabel;
 
@@ -53,6 +55,8 @@ public class UpdatesController {
     private final PlantService plantService = AppContext.getPlantService();
     private final ContrahentService contrahentService = AppContext.getContrahentService();
     private final PlantBatchService plantBatchService = AppContext.getPlantBatchService();
+    private final PlantCsvImportService plantCsvImportService =
+            new PlantCsvImportService(plantService, appSettingsService);
 
     @FXML
     public void initialize() {
@@ -212,6 +216,10 @@ public class UpdatesController {
 
         importReadinessLabel.setText(buildImportReadinessSummary(readinessScore, hasBackup, hasCountryDirectory));
         importRecommendationLabel.setText(buildImportRecommendation(hasBackup, issuerComplete, hasUsers, hasCountryDirectory, plantsCount, contrahentsCount, batchesCount));
+        plantImportPreviewStatusLabel.setText(
+                "Fundament importu CSV dla Plants jest przygotowany po stronie backendu w trybie preview-only. "
+                        + plantCsvImportService.getSupportedColumnsSummary()
+        );
     }
 
     private void loadUpdateReadiness() {

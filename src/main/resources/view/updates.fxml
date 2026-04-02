@@ -21,7 +21,7 @@
 
             <VBox spacing="4">
                 <Label text="Aktualizacje" styleClass="page-title"/>
-                <Label text="Widok gotowości operacyjnej pod przyszłą aktualizację danych, aplikacji i pierwszego bezpiecznego etapu importów." styleClass="page-subtitle" wrapText="true"/>
+                <Label text="Widok gotowości operacyjnej pod przyszłą aktualizację danych, aplikacji i pierwszy bezpieczny etap importów." styleClass="page-subtitle" wrapText="true"/>
             </VBox>
 
             <VBox styleClass="content-card" spacing="12">
@@ -70,11 +70,12 @@
                 <Label fx:id="importReadinessLabel" wrapText="true"/>
                 <Label fx:id="importDataScopeLabel" wrapText="true"/>
                 <Label fx:id="importRecommendationLabel" wrapText="true"/>
+                <Label fx:id="plantImportPreviewStatusLabel" wrapText="true"/>
             </VBox>
 
             <VBox styleClass="content-card" spacing="12">
                 <Label text="Dalsze kroki" styleClass="section-title" style="-fx-font-size: 18px;"/>
-                <Label text="Ten moduł nie wykonuje jeszcze automatycznej aktualizacji ani importów, ale pokazuje, czy środowisko jest gotowe do ich bezpiecznego wdrożenia w kolejnych etapach." wrapText="true"/>
+                <Label text="Ten moduł nie wykonuje jeszcze automatycznej aktualizacji ani zapisu importów, ale pokazuje, czy środowisko jest gotowe do ich bezpiecznego wdrożenia w kolejnych etapach." wrapText="true"/>
                 <HBox spacing="10">
                     <Button text="Ustawienia" onAction="#openSettings" styleClass="button-secondary"/>
                     <Button text="Pomoc" onAction="#openHelp" styleClass="button-secondary"/>
