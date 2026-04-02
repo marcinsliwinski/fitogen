@@ -12,13 +12,10 @@ import java.nio.file.Path;
 import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 public class ContrahentCsvImportService {
-
     private static final String STATUS_NEW = "NEW";
     private static final String STATUS_MATCHING_EXISTING = "MATCHING_EXISTING";
     private static final String STATUS_DUPLICATE_IN_FILE = "DUPLICATE_IN_FILE";
@@ -27,8 +24,7 @@ public class ContrahentCsvImportService {
     private final ContrahentService contrahentService;
     private final CountryDirectoryService countryDirectoryService;
 
-    public ContrahentCsvImportService(ContrahentService contrahentService,
-                                      CountryDirectoryService countryDirectoryService) {
+    public ContrahentCsvImportService(ContrahentService contrahentService, CountryDirectoryService countryDirectoryService) {
         this.contrahentService = contrahentService;
         this.countryDirectoryService = countryDirectoryService;
     }
@@ -43,338 +39,116 @@ public class ContrahentCsvImportService {
 
     public ContrahentImportPreviewResult preview(Reader reader, String sourceName) {
         List<String> lines = new BufferedReader(reader).lines().toList();
-        if (lines.isEmpty()) {
-            return new ContrahentImportPreviewResult(sourceName, ';', List.of(), List.of(), 0, 0, 0, 0);
-        }
+        if (lines.isEmpty()) return new ContrahentImportPreviewResult(sourceName, ';', List.of(), List.of(), 0, 0, 0, 0);
 
         String headerLine = firstNonBlank(lines);
-        if (headerLine == null) {
-            return new ContrahentImportPreviewResult(sourceName, ';', List.of(), List.of(), 0, 0, 0, 0);
-        }
+        if (headerLine == null) return new ContrahentImportPreviewResult(sourceName, ';', List.of(), List.of(), 0, 0, 0, 0);
 
         char delimiter = resolveDelimiter(headerLine);
-        List<String> headerCells = parseCsvLine(headerLine, delimiter);
-        HeaderMapping mapping = buildHeaderMapping(headerCells);
+        List<String> headers = parseCsvLine(headerLine, delimiter);
 
-        if (mapping.nameIndex < 0) {
-            throw new IllegalArgumentException("Plik CSV dla kontrahentów musi zawierać kolumnę name / nazwa.");
-        }
+        int nameIndex = indexOf(headers, "name", "nazwa");
+        int countryIndex = indexOf(headers, "country", "kraj");
+        int codeIndex = indexOf(headers, "countrycode", "kodkraju");
+        int cityIndex = indexOf(headers, "city", "miasto");
+        int postalIndex = indexOf(headers, "postalcode", "kodpocztowy");
+        int phytoIndex = indexOf(headers, "phytosanitarynumber", "nrfitosanitarny", "numerfitosanitarny");
+        int supplierIndex = indexOf(headers, "supplier", "dostawca");
+        int clientIndex = indexOf(headers, "client", "odbiorca");
 
-        Set<String> existingKeys = loadExistingKeys();
-        Set<String> fileKeys = new HashSet<>();
+        if (nameIndex < 0) throw new IllegalArgumentException("Plik CSV dla kontrahentów musi zawierać kolumnę name / nazwa.");
+
+        Set<String> existing = new HashSet<>();
+        for (Contrahent c : contrahentService.getAllContrahents()) existing.add(key(c.getName(), c.getCountryCode()));
+        Set<String> inFile = new HashSet<>();
         List<ContrahentImportPreviewRow> rows = new ArrayList<>();
-        int newRowsCount = 0;
-        int matchingExistingCount = 0;
-        int duplicateInFileCount = 0;
-        int invalidRowsCount = 0;
-        boolean headerConsumed = false;
-        int physicalRowNumber = 0;
-
+        int newCount=0, existCount=0, dupCount=0, invalidCount=0;
+        boolean skipped=false; int rowNo=0;
         for (String line : lines) {
-            physicalRowNumber++;
-            if (!headerConsumed && line.equals(headerLine)) {
-                headerConsumed = true;
-                continue;
-            }
-            if (line == null || line.isBlank()) {
-                continue;
-            }
-
+            rowNo++;
+            if (!skipped && line.equals(headerLine)) { skipped = true; continue; }
+            if (line == null || line.isBlank()) continue;
             List<String> cells = parseCsvLine(line, delimiter);
-            Candidate candidate = mapCandidate(cells, mapping);
-            if (candidate.isCompletelyEmpty()) {
-                continue;
+            String name = valueAt(cells, nameIndex);
+            String country = valueAt(cells, countryIndex);
+            String code = valueAt(cells, codeIndex);
+            String city = valueAt(cells, cityIndex);
+            String postal = valueAt(cells, postalIndex);
+            String phyto = valueAt(cells, phytoIndex);
+            boolean supplier = parseBool(valueAt(cells, supplierIndex));
+            boolean client = parseBool(valueAt(cells, clientIndex));
+
+            if (!country.isBlank() && code.isBlank()) {
+                String found = countryDirectoryService.findCodeByCountry(country);
+                if (found != null) code = found;
+            }
+            if (country.isBlank() && !code.isBlank()) {
+                String found = countryDirectoryService.findCountryByCode(code);
+                if (found != null) country = found;
             }
 
-            List<String> issues = new ArrayList<>();
-            if (candidate.name == null || candidate.name.isBlank()) {
-                issues.add("Brak wymaganej nazwy kontrahenta.");
-            }
-
-            if ((candidate.country == null || candidate.country.isBlank())
-                    && (candidate.countryCode == null || candidate.countryCode.isBlank())) {
-                issues.add("Brak kraju lub kodu kraju.");
-            } else {
-                if ((candidate.country == null || candidate.country.isBlank()) && candidate.countryCode != null && !candidate.countryCode.isBlank()) {
-                    String resolvedCountry = countryDirectoryService.findCountryByCode(candidate.countryCode);
-                    if (resolvedCountry != null) {
-                        candidate.country = resolvedCountry;
-                    }
-                }
-                if ((candidate.countryCode == null || candidate.countryCode.isBlank()) && candidate.country != null && !candidate.country.isBlank()) {
-                    String resolvedCode = countryDirectoryService.findCodeByCountry(candidate.country);
-                    if (resolvedCode != null) {
-                        candidate.countryCode = resolvedCode;
-                    }
-                }
-
-                if (candidate.countryCode != null && !candidate.countryCode.isBlank() && candidate.countryCode.trim().length() != 2) {
-                    issues.add("Kod kraju musi mieć 2 litery.");
-                }
-
-                if (candidate.country != null && !candidate.country.isBlank()
-                        && candidate.countryCode != null && !candidate.countryCode.isBlank()) {
-                    String expectedCode = countryDirectoryService.findCodeByCountry(candidate.country);
-                    String expectedCountry = countryDirectoryService.findCountryByCode(candidate.countryCode);
-                    if (expectedCode != null && !expectedCode.equalsIgnoreCase(candidate.countryCode.trim())) {
-                        issues.add("Kod kraju nie zgadza się ze wspólnym słownikiem krajów.");
-                    }
-                    if (expectedCountry != null && !expectedCountry.equalsIgnoreCase(candidate.country.trim())) {
-                        issues.add("Kraj nie zgadza się ze wspólnym słownikiem krajów.");
-                    }
-                }
-            }
-
-            String key = buildKey(candidate.name, candidate.countryCode, candidate.city);
+            String message = "";
             String status;
-            if (!issues.isEmpty()) {
-                status = STATUS_INVALID;
-                invalidRowsCount++;
-            } else if (fileKeys.contains(key)) {
-                status = STATUS_DUPLICATE_IN_FILE;
-                duplicateInFileCount++;
-                issues.add("Duplikat w pliku importu.");
-            } else if (existingKeys.contains(key)) {
-                status = STATUS_MATCHING_EXISTING;
-                matchingExistingCount++;
-                issues.add("Rekord już istnieje w bazie.");
-                fileKeys.add(key);
+            if (name.isBlank()) {
+                status = STATUS_INVALID; invalidCount++; message = "Brak nazwy.";
             } else {
-                status = STATUS_NEW;
-                newRowsCount++;
-                fileKeys.add(key);
+                String resolvedCode = country.isBlank() ? null : countryDirectoryService.findCodeByCountry(country);
+                if (resolvedCode != null && !code.isBlank() && !resolvedCode.equalsIgnoreCase(code)) {
+                    status = STATUS_INVALID; invalidCount++; message = "Niespójny kraj i kod kraju.";
+                } else {
+                    String k = key(name, code);
+                    if (inFile.contains(k)) {
+                        status = STATUS_DUPLICATE_IN_FILE; dupCount++; message = "Duplikat w pliku importu.";
+                    } else if (existing.contains(k)) {
+                        status = STATUS_MATCHING_EXISTING; existCount++; inFile.add(k); message = "Rekord już istnieje w bazie.";
+                    } else {
+                        status = STATUS_NEW; newCount++; inFile.add(k);
+                    }
+                }
             }
 
-            rows.add(new ContrahentImportPreviewRow(
-                    physicalRowNumber,
-                    candidate.name,
-                    candidate.country,
-                    upperOrEmpty(candidate.countryCode),
-                    candidate.city,
-                    candidate.postalCode,
-                    candidate.phytosanitaryNumber,
-                    candidate.supplier,
-                    candidate.client,
-                    status,
-                    String.join(" ", issues)
-            ));
+            rows.add(new ContrahentImportPreviewRow(rowNo, name, country, code, city, postal, phyto, supplier, client, status, message));
         }
-
-        return new ContrahentImportPreviewResult(
-                sourceName,
-                delimiter,
-                mapping.resolvedHeaders,
-                rows,
-                newRowsCount,
-                matchingExistingCount,
-                duplicateInFileCount,
-                invalidRowsCount
-        );
+        return new ContrahentImportPreviewResult(sourceName, delimiter, headers, rows, newCount, existCount, dupCount, invalidCount);
     }
 
     public String getSupportedColumnsSummary() {
-        return "Obsługiwane kolumny CSV: name/nazwa, country/kraj, countryCode/kodKraju, city/miasto, postalCode, street, "
-                + "phytosanitaryNumber, supplier/dostawca, client/odbiorca.";
+        return "Obsługiwane kolumny CSV: name/nazwa, country/kraj, countryCode/kodKraju, city/miasto, postalCode, phytosanitaryNumber, supplier/dostawca, client/odbiorca.";
     }
 
-    private Candidate mapCandidate(List<String> cells, HeaderMapping mapping) {
-        Candidate candidate = new Candidate();
-        candidate.name = valueAt(cells, mapping.nameIndex);
-        candidate.country = valueAt(cells, mapping.countryIndex);
-        candidate.countryCode = upperOrEmpty(valueAt(cells, mapping.countryCodeIndex));
-        candidate.city = valueAt(cells, mapping.cityIndex);
-        candidate.postalCode = valueAt(cells, mapping.postalCodeIndex);
-        candidate.street = valueAt(cells, mapping.streetIndex);
-        candidate.phytosanitaryNumber = valueAt(cells, mapping.phytosanitaryNumberIndex);
-        candidate.supplier = parseBoolean(valueAt(cells, mapping.supplierIndex));
-        candidate.client = parseBoolean(valueAt(cells, mapping.clientIndex));
-        return candidate;
-    }
-
-    private HeaderMapping buildHeaderMapping(List<String> headerCells) {
-        HeaderMapping mapping = new HeaderMapping();
-        for (int i = 0; i < headerCells.size(); i++) {
-            String normalized = normalizeHeader(headerCells.get(i));
-            if (matches(normalized, "name", "nazwa", "contrahentname")) {
-                mapping.nameIndex = i;
-                mapping.resolvedHeaders.add(headerCells.get(i));
-            } else if (matches(normalized, "country", "kraj")) {
-                mapping.countryIndex = i;
-                mapping.resolvedHeaders.add(headerCells.get(i));
-            } else if (matches(normalized, "countrycode", "kodkraju", "code")) {
-                mapping.countryCodeIndex = i;
-                mapping.resolvedHeaders.add(headerCells.get(i));
-            } else if (matches(normalized, "city", "miasto")) {
-                mapping.cityIndex = i;
-                mapping.resolvedHeaders.add(headerCells.get(i));
-            } else if (matches(normalized, "postalcode", "kodpocztowy")) {
-                mapping.postalCodeIndex = i;
-                mapping.resolvedHeaders.add(headerCells.get(i));
-            } else if (matches(normalized, "street", "ulica", "adres")) {
-                mapping.streetIndex = i;
-                mapping.resolvedHeaders.add(headerCells.get(i));
-            } else if (matches(normalized, "phytosanitarynumber", "fitosanitarny", "numerfitosanitarny")) {
-                mapping.phytosanitaryNumberIndex = i;
-                mapping.resolvedHeaders.add(headerCells.get(i));
-            } else if (matches(normalized, "supplier", "dostawca")) {
-                mapping.supplierIndex = i;
-                mapping.resolvedHeaders.add(headerCells.get(i));
-            } else if (matches(normalized, "client", "odbiorca", "klient")) {
-                mapping.clientIndex = i;
-                mapping.resolvedHeaders.add(headerCells.get(i));
-            }
+    private int indexOf(List<String> headers, String... aliases) {
+        for (int i=0;i<headers.size();i++) {
+            String norm = norm(headers.get(i));
+            for (String a : aliases) if (norm(a).equals(norm)) return i;
         }
-        return mapping;
+        return -1;
     }
-
-    private Set<String> loadExistingKeys() {
-        Set<String> keys = new HashSet<>();
-        for (Contrahent contrahent : contrahentService.getAllContrahents()) {
-            keys.add(buildKey(contrahent.getName(), contrahent.getCountryCode(), contrahent.getCity()));
-        }
-        return keys;
-    }
-
-    private String buildKey(String name, String countryCode, String city) {
-        return normalizeValue(name) + "|" + normalizeValue(countryCode) + "|" + normalizeValue(city);
-    }
-
-    private boolean parseBoolean(String value) {
-        String normalized = normalizeHeader(value);
-        return normalized.equals("true") || normalized.equals("tak") || normalized.equals("yes") || normalized.equals("1");
-    }
-
-    private String firstNonBlank(List<String> lines) {
-        for (String line : lines) {
-            if (line != null && !line.isBlank()) {
-                return line;
-            }
-        }
-        return null;
-    }
-
-    private String valueAt(List<String> cells, int index) {
-        if (index < 0 || index >= cells.size()) {
-            return "";
-        }
-        return cells.get(index) == null ? "" : cells.get(index).trim();
-    }
-
-    private String upperOrEmpty(String value) {
-        return value == null ? "" : value.trim().toUpperCase();
-    }
-
-    private String normalizeValue(String value) {
-        return value == null ? "" : value.trim().toLowerCase();
-    }
-
-    private boolean matches(String normalized, String... options) {
-        for (String option : options) {
-            if (normalizeHeader(option).equals(normalized)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private String normalizeHeader(String value) {
-        if (value == null) {
-            return "";
-        }
-        String normalized = Normalizer.normalize(value, Normalizer.Form.NFD)
-                .replaceAll("\\p{M}", "");
+    private String firstNonBlank(List<String> lines) { for (String l: lines) if (l != null && !l.isBlank()) return l; return null; }
+    private String valueAt(List<String> cells, int index) { return index < 0 || index >= cells.size() || cells.get(index) == null ? "" : cells.get(index).trim(); }
+    private boolean parseBool(String raw) { String n = norm(raw); return n.equals("true") || n.equals("tak") || n.equals("yes") || n.equals("1"); }
+    private String key(String name, String code) { return low(name)+"|"+low(code); }
+    private String low(String value) { return value == null ? "" : value.trim().toLowerCase(); }
+    private String norm(String value) {
+        if (value == null) return "";
+        String normalized = Normalizer.normalize(value, Normalizer.Form.NFD).replaceAll("\\p{M}", "");
         return normalized.replaceAll("[^A-Za-z0-9]", "").toLowerCase();
     }
-
-    private char resolveDelimiter(String headerLine) {
-        Map<Character, Integer> counts = new LinkedHashMap<>();
-        counts.put(';', countChar(headerLine, ';'));
-        counts.put(',', countChar(headerLine, ','));
-        counts.put('\t', countChar(headerLine, '\t'));
-
-        char best = ';';
-        int bestCount = -1;
-        for (Map.Entry<Character, Integer> entry : counts.entrySet()) {
-            if (entry.getValue() > bestCount) {
-                best = entry.getKey();
-                bestCount = entry.getValue();
-            }
-        }
-        return best;
-    }
-
-    private int countChar(String value, char c) {
-        int count = 0;
-        for (int i = 0; i < value.length(); i++) {
-            if (value.charAt(i) == c) {
-                count++;
-            }
-        }
-        return count;
-    }
-
+    private char resolveDelimiter(String line) { int s=count(line,';'), c=count(line,','), t=count(line,'\t'); if (t>=s && t>=c) return '\t'; if (c>s) return ','; return ';'; }
+    private int count(String value, char c) { int n=0; for (int i=0;i<value.length();i++) if (value.charAt(i)==c) n++; return n; }
     private List<String> parseCsvLine(String line, char delimiter) {
-        List<String> values = new ArrayList<>();
+        List<String> vals = new ArrayList<>();
         StringBuilder current = new StringBuilder();
         boolean inQuotes = false;
-
-        for (int i = 0; i < line.length(); i++) {
-            char currentChar = line.charAt(i);
-
-            if (currentChar == '"') {
-                if (inQuotes && i + 1 < line.length() && line.charAt(i + 1) == '"') {
-                    current.append('"');
-                    i++;
-                } else {
-                    inQuotes = !inQuotes;
-                }
-                continue;
-            }
-
-            if (currentChar == delimiter && !inQuotes) {
-                values.add(current.toString());
-                current.setLength(0);
-                continue;
-            }
-
-            current.append(currentChar);
+        for (int i=0;i<line.length();i++) {
+            char ch = line.charAt(i);
+            if (ch == '"') {
+                if (inQuotes && i+1<line.length() && line.charAt(i+1)=='"') { current.append('"'); i++; }
+                else inQuotes = !inQuotes;
+            } else if (ch == delimiter && !inQuotes) {
+                vals.add(current.toString()); current.setLength(0);
+            } else current.append(ch);
         }
-
-        values.add(current.toString());
-        return values;
-    }
-
-    private static class HeaderMapping {
-        private int nameIndex = -1;
-        private int countryIndex = -1;
-        private int countryCodeIndex = -1;
-        private int cityIndex = -1;
-        private int postalCodeIndex = -1;
-        private int streetIndex = -1;
-        private int phytosanitaryNumberIndex = -1;
-        private int supplierIndex = -1;
-        private int clientIndex = -1;
-        private final List<String> resolvedHeaders = new ArrayList<>();
-    }
-
-    private static class Candidate {
-        private String name;
-        private String country;
-        private String countryCode;
-        private String city;
-        private String postalCode;
-        private String street;
-        private String phytosanitaryNumber;
-        private boolean supplier;
-        private boolean client;
-
-        private boolean isCompletelyEmpty() {
-            return blank(name) && blank(country) && blank(countryCode) && blank(city)
-                    && blank(postalCode) && blank(street) && blank(phytosanitaryNumber);
-        }
-
-        private boolean blank(String value) {
-            return value == null || value.isBlank();
-        }
+        vals.add(current.toString());
+        return vals;
     }
 }

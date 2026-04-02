@@ -269,10 +269,4 @@ public class DocumentService {
         }
         return "ID " + batch.getId();
     }
-
-
-public java.util.List<com.egen.fitogen.model.Document> getAllDocuments() {
-    return documentRepository.findAll();
-}
-
 }

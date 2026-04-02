@@ -11,14 +11,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.text.Normalizer;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 public class PlantCsvImportService {
-
     private static final String STATUS_NEW = "NEW";
     private static final String STATUS_MATCHING_EXISTING = "MATCHING_EXISTING";
     private static final String STATUS_DUPLICATE_IN_FILE = "DUPLICATE_IN_FILE";
@@ -42,342 +39,120 @@ public class PlantCsvImportService {
 
     public PlantImportPreviewResult preview(Reader reader, String sourceName) {
         List<String> lines = new BufferedReader(reader).lines().toList();
-        if (lines.isEmpty()) {
-            return new PlantImportPreviewResult(sourceName, ';', List.of(), List.of(), 0, 0, 0, 0);
-        }
+        if (lines.isEmpty()) return new PlantImportPreviewResult(sourceName, ';', List.of(), List.of(), 0, 0, 0, 0);
 
         String headerLine = firstNonBlank(lines);
-        if (headerLine == null) {
-            return new PlantImportPreviewResult(sourceName, ';', List.of(), List.of(), 0, 0, 0, 0);
-        }
+        if (headerLine == null) return new PlantImportPreviewResult(sourceName, ';', List.of(), List.of(), 0, 0, 0, 0);
 
         char delimiter = resolveDelimiter(headerLine);
-        List<String> headerCells = parseCsvLine(headerLine, delimiter);
-        HeaderMapping mapping = buildHeaderMapping(headerCells);
+        List<String> headers = parseCsvLine(headerLine, delimiter);
 
-        if (mapping.speciesIndex < 0) {
-            throw new IllegalArgumentException(
-                    "Plik CSV dla roślin musi zawierać kolumnę species / gatunek."
-            );
-        }
+        int speciesIndex = indexOf(headers, "species", "gatunek");
+        int varietyIndex = indexOf(headers, "variety", "odmiana");
+        int rootstockIndex = indexOf(headers, "rootstock", "podkladka", "podkładka");
+        int latinIndex = indexOf(headers, "latinspeciesname", "nazwalacinska");
+        int eppoIndex = indexOf(headers, "eppocode", "kodeppo", "eppo");
+        int passportIndex = indexOf(headers, "passportrequired", "paszport");
+        int visibilityIndex = indexOf(headers, "visibilitystatus", "statuswidocznosci");
+        if (speciesIndex < 0) throw new IllegalArgumentException("Plik CSV dla roślin musi zawierać kolumnę species / gatunek.");
 
-        Set<String> existingKeys = loadExistingKeys();
-        Set<String> fileKeys = new HashSet<>();
-
-        List<PlantImportPreviewRow> previewRows = new ArrayList<>();
-        int newRowsCount = 0;
-        int matchingExistingCount = 0;
-        int duplicateInFileCount = 0;
-        int invalidRowsCount = 0;
-
-        boolean headerConsumed = false;
-        int physicalRowNumber = 0;
-
+        Set<String> existing = new HashSet<>();
+        for (Plant p : plantService.getAllPlants()) existing.add(key(p.getSpecies(), p.getVariety(), p.getRootstock()));
+        Set<String> inFile = new HashSet<>();
+        List<PlantImportPreviewRow> rows = new ArrayList<>();
+        int newCount=0, existCount=0, dupCount=0, invalidCount=0;
+        boolean skipped=false; int rowNo=0;
         for (String line : lines) {
-            physicalRowNumber++;
-
-            if (!headerConsumed && line.equals(headerLine)) {
-                headerConsumed = true;
-                continue;
-            }
-
-            if (line == null || line.isBlank()) {
-                continue;
-            }
-
+            rowNo++;
+            if (!skipped && line.equals(headerLine)) { skipped = true; continue; }
+            if (line == null || line.isBlank()) continue;
             List<String> cells = parseCsvLine(line, delimiter);
-            PlantCandidate candidate = mapCandidate(cells, mapping);
+            String species = valueAt(cells, speciesIndex);
+            String variety = valueAt(cells, varietyIndex);
+            String rootstock = valueAt(cells, rootstockIndex);
+            String latin = valueAt(cells, latinIndex);
+            String eppo = valueAt(cells, eppoIndex);
+            boolean passport = parseBool(valueAt(cells, passportIndex), appSettingsService.isPlantPassportRequiredForAll());
+            String visibility = normalizeVisibility(valueAt(cells, visibilityIndex));
 
-            if (candidate.isCompletelyEmpty()) {
-                continue;
-            }
-
-            List<String> issues = new ArrayList<>();
-            if (candidate.species == null || candidate.species.isBlank()) {
-                issues.add("Brak wymaganego gatunku.");
-            }
-            if (!isValidVisibility(candidate.visibilityStatus)) {
-                issues.add("Nieprawidłowy status widoczności. Dozwolone: Używany / Nieużywany.");
-            }
-
-            String plantKey = buildPlantKey(candidate.species, candidate.variety, candidate.rootstock);
+            String message = "";
             String status;
-            if (!issues.isEmpty()) {
-                status = STATUS_INVALID;
-                invalidRowsCount++;
-            } else if (fileKeys.contains(plantKey)) {
-                status = STATUS_DUPLICATE_IN_FILE;
-                duplicateInFileCount++;
-                issues.add("Duplikat w pliku importu.");
-            } else if (existingKeys.contains(plantKey)) {
-                status = STATUS_MATCHING_EXISTING;
-                matchingExistingCount++;
-                issues.add("Rekord już istnieje w bazie.");
-                fileKeys.add(plantKey);
+            if (species.isBlank() || !isValidVisibility(visibility)) {
+                status = STATUS_INVALID; invalidCount++;
+                if (species.isBlank()) message += "Brak wymaganego gatunku. ";
+                if (!isValidVisibility(visibility)) message += "Nieprawidłowy status widoczności.";
             } else {
-                status = STATUS_NEW;
-                newRowsCount++;
-                fileKeys.add(plantKey);
+                String k = key(species, variety, rootstock);
+                if (inFile.contains(k)) {
+                    status = STATUS_DUPLICATE_IN_FILE; dupCount++; message = "Duplikat w pliku importu.";
+                } else if (existing.contains(k)) {
+                    status = STATUS_MATCHING_EXISTING; existCount++; inFile.add(k); message = "Rekord już istnieje w bazie.";
+                } else {
+                    status = STATUS_NEW; newCount++; inFile.add(k);
+                }
             }
-
-            previewRows.add(new PlantImportPreviewRow(
-                    physicalRowNumber,
-                    candidate.species,
-                    candidate.variety,
-                    candidate.rootstock,
-                    candidate.latinSpeciesName,
-                    candidate.eppoCode,
-                    candidate.passportRequired,
-                    candidate.visibilityStatus,
-                    status,
-                    String.join(" ", issues)
-            ));
+            rows.add(new PlantImportPreviewRow(rowNo, species, variety, rootstock, latin, eppo, passport, visibility, status, message.trim()));
         }
-
-        return new PlantImportPreviewResult(
-                sourceName,
-                delimiter,
-                mapping.resolvedHeaders,
-                previewRows,
-                newRowsCount,
-                matchingExistingCount,
-                duplicateInFileCount,
-                invalidRowsCount
-        );
+        return new PlantImportPreviewResult(sourceName, delimiter, headers, rows, newCount, existCount, dupCount, invalidCount);
     }
 
     public String getSupportedColumnsSummary() {
-        return "Obsługiwane kolumny CSV: species/gatunek, variety/odmiana, rootstock/podkladka, "
-                + "latinSpeciesName/nazwaLacinska, eppoCode, passportRequired, visibilityStatus.";
+        return "Obsługiwane kolumny CSV: species/gatunek, variety/odmiana, rootstock/podkladka, latinSpeciesName/nazwaLacinska, eppoCode, passportRequired, visibilityStatus.";
     }
 
-    private HeaderMapping buildHeaderMapping(List<String> headerCells) {
-        HeaderMapping mapping = new HeaderMapping();
-        for (int i = 0; i < headerCells.size(); i++) {
-            String normalized = normalizeHeader(headerCells.get(i));
-            if (matches(normalized, "species", "gatunek")) {
-                mapping.speciesIndex = i;
-                mapping.resolvedHeaders.add(headerCells.get(i));
-            } else if (matches(normalized, "variety", "odmiana")) {
-                mapping.varietyIndex = i;
-                mapping.resolvedHeaders.add(headerCells.get(i));
-            } else if (matches(normalized, "rootstock", "podkladka", "podkładka")) {
-                mapping.rootstockIndex = i;
-                mapping.resolvedHeaders.add(headerCells.get(i));
-            } else if (matches(normalized, "latinspeciesname", "latinspecies", "latin", "nazwalacinska")) {
-                mapping.latinSpeciesNameIndex = i;
-                mapping.resolvedHeaders.add(headerCells.get(i));
-            } else if (matches(normalized, "eppocode", "eppo", "kodeppo")) {
-                mapping.eppoCodeIndex = i;
-                mapping.resolvedHeaders.add(headerCells.get(i));
-            } else if (matches(normalized, "passportrequired", "passport", "paszport")) {
-                mapping.passportRequiredIndex = i;
-                mapping.resolvedHeaders.add(headerCells.get(i));
-            } else if (matches(normalized, "visibilitystatus", "visibility", "statuswidocznosci")) {
-                mapping.visibilityStatusIndex = i;
-                mapping.resolvedHeaders.add(headerCells.get(i));
-            }
+    private int indexOf(List<String> headers, String... aliases) {
+        for (int i=0;i<headers.size();i++) {
+            String norm = norm(headers.get(i));
+            for (String alias : aliases) if (norm(alias).equals(norm)) return i;
         }
-        return mapping;
+        return -1;
     }
 
-    private PlantCandidate mapCandidate(List<String> cells, HeaderMapping mapping) {
-        PlantCandidate candidate = new PlantCandidate();
-        candidate.species = valueAt(cells, mapping.speciesIndex);
-        candidate.variety = valueAt(cells, mapping.varietyIndex);
-        candidate.rootstock = valueAt(cells, mapping.rootstockIndex);
-        candidate.latinSpeciesName = valueAt(cells, mapping.latinSpeciesNameIndex);
-        candidate.eppoCode = valueAt(cells, mapping.eppoCodeIndex);
-
-        String passportRaw = valueAt(cells, mapping.passportRequiredIndex);
-        candidate.passportRequired = parsePassportRequired(passportRaw);
-
-        String visibilityRaw = valueAt(cells, mapping.visibilityStatusIndex);
-        candidate.visibilityStatus = normalizeVisibility(visibilityRaw);
-
-        return candidate;
+    private String firstNonBlank(List<String> lines) { for (String l: lines) if (l != null && !l.isBlank()) return l; return null; }
+    private String valueAt(List<String> cells, int index) { return index < 0 || index >= cells.size() || cells.get(index) == null ? "" : cells.get(index).trim(); }
+    private String key(String species, String variety, String rootstock) { return low(species)+"|"+low(variety)+"|"+low(rootstock); }
+    private String low(String value) { return value == null ? "" : value.trim().toLowerCase(); }
+    private boolean parseBool(String raw, boolean fallback) {
+        if (raw == null || raw.isBlank()) return fallback;
+        String n = norm(raw);
+        return n.equals("true") || n.equals("tak") || n.equals("yes") || n.equals("1");
     }
-
-    private boolean parsePassportRequired(String rawValue) {
-        if (rawValue == null || rawValue.isBlank()) {
-            return appSettingsService.isPlantPassportRequiredForAll();
-        }
-
-        String normalized = normalizeHeader(rawValue);
-        return normalized.equals("true")
-                || normalized.equals("tak")
-                || normalized.equals("yes")
-                || normalized.equals("1");
+    private String normalizeVisibility(String raw) {
+        if (raw == null || raw.isBlank()) return "Używany";
+        String n = norm(raw);
+        if (n.equals("uzywany") || n.equals("used") || n.equals("active")) return "Używany";
+        if (n.equals("nieuzywany") || n.equals("unused") || n.equals("inactive")) return "Nieużywany";
+        return raw.trim();
     }
-
-    private String normalizeVisibility(String rawValue) {
-        if (rawValue == null || rawValue.isBlank()) {
-            return "Używany";
-        }
-
-        String normalized = normalizeHeader(rawValue);
-        if (normalized.equals("uzywany") || normalized.equals("used") || normalized.equals("active")) {
-            return "Używany";
-        }
-        if (normalized.equals("nieuzywany") || normalized.equals("unused") || normalized.equals("inactive")) {
-            return "Nieużywany";
-        }
-        return rawValue.trim();
-    }
-
-    private boolean isValidVisibility(String value) {
-        return "Używany".equals(value) || "Nieużywany".equals(value);
-    }
-
-    private Set<String> loadExistingKeys() {
-        Set<String> keys = new HashSet<>();
-        for (Plant plant : plantService.getAllPlants()) {
-            String key = buildPlantKey(plant.getSpecies(), plant.getVariety(), plant.getRootstock());
-            if (!key.isBlank()) {
-                keys.add(key);
-            }
-        }
-        return keys;
-    }
-
-    private String buildPlantKey(String species, String variety, String rootstock) {
-        String normalizedSpecies = normalizeValue(species);
-        if (normalizedSpecies.isBlank()) {
-            return "";
-        }
-        return normalizedSpecies + "|" + normalizeValue(variety) + "|" + normalizeValue(rootstock);
-    }
-
-    private String normalizeValue(String value) {
-        if (value == null) {
-            return "";
-        }
-        return value.trim().toLowerCase();
-    }
-
-    private String firstNonBlank(List<String> lines) {
-        for (String line : lines) {
-            if (line != null && !line.isBlank()) {
-                return line;
-            }
-        }
-        return null;
-    }
-
-    private String valueAt(List<String> cells, int index) {
-        if (index < 0 || index >= cells.size()) {
-            return "";
-        }
-        return cells.get(index) == null ? "" : cells.get(index).trim();
-    }
-
-    private boolean matches(String normalized, String... options) {
-        for (String option : options) {
-            if (normalizeHeader(option).equals(normalized)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private String normalizeHeader(String value) {
-        if (value == null) {
-            return "";
-        }
-        String normalized = Normalizer.normalize(value, Normalizer.Form.NFD)
-                .replaceAll("\\p{M}", "");
+    private boolean isValidVisibility(String value) { return "Używany".equals(value) || "Nieużywany".equals(value); }
+    private String norm(String value) {
+        if (value == null) return "";
+        String normalized = Normalizer.normalize(value, Normalizer.Form.NFD).replaceAll("\\p{M}", "");
         return normalized.replaceAll("[^A-Za-z0-9]", "").toLowerCase();
     }
-
-    private char resolveDelimiter(String headerLine) {
-        Map<Character, Integer> counts = new LinkedHashMap<>();
-        counts.put(';', countChar(headerLine, ';'));
-        counts.put(',', countChar(headerLine, ','));
-        counts.put('\t', countChar(headerLine, '\t'));
-
-        char best = ';';
-        int bestCount = -1;
-        for (Map.Entry<Character, Integer> entry : counts.entrySet()) {
-            if (entry.getValue() > bestCount) {
-                best = entry.getKey();
-                bestCount = entry.getValue();
-            }
-        }
-        return best;
+    private char resolveDelimiter(String line) {
+        int s = count(line, ';'), c = count(line, ','), t = count(line, '\t');
+        if (t >= s && t >= c) return '\t';
+        if (c > s) return ',';
+        return ';';
     }
-
-    private int countChar(String value, char c) {
-        int count = 0;
-        for (int i = 0; i < value.length(); i++) {
-            if (value.charAt(i) == c) {
-                count++;
-            }
-        }
-        return count;
-    }
-
+    private int count(String value, char c) { int n=0; for (int i=0;i<value.length();i++) if (value.charAt(i)==c) n++; return n; }
     private List<String> parseCsvLine(String line, char delimiter) {
-        List<String> values = new ArrayList<>();
+        List<String> vals = new ArrayList<>();
         StringBuilder current = new StringBuilder();
         boolean inQuotes = false;
-
-        for (int i = 0; i < line.length(); i++) {
-            char currentChar = line.charAt(i);
-
-            if (currentChar == '"') {
-                if (inQuotes && i + 1 < line.length() && line.charAt(i + 1) == '"') {
-                    current.append('"');
-                    i++;
-                } else {
-                    inQuotes = !inQuotes;
-                }
-                continue;
+        for (int i=0;i<line.length();i++) {
+            char ch = line.charAt(i);
+            if (ch == '"') {
+                if (inQuotes && i+1<line.length() && line.charAt(i+1)=='"') { current.append('"'); i++; }
+                else inQuotes = !inQuotes;
+            } else if (ch == delimiter && !inQuotes) {
+                vals.add(current.toString()); current.setLength(0);
+            } else {
+                current.append(ch);
             }
-
-            if (currentChar == delimiter && !inQuotes) {
-                values.add(current.toString());
-                current.setLength(0);
-                continue;
-            }
-
-            current.append(currentChar);
         }
-
-        values.add(current.toString());
-        return values;
-    }
-
-    private static class HeaderMapping {
-        private int speciesIndex = -1;
-        private int varietyIndex = -1;
-        private int rootstockIndex = -1;
-        private int latinSpeciesNameIndex = -1;
-        private int eppoCodeIndex = -1;
-        private int passportRequiredIndex = -1;
-        private int visibilityStatusIndex = -1;
-        private final List<String> resolvedHeaders = new ArrayList<>();
-    }
-
-    private static class PlantCandidate {
-        private String species;
-        private String variety;
-        private String rootstock;
-        private String latinSpeciesName;
-        private String eppoCode;
-        private boolean passportRequired;
-        private String visibilityStatus;
-
-        private boolean isCompletelyEmpty() {
-            return blank(species)
-                    && blank(variety)
-                    && blank(rootstock)
-                    && blank(latinSpeciesName)
-                    && blank(eppoCode)
-                    && blank(visibilityStatus);
-        }
-
-        private boolean blank(String value) {
-            return value == null || value.isBlank();
-        }
+        vals.add(current.toString());
+        return vals;
     }
 }

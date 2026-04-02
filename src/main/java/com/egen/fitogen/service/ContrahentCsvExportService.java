@@ -9,7 +9,6 @@ import java.nio.file.Path;
 import java.util.List;
 
 public class ContrahentCsvExportService {
-
     private final ContrahentService contrahentService;
 
     public ContrahentCsvExportService(ContrahentService contrahentService) {
@@ -22,7 +21,6 @@ public class ContrahentCsvExportService {
         try (BufferedWriter writer = Files.newBufferedWriter(outputPath)) {
             writer.write("name;country;countryCode;city;postalCode;street;phytosanitaryNumber;supplier;client");
             writer.newLine();
-
             for (Contrahent contrahent : contrahents) {
                 writer.write(String.join(";",
                         escape(contrahent.getName()),
@@ -40,7 +38,6 @@ public class ContrahentCsvExportService {
         } catch (IOException e) {
             throw new IllegalStateException("Nie udało się wyeksportować kontrahentów do CSV: " + outputPath, e);
         }
-
         return outputPath;
     }
 
@@ -49,10 +46,7 @@ public class ContrahentCsvExportService {
     }
 
     private String escape(String value) {
-        if (value == null) {
-            return "";
-        }
-
+        if (value == null) return "";
         boolean needsQuotes = value.contains(";") || value.contains(""") || value.contains("\n") || value.contains("\r");
         String escaped = value.replace(""", """");
         return needsQuotes ? """ + escaped + """ : escaped;
