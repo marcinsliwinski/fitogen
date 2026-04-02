@@ -4,6 +4,8 @@
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.VBox?>
@@ -70,7 +72,31 @@
                 <Label fx:id="importReadinessLabel" wrapText="true"/>
                 <Label fx:id="importDataScopeLabel" wrapText="true"/>
                 <Label fx:id="importRecommendationLabel" wrapText="true"/>
+            </VBox>
+
+            <VBox styleClass="content-card" spacing="12">
+                <HBox spacing="10">
+                    <Label text="Preview importu CSV dla Plants" styleClass="section-title" style="-fx-font-size: 18px;"/>
+                    <Region HBox.hgrow="ALWAYS"/>
+                    <Button text="Wybierz plik CSV" onAction="#previewPlantImportFile" styleClass="button-secondary"/>
+                    <Button text="Wyczyść preview" onAction="#clearPlantImportPreview" styleClass="button-secondary"/>
+                </HBox>
                 <Label fx:id="plantImportPreviewStatusLabel" wrapText="true"/>
+                <Label fx:id="plantImportPreviewFileLabel" wrapText="true"/>
+                <Label fx:id="plantImportPreviewSummaryLabel" wrapText="true"/>
+                <TableView fx:id="plantImportPreviewTable" prefHeight="320">
+                    <columns>
+                        <TableColumn fx:id="colRowNumber" text="Wiersz" prefWidth="70"/>
+                        <TableColumn fx:id="colSpecies" text="Gatunek" prefWidth="180"/>
+                        <TableColumn fx:id="colVariety" text="Odmiana" prefWidth="150"/>
+                        <TableColumn fx:id="colRootstock" text="Podkładka" prefWidth="130"/>
+                        <TableColumn fx:id="colEppoCode" text="Kod EPPO" prefWidth="100"/>
+                        <TableColumn fx:id="colPassportRequired" text="Paszport" prefWidth="85"/>
+                        <TableColumn fx:id="colVisibilityStatus" text="Widoczność" prefWidth="110"/>
+                        <TableColumn fx:id="colImportStatus" text="Status preview" prefWidth="140"/>
+                        <TableColumn fx:id="colImportMessage" text="Komentarz" prefWidth="340"/>
+                    </columns>
+                </TableView>
             </VBox>
 
             <VBox styleClass="content-card" spacing="12">

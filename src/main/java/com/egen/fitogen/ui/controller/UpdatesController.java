@@ -1,6 +1,8 @@
 package com.egen.fitogen.ui.controller;
 
 import com.egen.fitogen.config.AppContext;
+import com.egen.fitogen.dto.PlantImportPreviewResult;
+import com.egen.fitogen.dto.PlantImportPreviewRow;
 import com.egen.fitogen.model.AppUser;
 import com.egen.fitogen.service.AppSettingsService;
 import com.egen.fitogen.service.AppUserService;
@@ -13,9 +15,19 @@ import com.egen.fitogen.service.PlantCsvImportService;
 import com.egen.fitogen.service.PlantService;
 import com.egen.fitogen.ui.router.ViewManager;
 import com.egen.fitogen.ui.util.CountryDirectory;
+import javafx.beans.property.SimpleBooleanProperty;
+import javafx.beans.property.SimpleIntegerProperty;
+import javafx.beans.property.SimpleStringProperty;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
+import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableView;
+import javafx.stage.FileChooser;
+import javafx.stage.Window;
 
+import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
@@ -44,8 +56,23 @@ public class UpdatesController {
     @FXML private Label importDataScopeLabel;
     @FXML private Label importRecommendationLabel;
     @FXML private Label plantImportPreviewStatusLabel;
+    @FXML private Label plantImportPreviewSummaryLabel;
+    @FXML private Label plantImportPreviewFileLabel;
     @FXML private Label moduleReadinessLabel;
     @FXML private Label recommendedActionLabel;
+
+    @FXML private TableView<PlantImportPreviewRow> plantImportPreviewTable;
+    @FXML private TableColumn<PlantImportPreviewRow, Number> colRowNumber;
+    @FXML private TableColumn<PlantImportPreviewRow, String> colSpecies;
+    @FXML private TableColumn<PlantImportPreviewRow, String> colVariety;
+    @FXML private TableColumn<PlantImportPreviewRow, String> colRootstock;
+    @FXML private TableColumn<PlantImportPreviewRow, String> colEppoCode;
+    @FXML private TableColumn<PlantImportPreviewRow, Boolean> colPassportRequired;
+    @FXML private TableColumn<PlantImportPreviewRow, String> colVisibilityStatus;
+    @FXML private TableColumn<PlantImportPreviewRow, String> colImportStatus;
+    @FXML private TableColumn<PlantImportPreviewRow, String> colImportMessage;
+
+    private final ObservableList<PlantImportPreviewRow> plantImportPreviewRows = FXCollections.observableArrayList();
 
     private final AppSettingsService appSettingsService = AppContext.getAppSettingsService();
     private final BackupService backupService = AppContext.getBackupService();
@@ -60,6 +87,8 @@ public class UpdatesController {
 
     @FXML
     public void initialize() {
+        configurePlantImportPreviewTable();
+        resetPlantImportPreviewState();
         refreshStatus();
     }
 
@@ -85,6 +114,93 @@ public class UpdatesController {
     @FXML
     private void openHelp() {
         ViewManager.show(ViewManager.HELP);
+    }
+
+    @FXML
+    private void previewPlantImportFile() {
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Wybierz plik CSV do preview importu roślin");
+        fileChooser.getExtensionFilters().addAll(
+                new FileChooser.ExtensionFilter("Pliki CSV", "*.csv"),
+                new FileChooser.ExtensionFilter("Pliki tekstowe", "*.txt", "*.tsv"),
+                new FileChooser.ExtensionFilter("Wszystkie pliki", "*.*")
+        );
+
+        Window window = plantImportPreviewTable != null && plantImportPreviewTable.getScene() != null
+                ? plantImportPreviewTable.getScene().getWindow()
+                : null;
+
+        File selectedFile = fileChooser.showOpenDialog(window);
+        if (selectedFile == null) {
+            return;
+        }
+
+        try {
+            PlantImportPreviewResult result = plantCsvImportService.preview(selectedFile.toPath());
+            applyPlantImportPreviewResult(result, selectedFile.toPath());
+        } catch (Exception e) {
+            plantImportPreviewRows.clear();
+            plantImportPreviewFileLabel.setText("Plik preview: " + selectedFile.getAbsolutePath());
+            plantImportPreviewSummaryLabel.setText("Preview importu nie powiódł się.");
+            plantImportPreviewStatusLabel.setText("Błąd preview importu Plants: " + e.getMessage());
+        }
+    }
+
+    @FXML
+    private void clearPlantImportPreview() {
+        resetPlantImportPreviewState();
+    }
+
+    private void configurePlantImportPreviewTable() {
+        colRowNumber.setCellValueFactory(cell -> new SimpleIntegerProperty(cell.getValue().getRowNumber()));
+        colSpecies.setCellValueFactory(cell -> new SimpleStringProperty(nullSafe(cell.getValue().getSpecies())));
+        colVariety.setCellValueFactory(cell -> new SimpleStringProperty(nullSafe(cell.getValue().getVariety())));
+        colRootstock.setCellValueFactory(cell -> new SimpleStringProperty(nullSafe(cell.getValue().getRootstock())));
+        colEppoCode.setCellValueFactory(cell -> new SimpleStringProperty(nullSafe(cell.getValue().getEppoCode())));
+        colPassportRequired.setCellValueFactory(cell -> new SimpleBooleanProperty(cell.getValue().isPassportRequired()));
+        colVisibilityStatus.setCellValueFactory(cell -> new SimpleStringProperty(nullSafe(cell.getValue().getVisibilityStatus())));
+        colImportStatus.setCellValueFactory(cell -> new SimpleStringProperty(nullSafe(cell.getValue().getStatus())));
+        colImportMessage.setCellValueFactory(cell -> new SimpleStringProperty(nullSafe(cell.getValue().getMessage())));
+        plantImportPreviewTable.setItems(plantImportPreviewRows);
+    }
+
+    private void applyPlantImportPreviewResult(PlantImportPreviewResult result, Path csvPath) {
+        plantImportPreviewRows.setAll(result.getRows());
+        plantImportPreviewFileLabel.setText("Plik preview: " + csvPath.toAbsolutePath().normalize());
+        plantImportPreviewSummaryLabel.setText(
+                "Wiersze: " + result.getTotalRowsCount()
+                        + ", nowe: " + result.getNewRowsCount()
+                        + ", istniejące: " + result.getMatchingExistingCount()
+                        + ", duplikaty w pliku: " + result.getDuplicateInFileCount()
+                        + ", nieprawidłowe: " + result.getInvalidRowsCount()
+                        + ", delimiter: '" + printableDelimiter(result.getDelimiter()) + "'."
+        );
+
+        String headersText = result.getResolvedHeaders().isEmpty()
+                ? "brak rozpoznanych kolumn"
+                : String.join(", ", result.getResolvedHeaders());
+
+        plantImportPreviewStatusLabel.setText(
+                "Preview importu Plants działa w trybie tylko do odczytu. Rozpoznane kolumny: "
+                        + headersText
+                        + ". Zapis do bazy nie jest jeszcze aktywny."
+        );
+    }
+
+    private void resetPlantImportPreviewState() {
+        plantImportPreviewRows.clear();
+        if (plantImportPreviewFileLabel != null) {
+            plantImportPreviewFileLabel.setText("Plik preview: nie wybrano pliku.");
+        }
+        if (plantImportPreviewSummaryLabel != null) {
+            plantImportPreviewSummaryLabel.setText("Preview importu: brak danych do wyświetlenia.");
+        }
+        if (plantImportPreviewStatusLabel != null) {
+            plantImportPreviewStatusLabel.setText(
+                    "Fundament importu CSV dla Plants jest przygotowany po stronie backendu w trybie preview-only. "
+                            + plantCsvImportService.getSupportedColumnsSummary()
+            );
+        }
     }
 
     private void loadBackupStatus() {
@@ -216,10 +332,6 @@ public class UpdatesController {
 
         importReadinessLabel.setText(buildImportReadinessSummary(readinessScore, hasBackup, hasCountryDirectory));
         importRecommendationLabel.setText(buildImportRecommendation(hasBackup, issuerComplete, hasUsers, hasCountryDirectory, plantsCount, contrahentsCount, batchesCount));
-        plantImportPreviewStatusLabel.setText(
-                "Fundament importu CSV dla Plants jest przygotowany po stronie backendu w trybie preview-only. "
-                        + plantCsvImportService.getSupportedColumnsSummary()
-        );
     }
 
     private void loadUpdateReadiness() {
@@ -301,8 +413,8 @@ public class UpdatesController {
         String suffix = !hasBackup
                 ? " Najpierw wykonaj backup."
                 : !hasCountryDirectory
-                  ? " Najpierw upewnij się, że wspólny słownik krajów jest gotowy."
-                  : "";
+                ? " Najpierw upewnij się, że wspólny słownik krajów jest gotowy."
+                : "";
         return "Gotowość pod import: niska. Fundament operacyjny nadal wymaga porządków." + suffix;
     }
 
@@ -362,5 +474,13 @@ public class UpdatesController {
             return (sizeBytes / 1024) + " KB";
         }
         return String.format("%.2f MB", sizeBytes / (1024.0 * 1024.0));
+    }
+
+    private String printableDelimiter(char delimiter) {
+        return delimiter == '\t' ? "TAB" : String.valueOf(delimiter);
+    }
+
+    private String nullSafe(String value) {
+        return value == null ? "" : value;
     }
 }
