@@ -5,7 +5,6 @@
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.layout.HBox?>
-<?import javafx.scene.layout.Priority?>
 <?import javafx.scene.layout.VBox?>
 
 <ScrollPane xmlns:fx="http://javafx.com/fxml"
@@ -19,44 +18,63 @@
             </padding>
 
             <VBox spacing="4">
-                <Label text="Pomoc i Quick Start" styleClass="page-title"/>
-                <Label text="Szybkie wdrożenie użytkownika oraz najważniejsze wskazówki pracy z systemem Fito Gen." styleClass="page-subtitle" wrapText="true"/>
+                <Label text="Pomoc i centrum operacyjne" styleClass="page-title"/>
+                <Label text="Szybki start, najważniejsze zasady pracy oraz aktualna gotowość środowiska Fito Gen do pracy operacyjnej." styleClass="page-subtitle" wrapText="true"/>
             </VBox>
 
             <HBox spacing="16">
                 <VBox styleClass="content-card" spacing="10" HBox.hgrow="ALWAYS">
-                    <Label text="Quick Start" styleClass="section-title"/>
-                    <Label text="1. Uzupełnij Ustawienia: użytkownicy, typy dokumentów i konfigurację numeratora." wrapText="true"/>
-                    <Label text="2. Dodaj rośliny oraz kontrahentów. Dla dostawców zaznacz odpowiednią rolę." wrapText="true"/>
-                    <Label text="3. Dodaj partie roślin. Brak źródła pochodzenia oznacza partię wewnętrzną." wrapText="true"/>
-                    <Label text="4. Wystaw dokument, korzystając z pozycji dokumentu i wyboru partii po roślinie." wrapText="true"/>
-                    <Label text="5. Użyj Podglądu, Druku lub Eksportu PDF, aby sfinalizować dokument." wrapText="true"/>
+                    <Label text="Start systemu" styleClass="section-title"/>
+                    <Label fx:id="startupChecklistLabel" wrapText="true"/>
                 </VBox>
 
                 <VBox styleClass="content-card" spacing="10" HBox.hgrow="ALWAYS">
-                    <Label text="Najczęstszy workflow" styleClass="section-title"/>
-                    <Label text="Rośliny → Kontrahenci → Partie roślin → Dokumenty → Podgląd / PDF" wrapText="true"/>
-                    <Label text="Dwuklik w wiersz tabeli otwiera edycję rekordu w głównych modułach." wrapText="true"/>
-                    <Label text="Dokumenty i partie anulowane pozostają w systemie jako soft delete i są oznaczone statusem." wrapText="true"/>
-                    <Label text="W formularzu dokumentu wybór partii zależy od wybranej rośliny." wrapText="true"/>
+                    <Label text="Codzienny workflow" styleClass="section-title"/>
+                    <Label fx:id="dailyWorkflowLabel" wrapText="true"/>
                 </VBox>
             </HBox>
 
-            <VBox styleClass="content-card" spacing="12">
-                <Label text="Najczęstsze pytania" styleClass="section-title"/>
-                <Label text="Gdzie zmienić numerację? → Ustawienia → Numerator" wrapText="true"/>
-                <Label text="Jak ustawić użytkownika domyślnego? → Ustawienia → Użytkownicy" wrapText="true"/>
-                <Label text="Jak dodać nową partię z dokumentu? → W dropdownie partii wybierz „Dodaj nową partię…”" wrapText="true"/>
-                <Label text="Dlaczego nie mogę edytować anulowanego dokumentu lub partii? → Rekord anulowany jest blokowany do edycji biznesowo." wrapText="true"/>
-            </VBox>
+            <HBox spacing="16">
+                <VBox styleClass="content-card" spacing="10" HBox.hgrow="ALWAYS">
+                    <Label text="Dokumenty i partie" styleClass="section-title"/>
+                    <Label fx:id="documentsTipsLabel" wrapText="true"/>
+                </VBox>
+
+                <VBox styleClass="content-card" spacing="10" HBox.hgrow="ALWAYS">
+                    <Label text="Rośliny i EPPO" styleClass="section-title"/>
+                    <Label fx:id="plantsTipsLabel" wrapText="true"/>
+                    <Label fx:id="eppoTipsLabel" wrapText="true"/>
+                </VBox>
+            </HBox>
+
+            <HBox spacing="16">
+                <VBox styleClass="content-card" spacing="10" HBox.hgrow="ALWAYS">
+                    <Label text="Ustawienia i administracja" styleClass="section-title"/>
+                    <Label fx:id="settingsTipsLabel" wrapText="true"/>
+                </VBox>
+
+                <VBox styleClass="content-card" spacing="10" HBox.hgrow="ALWAYS">
+                    <Label text="Gotowość środowiska" styleClass="section-title"/>
+                    <Label fx:id="systemReadinessLabel" wrapText="true"/>
+                    <Label fx:id="nextActionLabel" wrapText="true"/>
+                    <Label fx:id="supportScopeLabel" wrapText="true"/>
+                    <Button text="Odśwież" onAction="#refreshHelp" styleClass="button-secondary"/>
+                </VBox>
+            </HBox>
 
             <VBox styleClass="content-card" spacing="12">
                 <Label text="Szybka nawigacja" styleClass="section-title"/>
                 <HBox spacing="10">
                     <Button text="Pulpit" onAction="#openDashboard" styleClass="button-secondary"/>
                     <Button text="Ustawienia" onAction="#openSettings" styleClass="button-secondary"/>
-                    <Button text="Dokumenty" onAction="#openDocuments" styleClass="button-secondary"/>
+                    <Button text="Rośliny" onAction="#openPlants" styleClass="button-secondary"/>
+                    <Button text="Kontrahenci" onAction="#openContrahents" styleClass="button-secondary"/>
+                </HBox>
+                <HBox spacing="10">
                     <Button text="Partie roślin" onAction="#openPlantBatches" styleClass="button-secondary"/>
+                    <Button text="Dokumenty" onAction="#openDocuments" styleClass="button-secondary"/>
+                    <Button text="EPPO Admin" onAction="#openEppoAdmin" styleClass="button-secondary"/>
+                    <Button text="Updates" onAction="#openUpdates" styleClass="button-secondary"/>
                 </HBox>
             </VBox>
         </VBox>
