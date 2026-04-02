@@ -21,7 +21,7 @@
 
             <VBox spacing="4">
                 <Label text="Aktualizacje" styleClass="page-title"/>
-                <Label text="Osobny moduł informacji o wersji systemu i gotowości funkcji aktualizacji." styleClass="page-subtitle" wrapText="true"/>
+                <Label text="Widok gotowości operacyjnej pod przyszłą aktualizację aplikacji oraz synchronizację danych z serwera. Importy i eksporty CSV pozostają wyłącznie w Ustawieniach." styleClass="page-subtitle" wrapText="true"/>
             </VBox>
 
             <VBox styleClass="content-card" spacing="12">
@@ -33,12 +33,8 @@
             </VBox>
 
             <VBox styleClass="content-card" spacing="12">
-                <Label text="Status aktualizacji systemu" styleClass="section-title" style="-fx-font-size: 18px;"/>
+                <Label text="Status Server Update" styleClass="section-title" style="-fx-font-size: 18px;"/>
                 <Label fx:id="systemUpdateStatusLabel" wrapText="true"/>
-            </VBox>
-
-            <VBox styleClass="content-card" spacing="12">
-                <Label text="Status aktualizacji bazy roślin" styleClass="section-title" style="-fx-font-size: 18px;"/>
                 <Label fx:id="plantDatabaseStatusLabel" wrapText="true"/>
             </VBox>
 
@@ -50,7 +46,7 @@
 
             <VBox styleClass="content-card" spacing="12">
                 <Label text="Dalsze kroki" styleClass="section-title" style="-fx-font-size: 18px;"/>
-                <Label text="W kolejnych etapach można tu bezpiecznie dodać sprawdzanie nowej wersji aplikacji, pobieranie aktualizacji oraz aktualizację bazy roślin z serwera." wrapText="true"/>
+                <Label text="Ten moduł nie wykonuje jeszcze automatycznej aktualizacji aplikacji ani synchronizacji z serwera, ale od tego kroku nie zawiera już widoków CSV. Importy i eksporty CSV pozostają wyłącznie w Ustawieniach." wrapText="true"/>
                 <HBox spacing="10">
                     <Button text="Ustawienia" onAction="#openSettings" styleClass="button-secondary"/>
                     <Button text="Pomoc" onAction="#openHelp" styleClass="button-secondary"/>

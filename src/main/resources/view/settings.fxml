@@ -11,9 +11,12 @@
 <?import javafx.scene.control.Tab?>
 <?import javafx.scene.control.TabPane?>
 <?import javafx.scene.control.TextField?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
 <?import javafx.scene.layout.ColumnConstraints?>
 <?import javafx.scene.layout.GridPane?>
 <?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.VBox?>
 
 <VBox spacing="16"
@@ -274,18 +277,6 @@
                                 <Button text="Zapisz dane podmiotu" onAction="#saveIssuerProfile"/>
                             </HBox>
 
-                        </VBox>
-                    </content>
-                </ScrollPane>
-            </Tab>
-
-            <Tab text="Pomoc">
-                <ScrollPane fitToWidth="true" fitToHeight="true">
-                    <content>
-                        <VBox spacing="16" styleClass="content-card">
-                            <padding><Insets top="16" right="16" bottom="16" left="16"/></padding>
-                            <Label text="Pomoc" styleClass="stat-title"/>
-                            <Label text="Miejsce na Quick Start, instrukcje i kolejne sekcje pomocy." wrapText="true" styleClass="page-subtitle"/>
                         </VBox>
                     </content>
                 </ScrollPane>
