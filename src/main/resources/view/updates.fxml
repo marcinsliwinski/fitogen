@@ -23,7 +23,7 @@
 
             <VBox spacing="4">
                 <Label text="Aktualizacje" styleClass="page-title"/>
-                <Label text="Widok gotowości operacyjnej pod przyszłą aktualizację danych, aplikacji i pierwszy bezpieczny etap importów." styleClass="page-subtitle" wrapText="true"/>
+                <Label text="Widok gotowości operacyjnej pod przyszłą aktualizację aplikacji, synchronizację danych z serwera i bezpieczne importy lokalne." styleClass="page-subtitle" wrapText="true"/>
             </VBox>
 
             <VBox styleClass="content-card" spacing="12">
@@ -43,10 +43,6 @@
             <VBox styleClass="content-card" spacing="12">
                 <Label text="Status aktualizacji systemu" styleClass="section-title" style="-fx-font-size: 18px;"/>
                 <Label fx:id="systemUpdateStatusLabel" wrapText="true"/>
-            </VBox>
-
-            <VBox styleClass="content-card" spacing="12">
-                <Label text="Status aktualizacji bazy roślin" styleClass="section-title" style="-fx-font-size: 18px;"/>
                 <Label fx:id="plantDatabaseStatusLabel" wrapText="true"/>
             </VBox>
 
@@ -65,6 +61,17 @@
                 <Label fx:id="usersStatusLabel" wrapText="true"/>
                 <Label fx:id="countryDirectoryStatusLabel" wrapText="true"/>
                 <Label fx:id="plantSettingsStatusLabel" wrapText="true"/>
+            </VBox>
+
+            <VBox styleClass="content-card" spacing="12">
+                <Label text="Mapa zakresów aktualizacji i importów" styleClass="section-title" style="-fx-font-size: 18px;"/>
+                <Label fx:id="plantsScopeLabel" wrapText="true"/>
+                <Label fx:id="eppoScopeLabel" wrapText="true"/>
+                <Label fx:id="countriesScopeLabel" wrapText="true"/>
+                <Label fx:id="contrahentsScopeLabel" wrapText="true"/>
+                <Label fx:id="documentsScopeLabel" wrapText="true"/>
+                <Label fx:id="scopeStrategySummaryLabel" wrapText="true"/>
+                <Label fx:id="nextDeliveryRecommendationLabel" wrapText="true"/>
             </VBox>
 
             <VBox styleClass="content-card" spacing="12">
@@ -101,7 +108,7 @@
 
             <VBox styleClass="content-card" spacing="12">
                 <Label text="Dalsze kroki" styleClass="section-title" style="-fx-font-size: 18px;"/>
-                <Label text="Ten moduł nie wykonuje jeszcze automatycznej aktualizacji ani zapisu importów, ale pokazuje, czy środowisko jest gotowe do ich bezpiecznego wdrożenia w kolejnych etapach." wrapText="true"/>
+                <Label text="Ten moduł nie wykonuje jeszcze automatycznej aktualizacji ani zapisu importów, ale pokazuje docelowy podział zakresów i gotowość środowiska do kolejnych etapów." wrapText="true"/>
                 <HBox spacing="10">
                     <Button text="Ustawienia" onAction="#openSettings" styleClass="button-secondary"/>
                     <Button text="Pomoc" onAction="#openHelp" styleClass="button-secondary"/>

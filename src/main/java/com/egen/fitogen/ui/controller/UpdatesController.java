@@ -9,7 +9,10 @@ import com.egen.fitogen.service.AppUserService;
 import com.egen.fitogen.service.BackupService;
 import com.egen.fitogen.service.ContrahentService;
 import com.egen.fitogen.service.CountryDirectoryService;
+import com.egen.fitogen.service.DocumentService;
 import com.egen.fitogen.service.DocumentTypeService;
+import com.egen.fitogen.service.EppoCodeService;
+import com.egen.fitogen.service.EppoZoneService;
 import com.egen.fitogen.service.PlantBatchService;
 import com.egen.fitogen.service.PlantCsvImportService;
 import com.egen.fitogen.service.PlantService;
@@ -61,6 +64,14 @@ public class UpdatesController {
     @FXML private Label moduleReadinessLabel;
     @FXML private Label recommendedActionLabel;
 
+    @FXML private Label plantsScopeLabel;
+    @FXML private Label eppoScopeLabel;
+    @FXML private Label countriesScopeLabel;
+    @FXML private Label contrahentsScopeLabel;
+    @FXML private Label documentsScopeLabel;
+    @FXML private Label scopeStrategySummaryLabel;
+    @FXML private Label nextDeliveryRecommendationLabel;
+
     @FXML private TableView<PlantImportPreviewRow> plantImportPreviewTable;
     @FXML private TableColumn<PlantImportPreviewRow, Number> colRowNumber;
     @FXML private TableColumn<PlantImportPreviewRow, String> colSpecies;
@@ -82,6 +93,9 @@ public class UpdatesController {
     private final PlantService plantService = AppContext.getPlantService();
     private final ContrahentService contrahentService = AppContext.getContrahentService();
     private final PlantBatchService plantBatchService = AppContext.getPlantBatchService();
+    private final EppoCodeService eppoCodeService = AppContext.getEppoCodeService();
+    private final EppoZoneService eppoZoneService = AppContext.getEppoZoneService();
+    private final DocumentService documentService = AppContext.getDocumentService();
     private final PlantCsvImportService plantCsvImportService =
             new PlantCsvImportService(plantService, appSettingsService);
 
@@ -103,6 +117,7 @@ public class UpdatesController {
         loadCountryDirectoryStatus();
         loadPlantSettingsStatus();
         loadImportPreparationStatus();
+        loadScopeRoadmapStatus();
         loadUpdateReadiness();
     }
 
@@ -170,14 +185,14 @@ public class UpdatesController {
         plantImportPreviewSummaryLabel.setText(
                 "Wiersze: " + result.getTotalRowsCount()
                         + ", nowe: " + result.getNewRowsCount()
-                        + ", istniejące: " + result.getMatchingExistingCount()
+                        + ", już istniejące: " + result.getMatchingExistingCount()
                         + ", duplikaty w pliku: " + result.getDuplicateInFileCount()
                         + ", nieprawidłowe: " + result.getInvalidRowsCount()
                         + ", delimiter: '" + printableDelimiter(result.getDelimiter()) + "'."
         );
 
         String headersText = result.getResolvedHeaders().isEmpty()
-                ? "brak rozpoznanych kolumn"
+                ? "brak rozpoznanych nagłówków"
                 : String.join(", ", result.getResolvedHeaders());
 
         plantImportPreviewStatusLabel.setText(
@@ -260,7 +275,6 @@ public class UpdatesController {
             documentTypesStatusLabel.setText("Typy dokumentów: brak wpisów. Przed rozszerzeniem automatyzacji warto zdefiniować co najmniej jeden typ dokumentu.");
             return;
         }
-
         documentTypesStatusLabel.setText("Typy dokumentów: skonfigurowano " + count + " wpis(y). Moduł dokumentów ma już bazę referencyjną do dalszego rozwoju.");
     }
 
@@ -309,11 +323,11 @@ public class UpdatesController {
 
         int plantsCount = plantService.getAllPlants().size();
         int contrahentsCount = contrahentService.getAllContrahents().size();
-        int batchesCount = plantBatchService.getAllBatches().size();
+        int documentsCount = documentService.getAllDocuments().size();
 
         importDataScopeLabel.setText(
-                "Zakres przygotowania pod import: rośliny (" + plantsCount + "), kontrahenci (" + contrahentsCount + "), partie roślin (" + batchesCount + "). "
-                        + "To są obszary o najniższym ryzyku wejścia dla pierwszego etapu importów."
+                "Zakres przygotowania: rośliny (" + plantsCount + "), kontrahenci (" + contrahentsCount + "), dokumenty (" + documentsCount + "). "
+                        + "Import preview działa dziś tylko dla Plants, ale moduł jest przygotowywany szerzej pod dane referencyjne i dane operacyjne."
         );
 
         int readinessScore = 0;
@@ -331,7 +345,58 @@ public class UpdatesController {
         }
 
         importReadinessLabel.setText(buildImportReadinessSummary(readinessScore, hasBackup, hasCountryDirectory));
-        importRecommendationLabel.setText(buildImportRecommendation(hasBackup, issuerComplete, hasUsers, hasCountryDirectory, plantsCount, contrahentsCount, batchesCount));
+        importRecommendationLabel.setText(buildImportRecommendation(hasBackup, issuerComplete, hasUsers, hasCountryDirectory, plantsCount, contrahentsCount, documentsCount));
+    }
+
+    private void loadScopeRoadmapStatus() {
+        int plantCount = plantService.getAllPlants().size();
+        int eppoCodeCount = eppoCodeService.getAll().size();
+        int eppoZoneCount = eppoZoneService.getAll().size();
+        int countryCount = countryDirectoryService.getEntries().size();
+        int contrahentCount = contrahentService.getAllContrahents().size();
+        int documentCount = documentService.getAllDocuments().size();
+
+        plantsScopeLabel.setText(
+                "Plants — import + aktualizacja z serwera. Aktualny stan: "
+                        + plantCount
+                        + " rekordów. Preview CSV już działa, więc to pozostaje najbliższy kandydat do dalszego wdrożenia."
+        );
+
+        eppoScopeLabel.setText(
+                "EPPO — import + aktualizacja z serwera. Aktualny stan: "
+                        + eppoCodeCount
+                        + " kodów EPPO i "
+                        + eppoZoneCount
+                        + " krajów/stref. Docelowo aktualizacja ma obejmować kody, gatunki i kraje/strefy powiązane z kodami."
+        );
+
+        countriesScopeLabel.setText(
+                "Lista krajów — import + aktualizacja z serwera. Aktualny stan: "
+                        + countryCount
+                        + " wpisów w wspólnym słowniku krajów. Ten zakres musi pozostać wspólnym źródłem dla Settings, EPPO i kontrahentów."
+        );
+
+        contrahentsScopeLabel.setText(
+                "Kontrahenci — tylko import. Aktualny stan: "
+                        + contrahentCount
+                        + " rekordów. Import powinien korzystać z wspólnego słownika krajów i nie wymaga osobnego mechanizmu aktualizacji z serwera."
+        );
+
+        documentsScopeLabel.setText(
+                "Dokumenty — tylko import. Aktualny stan: "
+                        + documentCount
+                        + " rekordów. Ten obszar wymaga najostrzejszej walidacji zależności i dlatego nie powinien być mieszany z aktualizacją referencyjną z serwera."
+        );
+
+        scopeStrategySummaryLabel.setText(
+                "Strategia modułu Updates: aplikacja może być aktualizowana razem lub równolegle z synchronizacją danych serwerowych, "
+                        + "ale dane należy rozdzielić na dwa typy procesów: import-only (kontrahenci, dokumenty) oraz import + server update (plants, EPPO, kraje)."
+        );
+
+        nextDeliveryRecommendationLabel.setText(
+                "Najbezpieczniejszy następny krok: utrzymać obecny preview Plants i dodać analogiczną warstwę preview/import planu dla kontrahentów, "
+                        + "a dopiero potem wejść w model aktualizacji serwerowej dla Plants, EPPO i wspólnego słownika krajów."
+        );
     }
 
     private void loadUpdateReadiness() {
@@ -363,7 +428,7 @@ public class UpdatesController {
         );
 
         plantDatabaseStatusLabel.setText(
-                "Aktualizacja bazy roślin: brak jeszcze integracji z serwerem, ale można już ocenić gotowość środowiska przed wdrożeniem importu i aktualizacji danych referencyjnych."
+                "Aktualizacja danych z serwera: docelowo obejmie Plants, EPPO i wspólny słownik krajów. Kontrahenci oraz dokumenty pozostają zakresem import-only."
         );
 
         moduleReadinessLabel.setText(buildReadinessSummary(readinessScore));
@@ -413,8 +478,8 @@ public class UpdatesController {
         String suffix = !hasBackup
                 ? " Najpierw wykonaj backup."
                 : !hasCountryDirectory
-                ? " Najpierw upewnij się, że wspólny słownik krajów jest gotowy."
-                : "";
+                  ? " Najpierw upewnij się, że wspólny słownik krajów jest gotowy."
+                  : "";
         return "Gotowość pod import: niska. Fundament operacyjny nadal wymaga porządków." + suffix;
     }
 
@@ -424,7 +489,7 @@ public class UpdatesController {
                                              boolean hasCountryDirectory,
                                              int plantsCount,
                                              int contrahentsCount,
-                                             int batchesCount) {
+                                             int documentsCount) {
         if (!hasBackup) {
             return "Rekomendacja importowa: zanim pojawi się pierwszy importer, wykonaj backup bazy danych.";
         }
@@ -438,22 +503,21 @@ public class UpdatesController {
             return "Rekomendacja importowa: uzupełnij dane podmiotu, żeby środowisko było kompletne operacyjnie przed szerszym wejściem w automatyzację.";
         }
         if (plantsCount == 0) {
-            return "Rekomendacja importowa: pierwszym kandydatem do wdrożenia jest import roślin. Ma najniższe ryzyko zależności i przygotuje bazę pod partie oraz dokumenty.";
+            return "Rekomendacja importowa: pierwszym kandydatem do wdrożenia pozostaje import roślin. Ma już backend preview i najniższe ryzyko zależności.";
         }
         if (contrahentsCount == 0) {
-            return "Rekomendacja importowa: pierwszym kandydatem do wdrożenia jest import kontrahentów z walidacją krajów i kodów krajów.";
+            return "Rekomendacja importowa: kolejnym logicznym krokiem jest import kontrahentów z walidacją krajów i kodów krajów.";
         }
-        if (batchesCount == 0) {
-            return "Rekomendacja importowa: kolejnym bezpiecznym krokiem może być import partii roślin po ustabilizowaniu mapowania roślina ↔ kontrahent.";
+        if (documentsCount == 0) {
+            return "Rekomendacja importowa: import dokumentów zostaw na później, po domknięciu walidacji zależności roślina/partia/kontrahent.";
         }
-        return "Rekomendacja importowa: środowisko ma już dane bazowe, więc można przejść do zaprojektowania importu CSV z walidacją, preview zmian i bezpiecznym commitowaniem danych.";
+        return "Rekomendacja importowa: środowisko ma już dane bazowe, więc można przejść do kolejnych preview importerów i dopiero potem do bezpiecznego zapisu.";
     }
 
     private String describeUser(AppUser user) {
         if (user == null) {
             return "brak";
         }
-
         String displayName = user.getDisplayName();
         return displayName == null || displayName.isBlank() ? "brak" : displayName;
     }
@@ -477,7 +541,10 @@ public class UpdatesController {
     }
 
     private String printableDelimiter(char delimiter) {
-        return delimiter == '\t' ? "TAB" : String.valueOf(delimiter);
+        if (delimiter == '\t') {
+            return "\\t";
+        }
+        return String.valueOf(delimiter);
     }
 
     private String nullSafe(String value) {
