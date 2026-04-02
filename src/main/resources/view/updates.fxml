@@ -79,6 +79,7 @@
                 <Label fx:id="importReadinessLabel" wrapText="true"/>
                 <Label fx:id="importDataScopeLabel" wrapText="true"/>
                 <Label fx:id="importRecommendationLabel" wrapText="true"/>
+                <Label fx:id="contrahentImportPreviewStatusLabel" wrapText="true"/>
             </VBox>
 
             <VBox styleClass="content-card" spacing="12">

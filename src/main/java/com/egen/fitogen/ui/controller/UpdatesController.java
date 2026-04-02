@@ -8,6 +8,7 @@ import com.egen.fitogen.service.AppSettingsService;
 import com.egen.fitogen.service.AppUserService;
 import com.egen.fitogen.service.BackupService;
 import com.egen.fitogen.service.ContrahentService;
+import com.egen.fitogen.service.ContrahentCsvImportService;
 import com.egen.fitogen.service.CountryDirectoryService;
 import com.egen.fitogen.service.DocumentService;
 import com.egen.fitogen.service.DocumentTypeService;
@@ -71,6 +72,7 @@ public class UpdatesController {
     @FXML private Label documentsScopeLabel;
     @FXML private Label scopeStrategySummaryLabel;
     @FXML private Label nextDeliveryRecommendationLabel;
+    @FXML private Label contrahentImportPreviewStatusLabel;
 
     @FXML private TableView<PlantImportPreviewRow> plantImportPreviewTable;
     @FXML private TableColumn<PlantImportPreviewRow, Number> colRowNumber;
@@ -98,6 +100,8 @@ public class UpdatesController {
     private final DocumentService documentService = AppContext.getDocumentService();
     private final PlantCsvImportService plantCsvImportService =
             new PlantCsvImportService(plantService, appSettingsService);
+    private final ContrahentCsvImportService contrahentCsvImportService =
+            new ContrahentCsvImportService(contrahentService, countryDirectoryService);
 
     @FXML
     public void initialize() {
@@ -346,6 +350,10 @@ public class UpdatesController {
 
         importReadinessLabel.setText(buildImportReadinessSummary(readinessScore, hasBackup, hasCountryDirectory));
         importRecommendationLabel.setText(buildImportRecommendation(hasBackup, issuerComplete, hasUsers, hasCountryDirectory, plantsCount, contrahentsCount, documentsCount));
+        contrahentImportPreviewStatusLabel.setText(
+                "Następny przygotowany zakres import-only: kontrahenci. Fundament backendowego preview CSV jest już gotowy. "
+                        + contrahentCsvImportService.getSupportedColumnsSummary()
+        );
     }
 
     private void loadScopeRoadmapStatus() {
