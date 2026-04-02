@@ -53,8 +53,8 @@ public class ContrahentCsvExportService {
             return "";
         }
 
-        boolean needsQuotes = value.contains(";") || value.contains(""") || value.contains("\n") || value.contains("\r");
-        String escaped = value.replace(""", """");
-        return needsQuotes ? """ + escaped + """ : escaped;
+        boolean needsQuotes = value.contains(";") || value.contains("\"") || value.contains("\n") || value.contains("\r");
+        String escaped = value.replace("\"", "\"\"");
+        return needsQuotes ? "\"" + escaped + "\"" : escaped;
     }
 }
