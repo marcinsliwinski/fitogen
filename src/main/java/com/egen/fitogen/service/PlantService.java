@@ -9,16 +9,10 @@ public class PlantService {
 
     private final PlantRepository repository;
     private final AppSettingsService appSettingsService;
-    private final AuditLogService auditLogService;
 
     public PlantService(PlantRepository repository, AppSettingsService appSettingsService) {
-        this(repository, appSettingsService, null);
-    }
-
-    public PlantService(PlantRepository repository, AppSettingsService appSettingsService, AuditLogService auditLogService) {
         this.repository = repository;
         this.appSettingsService = appSettingsService;
-        this.auditLogService = auditLogService;
     }
 
     public List<Plant> getAllPlants() {
@@ -28,24 +22,15 @@ public class PlantService {
     public void addPlant(Plant plant) {
         validate(plant);
         repository.save(plant);
-        log("CREATE", null, "Dodano roślinę: " + describe(plant));
     }
 
     public void updatePlant(Plant plant) {
         validate(plant);
-        Plant existing = repository.findById(plant.getId());
         repository.update(plant);
-        log(
-                "UPDATE",
-                plant.getId(),
-                "Zaktualizowano roślinę z " + describe(existing) + " na " + describe(plant)
-        );
     }
 
     public void deletePlant(int id) {
-        Plant existing = repository.findById(id);
         repository.delete(id);
-        log("DELETE", id, "Usunięto roślinę: " + describe(existing));
     }
 
     public List<String> getSpeciesSuggestions() {
@@ -142,50 +127,5 @@ public class PlantService {
 
     private boolean notBlank(String value) {
         return value != null && !value.trim().isBlank();
-    }
-
-    private void log(String actionType, Integer entityId, String description) {
-        if (auditLogService == null) {
-            return;
-        }
-        auditLogService.log("PLANT", entityId, actionType, description);
-    }
-
-    private String describe(Plant plant) {
-        if (plant == null) {
-            return "[brak rośliny]";
-        }
-
-        StringBuilder sb = new StringBuilder();
-        appendPart(sb, plant.getSpecies());
-        appendPart(sb, plant.getRootstock());
-        appendPart(sb, plant.getVariety());
-
-        String eppoCode = normalizeText(plant.getEppoCode());
-        if (eppoCode != null && !eppoCode.isBlank()) {
-            sb.append(" [EPPO: ").append(eppoCode).append("]");
-        }
-
-        String visibilityStatus = normalizeText(plant.getVisibilityStatus());
-        if (visibilityStatus != null && !visibilityStatus.isBlank()) {
-            sb.append(" [widoczność: ").append(visibilityStatus).append("]");
-        }
-
-        sb.append(plant.isPassportRequired() ? " [paszport: wymagany]" : " [paszport: opcjonalny]");
-
-        String description = sb.toString().trim();
-        return description.isBlank() ? "[brak rośliny]" : description;
-    }
-
-    private void appendPart(StringBuilder sb, String value) {
-        String normalized = normalizeText(value);
-        if (normalized == null || normalized.isBlank()) {
-            return;
-        }
-
-        if (!sb.isEmpty()) {
-            sb.append(' ');
-        }
-        sb.append(normalized);
     }
 }

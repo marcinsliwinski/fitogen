@@ -16,9 +16,6 @@
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
 
-<?import javafx.scene.control.TableColumn?>
-<?import javafx.scene.control.TableView?>
-<?import javafx.scene.layout.Region?>
 <VBox spacing="16"
       xmlns:fx="http://javafx.com/fxml"
       fx:controller="com.egen.fitogen.ui.controller.SettingsController"
@@ -149,16 +146,13 @@
 
                             <VBox spacing="12" styleClass="stat-card">
                                 <Label text="Wspólny słownik krajów" styleClass="stat-title"/>
-                                <Label text="Ten słownik jest współdzielony przez Kontrahentów, EPPO i dane podmiotu. Zarządzasz tutaj tylko wpisami własnymi; katalog bazowy pozostaje wspólną referencją dla całej aplikacji." wrapText="true" styleClass="page-subtitle"/>
+                                <Label text="Ten słownik jest współdzielony przez Kontrahentów, EPPO i dane podmiotu. Możesz dopisywać własne wpisy bez zmiany schematu bazy." wrapText="true" styleClass="page-subtitle"/>
                                 <Label fx:id="countryDictionaryStatusLabel" wrapText="true" styleClass="page-subtitle"/>
                                 <HBox spacing="14">
-                                    <VBox spacing="8">
-                                        <TextField fx:id="customCountrySearchField" promptText="Filtruj wpisy własne po kraju lub kodzie"/>
-                                        <ListView fx:id="customCountryEntriesList" prefWidth="320" prefHeight="220"/>
-                                    </VBox>
+                                    <ListView fx:id="customCountryEntriesList" prefWidth="320" prefHeight="220"/>
                                     <VBox spacing="10" HBox.hgrow="ALWAYS">
                                         <TextField fx:id="customCountryNameField" promptText="Nazwa kraju"/>
-                                        <TextField fx:id="customCountryCodeField" promptText="Kod kraju, dokładnie 2 litery, np. PL"/>
+                                        <TextField fx:id="customCountryCodeField" promptText="Kod kraju, np. PL"/>
                                         <HBox spacing="10">
                                             <Button text="Nowy" onAction="#clearCustomCountryEntryForm" styleClass="button-secondary"/>
                                             <Button text="Zapisz wpis" onAction="#saveCustomCountryEntry"/>
@@ -285,116 +279,13 @@
                 </ScrollPane>
             </Tab>
 
-
-            <Tab text="Import / Eksport CSV">
+            <Tab text="Pomoc">
                 <ScrollPane fitToWidth="true" fitToHeight="true">
                     <content>
                         <VBox spacing="16" styleClass="content-card">
                             <padding><Insets top="16" right="16" bottom="16" left="16"/></padding>
-
-                            <VBox spacing="12" styleClass="stat-card">
-                                <Label text="Import / Eksport CSV" styleClass="stat-title"/>
-                                <Label fx:id="importExportScopeSummaryLabel" wrapText="true" styleClass="page-subtitle"/>
-                                <Label fx:id="plantsImportSyncLabel" wrapText="true"/>
-                                <Label fx:id="eppoImportSyncLabel" wrapText="true"/>
-                                <Label fx:id="countriesImportSyncLabel" wrapText="true"/>
-                                <Label fx:id="contrahentsImportOnlyLabel" wrapText="true"/>
-                                <Label fx:id="documentsImportOnlyLabel" wrapText="true"/>
-                                <Label fx:id="exportCsvPlanLabel" wrapText="true"/>
-                                <Label fx:id="importExportRecommendationLabel" wrapText="true"/>
-                            </VBox>
-
-                            <Separator/>
-
-                            <VBox spacing="12" styleClass="stat-card">
-                                <HBox spacing="10" alignment="CENTER_LEFT">
-                                    <Label text="Preview importu CSV dla roślin" styleClass="stat-title"/>
-                                    <Region HBox.hgrow="ALWAYS"/>
-                                    <Button text="Wybierz plik CSV" onAction="#previewPlantsImportCsv"/>
-                                    <Button text="Wyczyść preview" onAction="#clearPlantsImportPreview" styleClass="button-secondary"/>
-                                </HBox>
-                                <Label fx:id="plantsImportPreviewStatusLabel" wrapText="true" styleClass="page-subtitle"/>
-                                <Label fx:id="plantsImportPreviewFileLabel" wrapText="true"/>
-                                <Label fx:id="plantsImportPreviewSummaryLabel" wrapText="true"/>
-                                <TableView fx:id="plantsImportPreviewTable" prefHeight="260">
-                                    <columns>
-                                        <TableColumn fx:id="plantsColRowNumber" text="Wiersz" prefWidth="70"/>
-                                        <TableColumn fx:id="plantsColSpecies" text="Gatunek" prefWidth="180"/>
-                                        <TableColumn fx:id="plantsColVariety" text="Odmiana" prefWidth="150"/>
-                                        <TableColumn fx:id="plantsColRootstock" text="Podkładka" prefWidth="130"/>
-                                        <TableColumn fx:id="plantsColEppoCode" text="Kod EPPO" prefWidth="100"/>
-                                        <TableColumn fx:id="plantsColPassportRequired" text="Paszport" prefWidth="85"/>
-                                        <TableColumn fx:id="plantsColVisibilityStatus" text="Widoczność" prefWidth="110"/>
-                                        <TableColumn fx:id="plantsColImportStatus" text="Status preview" prefWidth="140"/>
-                                        <TableColumn fx:id="plantsColImportMessage" text="Komentarz" prefWidth="320"/>
-                                    </columns>
-                                </TableView>
-                            </VBox>
-
-                            <Separator/>
-
-                            <VBox spacing="12" styleClass="stat-card">
-                                <HBox spacing="10" alignment="CENTER_LEFT">
-                                    <Label text="Preview importu CSV dla kontrahentów" styleClass="stat-title"/>
-                                    <Region HBox.hgrow="ALWAYS"/>
-                                    <Button text="Wybierz plik CSV" onAction="#previewContrahentsImportCsv"/>
-                                    <Button text="Wyczyść preview" onAction="#clearContrahentsImportPreview" styleClass="button-secondary"/>
-                                </HBox>
-                                <Label fx:id="contrahentsImportPreviewStatusLabel" wrapText="true" styleClass="page-subtitle"/>
-                                <Label fx:id="contrahentsImportPreviewFileLabel" wrapText="true"/>
-                                <Label fx:id="contrahentsImportPreviewSummaryLabel" wrapText="true"/>
-                                <TableView fx:id="contrahentsImportPreviewTable" prefHeight="260">
-                                    <columns>
-                                        <TableColumn fx:id="contrahentsColRowNumber" text="Wiersz" prefWidth="70"/>
-                                        <TableColumn fx:id="contrahentsColName" text="Nazwa" prefWidth="190"/>
-                                        <TableColumn fx:id="contrahentsColCountry" text="Kraj" prefWidth="140"/>
-                                        <TableColumn fx:id="contrahentsColCountryCode" text="Kod kraju" prefWidth="100"/>
-                                        <TableColumn fx:id="contrahentsColCity" text="Miasto" prefWidth="120"/>
-                                        <TableColumn fx:id="contrahentsColPostalCode" text="Kod pocztowy" prefWidth="110"/>
-                                        <TableColumn fx:id="contrahentsColSupplier" text="Dostawca" prefWidth="90"/>
-                                        <TableColumn fx:id="contrahentsColClient" text="Odbiorca" prefWidth="90"/>
-                                        <TableColumn fx:id="contrahentsColImportStatus" text="Status preview" prefWidth="140"/>
-                                        <TableColumn fx:id="contrahentsColImportMessage" text="Komentarz" prefWidth="320"/>
-                                    </columns>
-                                </TableView>
-                            </VBox>
-                        </VBox>
-                    </content>
-                </ScrollPane>
-            </Tab>
-
-            <Tab text="Audit Log">
-                <ScrollPane fitToWidth="true" fitToHeight="true">
-                    <content>
-                        <VBox spacing="16" styleClass="content-card">
-                            <padding><Insets top="16" right="16" bottom="16" left="16"/></padding>
-
-                            <VBox spacing="8" styleClass="stat-card">
-                                <Label text="Audit Log" styleClass="stat-title"/>
-                                <Label text="Widok pokazuje fundament dziennika audytowego oraz ostatnie zapisane wpisy. Na tym etapie jest to odczyt bez filtrowania i paginacji." wrapText="true" styleClass="page-subtitle"/>
-                                <Label fx:id="auditLogCountLabel" wrapText="true" styleClass="page-subtitle"/>
-                                <Label fx:id="auditLogLatestEntryLabel" wrapText="true" styleClass="page-subtitle"/>
-                                <Label fx:id="auditLogReadinessLabel" wrapText="true" styleClass="page-subtitle"/>
-                            </VBox>
-
-                            <VBox spacing="10">
-                                <Label text="Ostatnie wpisy" styleClass="stat-title"/>
-                                <GridPane hgap="10" vgap="10">
-                                    <columnConstraints>
-                                        <ColumnConstraints percentWidth="30"/>
-                                        <ColumnConstraints percentWidth="30"/>
-                                        <ColumnConstraints percentWidth="40"/>
-                                    </columnConstraints>
-
-                                    <ComboBox fx:id="auditLogEntityTypeFilterBox" promptText="Wszystkie encje" maxWidth="1.7976931348623157E308" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
-                                    <ComboBox fx:id="auditLogActionTypeFilterBox" promptText="Wszystkie akcje" maxWidth="1.7976931348623157E308" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
-                                    <TextField fx:id="auditLogSearchField" promptText="Szukaj po aktorze, opisie, encji lub ID..." GridPane.rowIndex="0" GridPane.columnIndex="2"/>
-                                </GridPane>
-                                <ListView fx:id="auditLogEntriesList" prefHeight="320"/>
-                                <HBox spacing="10" alignment="CENTER_RIGHT">
-                                    <Button text="Odśwież widok" onAction="#refreshAuditLogView" styleClass="button-secondary"/>
-                                </HBox>
-                            </VBox>
+                            <Label text="Pomoc" styleClass="stat-title"/>
+                            <Label text="Miejsce na Quick Start, instrukcje i kolejne sekcje pomocy." wrapText="true" styleClass="page-subtitle"/>
                         </VBox>
                     </content>
                 </ScrollPane>

@@ -14,14 +14,11 @@ public class CountryDirectoryService {
 
     private final ContrahentService contrahentService;
     private final AppSettingsService appSettingsService;
-    private final AuditLogService auditLogService;
 
     public CountryDirectoryService(ContrahentService contrahentService,
-                                   AppSettingsService appSettingsService,
-                                   AuditLogService auditLogService) {
+                                   AppSettingsService appSettingsService) {
         this.contrahentService = contrahentService;
         this.appSettingsService = appSettingsService;
-        this.auditLogService = auditLogService;
     }
 
     public List<CountryDirectory.CountryEntry> getEntries() {
@@ -92,20 +89,10 @@ public class CountryDirectoryService {
     }
 
     public void saveCustomEntry(String country, String countryCode) {
-        saveCustomEntry(null, null, country, countryCode);
-    }
-
-    public void saveCustomEntry(String originalCountry,
-                                String originalCountryCode,
-                                String country,
-                                String countryCode) {
         CountryDirectory.CountryEntry normalized = normalizeEntry(new CountryDirectory.CountryEntry(country, countryCode));
         if (normalized == null) {
             throw new IllegalArgumentException("Kraj i kod kraju są wymagane.");
         }
-
-        CountryDirectory.CountryEntry original = normalizeEntry(new CountryDirectory.CountryEntry(originalCountry, originalCountryCode));
-        validateEntry(normalized, original);
 
         Map<String, CountryDirectory.CountryEntry> customMap = new LinkedHashMap<>();
         for (CountryDirectory.CountryEntry entry : getCustomEntries()) {
@@ -115,27 +102,8 @@ public class CountryDirectoryService {
             }
         }
 
-        CountryDirectory.CountryEntry existing = original != null ? findCustomEntryByCountry(original.country()) : findCustomEntryByCountry(normalized.country());
-        if (sameEntry(existing, normalized)) {
-            return;
-        }
-
-        if (original != null) {
-            customMap.remove(normalizeKey(original.country()));
-        }
-
         customMap.put(normalizeKey(normalized.country()), normalized);
         appSettingsService.saveCustomCountryEntries(new ArrayList<>(customMap.values()));
-
-        if (existing == null) {
-            log("CREATE", "Dodano własny wpis słownika krajów: " + describe(normalized));
-        } else {
-            log(
-                    "UPDATE",
-                    "Zaktualizowano własny wpis słownika krajów z " + describe(existing)
-                            + " na " + describe(normalized)
-            );
-        }
     }
 
     public void deleteCustomEntry(String country, String countryCode) {
@@ -144,8 +112,6 @@ public class CountryDirectoryService {
         if (normalizedCountry == null) {
             return;
         }
-
-        CountryDirectory.CountryEntry existing = findCustomEntryByCountry(country);
 
         List<CountryDirectory.CountryEntry> retained = new ArrayList<>();
         for (CountryDirectory.CountryEntry entry : getCustomEntries()) {
@@ -162,66 +128,10 @@ public class CountryDirectoryService {
         }
 
         appSettingsService.saveCustomCountryEntries(retained);
-        log("DELETE", "Usunięto własny wpis słownika krajów: " + describe(existing));
     }
 
     private List<Contrahent> existingContrahents() {
         return contrahentService == null ? List.of() : contrahentService.getAllContrahents();
-    }
-
-    private CountryDirectory.CountryEntry findCustomEntryByCountry(String country) {
-        String key = normalizeKey(country);
-        if (key == null) {
-            return null;
-        }
-
-        return getCustomEntries().stream()
-                .map(this::normalizeEntry)
-                .filter(entry -> entry != null && key.equals(normalizeKey(entry.country())))
-                .findFirst()
-                .orElse(null);
-    }
-
-    private void validateEntry(CountryDirectory.CountryEntry candidate, CountryDirectory.CountryEntry ignoredEntry) {
-        if (candidate == null) {
-            throw new IllegalArgumentException("Kraj i kod kraju są wymagane.");
-        }
-
-        if (!candidate.countryCode().matches("[A-Z]{2}")) {
-            throw new IllegalArgumentException("Kod kraju musi składać się z dokładnie 2 liter, np. PL.");
-        }
-
-        String candidateCountryKey = normalizeKey(candidate.country());
-        String candidateCode = normalizeCode(candidate.countryCode());
-        String ignoredCountryKey = ignoredEntry == null ? null : normalizeKey(ignoredEntry.country());
-
-        for (CountryDirectory.CountryEntry entry : getEntries()) {
-            CountryDirectory.CountryEntry current = normalizeEntry(entry);
-            if (current == null) {
-                continue;
-            }
-
-            if (ignoredCountryKey != null && ignoredCountryKey.equals(normalizeKey(current.country()))) {
-                continue;
-            }
-
-            boolean sameCountry = candidateCountryKey.equals(normalizeKey(current.country()));
-            boolean sameCode = candidateCode.equals(normalizeCode(current.countryCode()));
-            if (sameCode && !sameCountry) {
-                throw new IllegalArgumentException(
-                        "Kod kraju " + candidateCode + " jest już używany dla kraju: " + current.country() + "."
-                );
-            }
-        }
-    }
-
-    private boolean sameEntry(CountryDirectory.CountryEntry first, CountryDirectory.CountryEntry second) {
-        if (first == null || second == null) {
-            return false;
-        }
-
-        return normalizeKey(first.country()).equals(normalizeKey(second.country()))
-                && normalizeCode(first.countryCode()).equals(normalizeCode(second.countryCode()));
     }
 
     private CountryDirectory.CountryEntry normalizeEntry(CountryDirectory.CountryEntry entry) {
@@ -259,19 +169,5 @@ public class CountryDirectoryService {
 
         String normalized = value.trim().toUpperCase(Locale.ROOT);
         return normalized.isBlank() ? null : normalized;
-    }
-
-    private void log(String actionType, String description) {
-        if (auditLogService == null) {
-            return;
-        }
-        auditLogService.log("COUNTRY_DIRECTORY", null, actionType, description);
-    }
-
-    private String describe(CountryDirectory.CountryEntry entry) {
-        if (entry == null) {
-            return "[brak wpisu]";
-        }
-        return entry.country() + " (" + entry.countryCode() + ")";
     }
 }

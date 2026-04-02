@@ -1,37 +1,22 @@
 package com.egen.fitogen.ui.controller;
 
 import com.egen.fitogen.config.AppContext;
-import com.egen.fitogen.dto.PlantImportPreviewResult;
-import com.egen.fitogen.dto.PlantImportPreviewRow;
 import com.egen.fitogen.model.AppUser;
 import com.egen.fitogen.service.AppSettingsService;
 import com.egen.fitogen.service.AppUserService;
 import com.egen.fitogen.service.BackupService;
 import com.egen.fitogen.service.ContrahentService;
-import com.egen.fitogen.service.ContrahentCsvImportService;
 import com.egen.fitogen.service.CountryDirectoryService;
 import com.egen.fitogen.service.DocumentService;
 import com.egen.fitogen.service.DocumentTypeService;
 import com.egen.fitogen.service.EppoCodeService;
 import com.egen.fitogen.service.EppoZoneService;
-import com.egen.fitogen.service.PlantBatchService;
-import com.egen.fitogen.service.PlantCsvImportService;
 import com.egen.fitogen.service.PlantService;
 import com.egen.fitogen.ui.router.ViewManager;
 import com.egen.fitogen.ui.util.CountryDirectory;
-import javafx.beans.property.SimpleBooleanProperty;
-import javafx.beans.property.SimpleIntegerProperty;
-import javafx.beans.property.SimpleStringProperty;
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableView;
-import javafx.stage.FileChooser;
-import javafx.stage.Window;
 
-import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
@@ -59,9 +44,6 @@ public class UpdatesController {
     @FXML private Label importReadinessLabel;
     @FXML private Label importDataScopeLabel;
     @FXML private Label importRecommendationLabel;
-    @FXML private Label plantImportPreviewStatusLabel;
-    @FXML private Label plantImportPreviewSummaryLabel;
-    @FXML private Label plantImportPreviewFileLabel;
     @FXML private Label moduleReadinessLabel;
     @FXML private Label recommendedActionLabel;
 
@@ -72,20 +54,6 @@ public class UpdatesController {
     @FXML private Label documentsScopeLabel;
     @FXML private Label scopeStrategySummaryLabel;
     @FXML private Label nextDeliveryRecommendationLabel;
-    @FXML private Label contrahentImportPreviewStatusLabel;
-
-    @FXML private TableView<PlantImportPreviewRow> plantImportPreviewTable;
-    @FXML private TableColumn<PlantImportPreviewRow, Number> colRowNumber;
-    @FXML private TableColumn<PlantImportPreviewRow, String> colSpecies;
-    @FXML private TableColumn<PlantImportPreviewRow, String> colVariety;
-    @FXML private TableColumn<PlantImportPreviewRow, String> colRootstock;
-    @FXML private TableColumn<PlantImportPreviewRow, String> colEppoCode;
-    @FXML private TableColumn<PlantImportPreviewRow, Boolean> colPassportRequired;
-    @FXML private TableColumn<PlantImportPreviewRow, String> colVisibilityStatus;
-    @FXML private TableColumn<PlantImportPreviewRow, String> colImportStatus;
-    @FXML private TableColumn<PlantImportPreviewRow, String> colImportMessage;
-
-    private final ObservableList<PlantImportPreviewRow> plantImportPreviewRows = FXCollections.observableArrayList();
 
     private final AppSettingsService appSettingsService = AppContext.getAppSettingsService();
     private final BackupService backupService = AppContext.getBackupService();
@@ -94,19 +62,12 @@ public class UpdatesController {
     private final CountryDirectoryService countryDirectoryService = AppContext.getCountryDirectoryService();
     private final PlantService plantService = AppContext.getPlantService();
     private final ContrahentService contrahentService = AppContext.getContrahentService();
-    private final PlantBatchService plantBatchService = AppContext.getPlantBatchService();
     private final EppoCodeService eppoCodeService = AppContext.getEppoCodeService();
     private final EppoZoneService eppoZoneService = AppContext.getEppoZoneService();
     private final DocumentService documentService = AppContext.getDocumentService();
-    private final PlantCsvImportService plantCsvImportService =
-            new PlantCsvImportService(plantService, appSettingsService);
-    private final ContrahentCsvImportService contrahentCsvImportService =
-            new ContrahentCsvImportService(contrahentService, countryDirectoryService);
 
     @FXML
     public void initialize() {
-        configurePlantImportPreviewTable();
-        resetPlantImportPreviewState();
         refreshStatus();
     }
 
@@ -133,93 +94,6 @@ public class UpdatesController {
     @FXML
     private void openHelp() {
         ViewManager.show(ViewManager.HELP);
-    }
-
-    @FXML
-    private void previewPlantImportFile() {
-        FileChooser fileChooser = new FileChooser();
-        fileChooser.setTitle("Wybierz plik CSV do preview importu roślin");
-        fileChooser.getExtensionFilters().addAll(
-                new FileChooser.ExtensionFilter("Pliki CSV", "*.csv"),
-                new FileChooser.ExtensionFilter("Pliki tekstowe", "*.txt", "*.tsv"),
-                new FileChooser.ExtensionFilter("Wszystkie pliki", "*.*")
-        );
-
-        Window window = plantImportPreviewTable != null && plantImportPreviewTable.getScene() != null
-                ? plantImportPreviewTable.getScene().getWindow()
-                : null;
-
-        File selectedFile = fileChooser.showOpenDialog(window);
-        if (selectedFile == null) {
-            return;
-        }
-
-        try {
-            PlantImportPreviewResult result = plantCsvImportService.preview(selectedFile.toPath());
-            applyPlantImportPreviewResult(result, selectedFile.toPath());
-        } catch (Exception e) {
-            plantImportPreviewRows.clear();
-            plantImportPreviewFileLabel.setText("Plik preview: " + selectedFile.getAbsolutePath());
-            plantImportPreviewSummaryLabel.setText("Preview importu nie powiódł się.");
-            plantImportPreviewStatusLabel.setText("Błąd preview importu Plants: " + e.getMessage());
-        }
-    }
-
-    @FXML
-    private void clearPlantImportPreview() {
-        resetPlantImportPreviewState();
-    }
-
-    private void configurePlantImportPreviewTable() {
-        colRowNumber.setCellValueFactory(cell -> new SimpleIntegerProperty(cell.getValue().getRowNumber()));
-        colSpecies.setCellValueFactory(cell -> new SimpleStringProperty(nullSafe(cell.getValue().getSpecies())));
-        colVariety.setCellValueFactory(cell -> new SimpleStringProperty(nullSafe(cell.getValue().getVariety())));
-        colRootstock.setCellValueFactory(cell -> new SimpleStringProperty(nullSafe(cell.getValue().getRootstock())));
-        colEppoCode.setCellValueFactory(cell -> new SimpleStringProperty(nullSafe(cell.getValue().getEppoCode())));
-        colPassportRequired.setCellValueFactory(cell -> new SimpleBooleanProperty(cell.getValue().isPassportRequired()));
-        colVisibilityStatus.setCellValueFactory(cell -> new SimpleStringProperty(nullSafe(cell.getValue().getVisibilityStatus())));
-        colImportStatus.setCellValueFactory(cell -> new SimpleStringProperty(nullSafe(cell.getValue().getStatus())));
-        colImportMessage.setCellValueFactory(cell -> new SimpleStringProperty(nullSafe(cell.getValue().getMessage())));
-        plantImportPreviewTable.setItems(plantImportPreviewRows);
-    }
-
-    private void applyPlantImportPreviewResult(PlantImportPreviewResult result, Path csvPath) {
-        plantImportPreviewRows.setAll(result.getRows());
-        plantImportPreviewFileLabel.setText("Plik preview: " + csvPath.toAbsolutePath().normalize());
-        plantImportPreviewSummaryLabel.setText(
-                "Wiersze: " + result.getTotalRowsCount()
-                        + ", nowe: " + result.getNewRowsCount()
-                        + ", już istniejące: " + result.getMatchingExistingCount()
-                        + ", duplikaty w pliku: " + result.getDuplicateInFileCount()
-                        + ", nieprawidłowe: " + result.getInvalidRowsCount()
-                        + ", delimiter: '" + printableDelimiter(result.getDelimiter()) + "'."
-        );
-
-        String headersText = result.getResolvedHeaders().isEmpty()
-                ? "brak rozpoznanych nagłówków"
-                : String.join(", ", result.getResolvedHeaders());
-
-        plantImportPreviewStatusLabel.setText(
-                "Preview importu Plants działa w trybie tylko do odczytu. Rozpoznane kolumny: "
-                        + headersText
-                        + ". Zapis do bazy nie jest jeszcze aktywny."
-        );
-    }
-
-    private void resetPlantImportPreviewState() {
-        plantImportPreviewRows.clear();
-        if (plantImportPreviewFileLabel != null) {
-            plantImportPreviewFileLabel.setText("Plik preview: nie wybrano pliku.");
-        }
-        if (plantImportPreviewSummaryLabel != null) {
-            plantImportPreviewSummaryLabel.setText("Preview importu: brak danych do wyświetlenia.");
-        }
-        if (plantImportPreviewStatusLabel != null) {
-            plantImportPreviewStatusLabel.setText(
-                    "Fundament importu CSV dla Plants jest przygotowany po stronie backendu w trybie preview-only. "
-                            + plantCsvImportService.getSupportedColumnsSummary()
-            );
-        }
     }
 
     private void loadBackupStatus() {
@@ -330,8 +204,8 @@ public class UpdatesController {
         int documentsCount = documentService.getAllDocuments().size();
 
         importDataScopeLabel.setText(
-                "Zakres przygotowania: rośliny (" + plantsCount + "), kontrahenci (" + contrahentsCount + "), dokumenty (" + documentsCount + "). "
-                        + "Import preview działa dziś tylko dla Plants, ale moduł jest przygotowywany szerzej pod dane referencyjne i dane operacyjne."
+                "Zakres danych: rośliny (" + plantsCount + "), kontrahenci (" + contrahentsCount + "), dokumenty (" + documentsCount + "). "
+                        + "Importy i eksporty CSV są już prowadzone w Ustawieniach, a moduł Aktualizacje koncentruje się na przyszłym Server Update."
         );
 
         int readinessScore = 0;
@@ -350,10 +224,6 @@ public class UpdatesController {
 
         importReadinessLabel.setText(buildImportReadinessSummary(readinessScore, hasBackup, hasCountryDirectory));
         importRecommendationLabel.setText(buildImportRecommendation(hasBackup, issuerComplete, hasUsers, hasCountryDirectory, plantsCount, contrahentsCount, documentsCount));
-        contrahentImportPreviewStatusLabel.setText(
-                "Następny przygotowany zakres import-only: kontrahenci. Fundament backendowego preview CSV jest już gotowy. "
-                        + contrahentCsvImportService.getSupportedColumnsSummary()
-        );
     }
 
     private void loadScopeRoadmapStatus() {
@@ -367,7 +237,7 @@ public class UpdatesController {
         plantsScopeLabel.setText(
                 "Plants — import + aktualizacja z serwera. Aktualny stan: "
                         + plantCount
-                        + " rekordów. Preview CSV już działa, więc to pozostaje najbliższy kandydat do dalszego wdrożenia."
+                        + " rekordów. Import i eksport CSV są już obsługiwane w Ustawieniach, a ten moduł pozostaje miejscem dla przyszłej synchronizacji z serwera."
         );
 
         eppoScopeLabel.setText(
@@ -397,13 +267,13 @@ public class UpdatesController {
         );
 
         scopeStrategySummaryLabel.setText(
-                "Strategia modułu Updates: aplikacja może być aktualizowana razem lub równolegle z synchronizacją danych serwerowych, "
+                "Strategia modułu Aktualizacje: aplikacja może być aktualizowana razem lub równolegle z synchronizacją danych serwerowych, "
                         + "ale dane należy rozdzielić na dwa typy procesów: import-only (kontrahenci, dokumenty) oraz import + server update (plants, EPPO, kraje)."
         );
 
         nextDeliveryRecommendationLabel.setText(
-                "Najbezpieczniejszy następny krok: utrzymać obecny preview Plants i dodać analogiczną warstwę preview/import planu dla kontrahentów, "
-                        + "a dopiero potem wejść w model aktualizacji serwerowej dla Plants, EPPO i wspólnego słownika krajów."
+                "Najbezpieczniejszy następny krok: zostawić importy i eksporty CSV wyłącznie w Ustawieniach, "
+                        + "a tutaj wejść w projekt modelu Server Update dla Plants, EPPO i wspólnego słownika krajów."
         );
     }
 
@@ -436,7 +306,7 @@ public class UpdatesController {
         );
 
         plantDatabaseStatusLabel.setText(
-                "Aktualizacja danych z serwera: docelowo obejmie Plants, EPPO i wspólny słownik krajów. Kontrahenci oraz dokumenty pozostają zakresem import-only."
+                "Server Update: docelowo obejmie Plants, EPPO i wspólny słownik krajów. Kontrahenci oraz dokumenty pozostają wyłącznie zakresem import-only i nie powinny wracać do tego modułu jako CSV."
         );
 
         moduleReadinessLabel.setText(buildReadinessSummary(readinessScore));
@@ -445,12 +315,12 @@ public class UpdatesController {
 
     private String buildReadinessSummary(int readinessScore) {
         if (readinessScore >= 5) {
-            return "Gotowość modułu: wysoka. Konfiguracja administracyjna jest domknięta i moduł Updates może być dalej rozwijany o realne mechanizmy aktualizacji danych i aplikacji.";
+            return "Gotowość modułu: wysoka. Konfiguracja administracyjna jest domknięta i moduł Aktualizacje może być dalej rozwijany o realne mechanizmy aktualizacji danych i aplikacji.";
         }
         if (readinessScore >= 3) {
             return "Gotowość modułu: średnia. Podstawy są przygotowane, ale przed wdrożeniem realnych aktualizacji warto domknąć brakujące elementy operacyjne.";
         }
-        return "Gotowość modułu: niska. Najpierw warto uporządkować konfigurację systemu, zanim moduł Updates zacznie wykonywać operacje na danych lub plikach aplikacji.";
+        return "Gotowość modułu: niska. Najpierw warto uporządkować konfigurację systemu, zanim moduł Aktualizacje zacznie wykonywać operacje na danych lub plikach aplikacji.";
     }
 
     private String buildRecommendation(boolean hasBackup,
@@ -459,7 +329,7 @@ public class UpdatesController {
                                        boolean hasUsers,
                                        boolean hasDefaultUser) {
         if (!hasBackup) {
-            return "Zalecane następne działanie: wykonaj backup w Ustawieniach, zanim moduł Updates dostanie operacje modyfikujące dane.";
+            return "Zalecane następne działanie: wykonaj backup w Ustawieniach, zanim moduł Aktualizacje dostanie operacje modyfikujące dane.";
         }
         if (!issuerComplete) {
             return "Zalecane następne działanie: uzupełnij dane podmiotu w Ustawieniach, aby środowisko było kompletne operacyjnie.";
@@ -473,22 +343,22 @@ public class UpdatesController {
         if (!hasDocumentTypes) {
             return "Zalecane następne działanie: dodaj typy dokumentów w Ustawieniach, aby przygotować system do pełniejszej pracy operacyjnej.";
         }
-        return "Zalecane następne działanie: można bezpiecznie przejść do budowy realnego mechanizmu aktualizacji danych referencyjnych i później aplikacji.";
+        return "Zalecane następne działanie: można bezpiecznie przejść do budowy realnego mechanizmu Server Update dla danych referencyjnych i później aplikacji.";
     }
 
     private String buildImportReadinessSummary(int readinessScore, boolean hasBackup, boolean hasCountryDirectory) {
         if (readinessScore >= 4) {
-            return "Gotowość pod import: wysoka. Środowisko ma backup, dane administracyjne i wspólny słownik krajów, więc można projektować pierwszy bezpieczny import rekordów.";
+            return "Gotowość pod zakresy danych: wysoka. Środowisko ma backup, dane administracyjne i wspólny słownik krajów, więc można projektować bezpieczne procesy importu i Server Update.";
         }
         if (readinessScore >= 2) {
-            return "Gotowość pod import: średnia. Da się rozpocząć projektowanie importów, ale przed wdrożeniem zapisu warto domknąć backup i podstawy referencyjne.";
+            return "Gotowość pod zakresy danych: średnia. Da się rozpocząć projektowanie procesów, ale przed wdrożeniem zapisu warto domknąć backup i podstawy referencyjne.";
         }
         String suffix = !hasBackup
                 ? " Najpierw wykonaj backup."
                 : !hasCountryDirectory
-                  ? " Najpierw upewnij się, że wspólny słownik krajów jest gotowy."
-                  : "";
-        return "Gotowość pod import: niska. Fundament operacyjny nadal wymaga porządków." + suffix;
+                ? " Najpierw upewnij się, że wspólny słownik krajów jest gotowy."
+                : "";
+        return "Gotowość pod zakresy danych: niska. Fundament operacyjny nadal wymaga porządków." + suffix;
     }
 
     private String buildImportRecommendation(boolean hasBackup,
@@ -499,27 +369,27 @@ public class UpdatesController {
                                              int contrahentsCount,
                                              int documentsCount) {
         if (!hasBackup) {
-            return "Rekomendacja importowa: zanim pojawi się pierwszy importer, wykonaj backup bazy danych.";
+            return "Rekomendacja: zanim pojawi się Server Update, wykonaj backup bazy danych.";
         }
         if (!hasCountryDirectory) {
-            return "Rekomendacja importowa: uporządkuj wspólny słownik krajów, bo będzie potrzebny przy imporcie kontrahentów i danych referencyjnych.";
+            return "Rekomendacja: uporządkuj wspólny słownik krajów, bo będzie potrzebny zarówno przy importach w Ustawieniach, jak i przy przyszłej synchronizacji z serwera.";
         }
         if (!hasUsers) {
-            return "Rekomendacja importowa: dodaj użytkownika domyślnego, aby przyszły import mógł być lepiej opisany w Audit Log.";
+            return "Rekomendacja: dodaj użytkownika domyślnego, aby przyszłe operacje aktualizacyjne mogły być lepiej opisane w Audit Log.";
         }
         if (!issuerComplete) {
-            return "Rekomendacja importowa: uzupełnij dane podmiotu, żeby środowisko było kompletne operacyjnie przed szerszym wejściem w automatyzację.";
+            return "Rekomendacja: uzupełnij dane podmiotu, żeby środowisko było kompletne operacyjnie przed szerszym wejściem w automatyzację.";
         }
         if (plantsCount == 0) {
-            return "Rekomendacja importowa: pierwszym kandydatem do wdrożenia pozostaje import roślin. Ma już backend preview i najniższe ryzyko zależności.";
+            return "Rekomendacja: import roślin jest już prowadzony w Ustawieniach, więc tutaj warto przygotowywać kolejne reguły dla zakresów Server Update.";
         }
         if (contrahentsCount == 0) {
-            return "Rekomendacja importowa: kolejnym logicznym krokiem jest import kontrahentów z walidacją krajów i kodów krajów.";
+            return "Rekomendacja: kontrahenci pozostają zakresem import-only w Ustawieniach z walidacją krajów i kodów krajów.";
         }
         if (documentsCount == 0) {
-            return "Rekomendacja importowa: import dokumentów zostaw na później, po domknięciu walidacji zależności roślina/partia/kontrahent.";
+            return "Rekomendacja: dokumenty pozostają najpóźniejszym zakresem import-only, po domknięciu walidacji zależności roślina/partia/kontrahent.";
         }
-        return "Rekomendacja importowa: środowisko ma już dane bazowe, więc można przejść do kolejnych preview importerów i dopiero potem do bezpiecznego zapisu.";
+        return "Rekomendacja: środowisko ma już dane bazowe, więc można przejść do projektowania reguł Server Update równolegle z dalszym rozwojem importów i eksportów w Ustawieniach.";
     }
 
     private String describeUser(AppUser user) {
@@ -546,16 +416,5 @@ public class UpdatesController {
             return (sizeBytes / 1024) + " KB";
         }
         return String.format("%.2f MB", sizeBytes / (1024.0 * 1024.0));
-    }
-
-    private String printableDelimiter(char delimiter) {
-        if (delimiter == '\t') {
-            return "\\t";
-        }
-        return String.valueOf(delimiter);
-    }
-
-    private String nullSafe(String value) {
-        return value == null ? "" : value;
     }
 }

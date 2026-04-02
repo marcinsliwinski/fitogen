@@ -4,45 +4,27 @@ import com.egen.fitogen.config.AppContext;
 import com.egen.fitogen.domain.NumberingConfig;
 import com.egen.fitogen.domain.NumberingSectionType;
 import com.egen.fitogen.domain.NumberingType;
-
-import com.egen.fitogen.dto.ContrahentImportPreviewResult;
-import com.egen.fitogen.dto.ContrahentImportPreviewRow;
-import com.egen.fitogen.dto.PlantImportPreviewResult;
-import com.egen.fitogen.dto.PlantImportPreviewRow;
 import com.egen.fitogen.model.AppUser;
-import com.egen.fitogen.model.AuditLogEntry;
 import com.egen.fitogen.model.DocumentType;
 import com.egen.fitogen.model.IssuerProfile;
 import com.egen.fitogen.service.AppSettingsService;
 import com.egen.fitogen.service.AppUserService;
-import com.egen.fitogen.service.AuditLogService;
 import com.egen.fitogen.service.BackupService;
-import com.egen.fitogen.service.ContrahentCsvImportService;
 import com.egen.fitogen.service.CountryDirectoryService;
 import com.egen.fitogen.service.DocumentTypeService;
 import com.egen.fitogen.service.NumberingConfigService;
-import com.egen.fitogen.service.PlantCsvImportService;
-import com.egen.fitogen.service.PlantService;
-import com.egen.fitogen.service.ContrahentService;
 import com.egen.fitogen.ui.util.CountryDirectory;
 import com.egen.fitogen.ui.util.DialogUtil;
 import com.egen.fitogen.ui.util.ValidationUtil;
-import javafx.beans.property.SimpleBooleanProperty;
-import javafx.beans.property.SimpleIntegerProperty;
-import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.stage.DirectoryChooser;
-import javafx.stage.FileChooser;
 import javafx.stage.Window;
 import javafx.util.StringConverter;
 
@@ -51,10 +33,7 @@ import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Locale;
-import java.util.Set;
 import java.util.function.Supplier;
 
 public class SettingsController {
@@ -81,7 +60,6 @@ public class SettingsController {
     @FXML private TextField documentTypeNameField;
     @FXML private TextField documentTypeCodeField;
     @FXML private ListView<CountryDirectory.CountryEntry> customCountryEntriesList;
-    @FXML private TextField customCountrySearchField;
     @FXML private TextField customCountryNameField;
     @FXML private TextField customCountryCodeField;
     @FXML private Label countryDictionaryStatusLabel;
@@ -89,14 +67,6 @@ public class SettingsController {
     @FXML private TextField userFirstNameField;
     @FXML private TextField userLastNameField;
     @FXML private ComboBox<AppUser> defaultUserBox;
-
-    @FXML private Label auditLogCountLabel;
-    @FXML private Label auditLogLatestEntryLabel;
-    @FXML private Label auditLogReadinessLabel;
-    @FXML private ComboBox<String> auditLogEntityTypeFilterBox;
-    @FXML private ComboBox<String> auditLogActionTypeFilterBox;
-    @FXML private TextField auditLogSearchField;
-    @FXML private ListView<AuditLogEntry> auditLogEntriesList;
 
     @FXML private TextField issuerNameField;
     @FXML private ComboBox<String> issuerCountryField;
@@ -112,58 +82,12 @@ public class SettingsController {
     @FXML private CheckBox plantFullCatalogEnabledCheckBox;
     @FXML private Label plantCatalogModeStatusLabel;
 
-    @FXML private Label importExportScopeSummaryLabel;
-    @FXML private Label importExportRecommendationLabel;
-    @FXML private Label exportCsvPlanLabel;
-    @FXML private Label plantsImportSyncLabel;
-    @FXML private Label eppoImportSyncLabel;
-    @FXML private Label countriesImportSyncLabel;
-    @FXML private Label contrahentsImportOnlyLabel;
-    @FXML private Label documentsImportOnlyLabel;
-
-    @FXML private Label plantsImportPreviewStatusLabel;
-    @FXML private Label plantsImportPreviewFileLabel;
-    @FXML private Label plantsImportPreviewSummaryLabel;
-    @FXML private TableView<PlantImportPreviewRow> plantsImportPreviewTable;
-    @FXML private TableColumn<PlantImportPreviewRow, Number> plantsColRowNumber;
-    @FXML private TableColumn<PlantImportPreviewRow, String> plantsColSpecies;
-    @FXML private TableColumn<PlantImportPreviewRow, String> plantsColVariety;
-    @FXML private TableColumn<PlantImportPreviewRow, String> plantsColRootstock;
-    @FXML private TableColumn<PlantImportPreviewRow, String> plantsColEppoCode;
-    @FXML private TableColumn<PlantImportPreviewRow, Boolean> plantsColPassportRequired;
-    @FXML private TableColumn<PlantImportPreviewRow, String> plantsColVisibilityStatus;
-    @FXML private TableColumn<PlantImportPreviewRow, String> plantsColImportStatus;
-    @FXML private TableColumn<PlantImportPreviewRow, String> plantsColImportMessage;
-
-    @FXML private Label contrahentsImportPreviewStatusLabel;
-    @FXML private Label contrahentsImportPreviewFileLabel;
-    @FXML private Label contrahentsImportPreviewSummaryLabel;
-    @FXML private TableView<ContrahentImportPreviewRow> contrahentsImportPreviewTable;
-    @FXML private TableColumn<ContrahentImportPreviewRow, Number> contrahentsColRowNumber;
-    @FXML private TableColumn<ContrahentImportPreviewRow, String> contrahentsColName;
-    @FXML private TableColumn<ContrahentImportPreviewRow, String> contrahentsColCountry;
-    @FXML private TableColumn<ContrahentImportPreviewRow, String> contrahentsColCountryCode;
-    @FXML private TableColumn<ContrahentImportPreviewRow, String> contrahentsColCity;
-    @FXML private TableColumn<ContrahentImportPreviewRow, String> contrahentsColPostalCode;
-    @FXML private TableColumn<ContrahentImportPreviewRow, Boolean> contrahentsColSupplier;
-    @FXML private TableColumn<ContrahentImportPreviewRow, Boolean> contrahentsColClient;
-    @FXML private TableColumn<ContrahentImportPreviewRow, String> contrahentsColImportStatus;
-    @FXML private TableColumn<ContrahentImportPreviewRow, String> contrahentsColImportMessage;
-
     private final NumberingConfigService numberingConfigService = AppContext.getNumberingConfigService();
     private final BackupService backupService = AppContext.getBackupService();
     private final DocumentTypeService documentTypeService = AppContext.getDocumentTypeService();
     private final AppUserService appUserService = AppContext.getAppUserService();
     private final AppSettingsService appSettingsService = AppContext.getAppSettingsService();
     private final CountryDirectoryService countryDirectoryService = AppContext.getCountryDirectoryService();
-    private final AuditLogService auditLogService = AppContext.getAuditLogService();
-    private final PlantService plantService = AppContext.getPlantService();
-    private final ContrahentService contrahentService = AppContext.getContrahentService();
-    private final PlantCsvImportService plantCsvImportService = new PlantCsvImportService(plantService, appSettingsService);
-    private final ContrahentCsvImportService contrahentCsvImportService = new ContrahentCsvImportService(contrahentService, countryDirectoryService);
-
-    private final ObservableList<PlantImportPreviewRow> plantsImportPreviewRows = FXCollections.observableArrayList();
-    private final ObservableList<ContrahentImportPreviewRow> contrahentsImportPreviewRows = FXCollections.observableArrayList();
 
     private boolean loading;
     private boolean updatingDefaultUserSelection;
@@ -172,8 +96,6 @@ public class SettingsController {
     private DocumentType editingDocumentType;
     private CountryDirectory.CountryEntry editingCustomCountryEntry;
     private AppUser editingUser;
-    private final ObservableList<AuditLogEntry> auditLogMasterEntries = FXCollections.observableArrayList();
-    private final ObservableList<CountryDirectory.CountryEntry> customCountryMasterEntries = FXCollections.observableArrayList();
 
     @FXML
     public void initialize() {
@@ -182,8 +104,6 @@ public class SettingsController {
         configureUserControls();
         configureCustomCountryControls();
         configureIssuerCountryControls();
-        configureAuditLogControls();
-        configureImportExportPreviewControls();
 
         numberingTypeBox.getItems().setAll(NumberingType.values());
         numberingTypeBox.setValue(NumberingType.DOCUMENT);
@@ -199,209 +119,7 @@ public class SettingsController {
         loadPlantPassportMode();
         loadPlantCatalogMode();
         refreshBackupStatus();
-        refreshAuditLogView();
-        loadImportExportOverview();
         loadConfig(NumberingType.DOCUMENT);
-    }
-
-
-    private void configureImportExportPreviewControls() {
-        configurePlantsImportPreviewTable();
-        configureContrahentsImportPreviewTable();
-        resetPlantsImportPreviewState();
-        resetContrahentsImportPreviewState();
-    }
-
-    private void configurePlantsImportPreviewTable() {
-        if (plantsImportPreviewTable == null) {
-            return;
-        }
-        plantsColRowNumber.setCellValueFactory(cell -> new SimpleIntegerProperty(cell.getValue().getRowNumber()));
-        plantsColSpecies.setCellValueFactory(cell -> new SimpleStringProperty(safe(cell.getValue().getSpecies())));
-        plantsColVariety.setCellValueFactory(cell -> new SimpleStringProperty(safe(cell.getValue().getVariety())));
-        plantsColRootstock.setCellValueFactory(cell -> new SimpleStringProperty(safe(cell.getValue().getRootstock())));
-        plantsColEppoCode.setCellValueFactory(cell -> new SimpleStringProperty(safe(cell.getValue().getEppoCode())));
-        plantsColPassportRequired.setCellValueFactory(cell -> new SimpleBooleanProperty(cell.getValue().isPassportRequired()));
-        plantsColVisibilityStatus.setCellValueFactory(cell -> new SimpleStringProperty(safe(cell.getValue().getVisibilityStatus())));
-        plantsColImportStatus.setCellValueFactory(cell -> new SimpleStringProperty(safe(cell.getValue().getStatus())));
-        plantsColImportMessage.setCellValueFactory(cell -> new SimpleStringProperty(safe(cell.getValue().getMessage())));
-        plantsImportPreviewTable.setItems(plantsImportPreviewRows);
-    }
-
-    private void configureContrahentsImportPreviewTable() {
-        if (contrahentsImportPreviewTable == null) {
-            return;
-        }
-        contrahentsColRowNumber.setCellValueFactory(cell -> new SimpleIntegerProperty(cell.getValue().getRowNumber()));
-        contrahentsColName.setCellValueFactory(cell -> new SimpleStringProperty(safe(cell.getValue().getName())));
-        contrahentsColCountry.setCellValueFactory(cell -> new SimpleStringProperty(safe(cell.getValue().getCountry())));
-        contrahentsColCountryCode.setCellValueFactory(cell -> new SimpleStringProperty(safe(cell.getValue().getCountryCode())));
-        contrahentsColCity.setCellValueFactory(cell -> new SimpleStringProperty(safe(cell.getValue().getCity())));
-        contrahentsColPostalCode.setCellValueFactory(cell -> new SimpleStringProperty(safe(cell.getValue().getPostalCode())));
-        contrahentsColSupplier.setCellValueFactory(cell -> new SimpleBooleanProperty(cell.getValue().isSupplier()));
-        contrahentsColClient.setCellValueFactory(cell -> new SimpleBooleanProperty(cell.getValue().isClient()));
-        contrahentsColImportStatus.setCellValueFactory(cell -> new SimpleStringProperty(safe(cell.getValue().getStatus())));
-        contrahentsColImportMessage.setCellValueFactory(cell -> new SimpleStringProperty(safe(cell.getValue().getMessage())));
-        contrahentsImportPreviewTable.setItems(contrahentsImportPreviewRows);
-    }
-
-    private void loadImportExportOverview() {
-        if (importExportScopeSummaryLabel == null) {
-            return;
-        }
-
-        int plantCount = plantService.getAllPlants().size();
-        int contrahentCount = contrahentService.getAllContrahents().size();
-        int countryCount = countryDirectoryService.getEntries().size();
-
-        importExportScopeSummaryLabel.setText(
-                "Importy i eksporty CSV są od tego kroku prowadzone w Ustawieniach. Zakres docelowy rozdziela procesy import-only oraz import + aktualizacja z serwera."
-        );
-        plantsImportSyncLabel.setText(
-                "Rośliny — import CSV + późniejsza aktualizacja z serwera. Aktualny stan: " + plantCount + " rekordów. Preview CSV działa w trybie tylko do odczytu."
-        );
-        eppoImportSyncLabel.setText(
-                "EPPO — import + aktualizacja z serwera. Docelowo obejmie kody EPPO razem z gatunkami i krajami/strefami przypisanymi do kodów."
-        );
-        countriesImportSyncLabel.setText(
-                "Lista krajów — import + aktualizacja z serwera. Aktualny stan: " + countryCount + " wpisów wspólnego słownika krajów."
-        );
-        contrahentsImportOnlyLabel.setText(
-                "Kontrahenci — tylko import CSV. Aktualny stan: " + contrahentCount + " rekordów. Preview CSV działa w trybie tylko do odczytu."
-        );
-        documentsImportOnlyLabel.setText(
-                "Dokumenty — tylko import CSV. To obszar o najwyższej złożoności walidacyjnej, dlatego pozostaje po roślinach i kontrahentach."
-        );
-        exportCsvPlanLabel.setText(
-                "Eksport CSV zostanie wdrożony w dokładnie tych samych standardach co import: preview zakresu, spójne kolumny, walidacja i bezpieczne operacje na danych. Najpierw rośliny i kontrahenci, potem pozostałe obszary."
-        );
-        importExportRecommendationLabel.setText(
-                "Najbezpieczniejszy następny krok po tym etapie: domknąć preview-only dla kontrahentów w Ustawieniach, a potem dołożyć pierwsze eksporty CSV w tych samych standardach UX i walidacji."
-        );
-    }
-
-    @FXML
-    private void previewPlantsImportCsv() {
-        File selectedFile = chooseCsvFile("Wybierz plik CSV do preview importu roślin");
-        if (selectedFile == null) {
-            return;
-        }
-
-        try {
-            PlantImportPreviewResult result = plantCsvImportService.preview(selectedFile.toPath());
-            plantsImportPreviewRows.setAll(result.getRows());
-            plantsImportPreviewFileLabel.setText("Plik preview: " + selectedFile.getAbsolutePath());
-            plantsImportPreviewSummaryLabel.setText(
-                    "Wiersze: " + result.getTotalRowsCount()
-                            + ", nowe: " + result.getNewRowsCount()
-                            + ", już istniejące: " + result.getMatchingExistingCount()
-                            + ", duplikaty w pliku: " + result.getDuplicateInFileCount()
-                            + ", nieprawidłowe: " + result.getInvalidRowsCount()
-                            + ", delimiter: '" + printableDelimiter(result.getDelimiter()) + "'."
-            );
-            String headers = result.getResolvedHeaders().isEmpty() ? "brak rozpoznanych nagłówków" : String.join(", ", result.getResolvedHeaders());
-            plantsImportPreviewStatusLabel.setText(
-                    "Preview importu Plants działa w trybie tylko do odczytu. Rozpoznane kolumny: " + headers + ". Zapis do bazy nie jest jeszcze aktywny."
-            );
-        } catch (Exception e) {
-            plantsImportPreviewRows.clear();
-            plantsImportPreviewFileLabel.setText("Plik preview: " + selectedFile.getAbsolutePath());
-            plantsImportPreviewSummaryLabel.setText("Preview importu nie powiódł się.");
-            plantsImportPreviewStatusLabel.setText("Błąd preview importu Plants: " + e.getMessage());
-        }
-    }
-
-    @FXML
-    private void clearPlantsImportPreview() {
-        resetPlantsImportPreviewState();
-    }
-
-    @FXML
-    private void previewContrahentsImportCsv() {
-        File selectedFile = chooseCsvFile("Wybierz plik CSV do preview importu kontrahentów");
-        if (selectedFile == null) {
-            return;
-        }
-
-        try {
-            ContrahentImportPreviewResult result = contrahentCsvImportService.preview(selectedFile.toPath());
-            contrahentsImportPreviewRows.setAll(result.getRows());
-            contrahentsImportPreviewFileLabel.setText("Plik preview: " + selectedFile.getAbsolutePath());
-            contrahentsImportPreviewSummaryLabel.setText(
-                    "Wiersze: " + result.getTotalRowsCount()
-                            + ", nowe: " + result.getNewRowsCount()
-                            + ", już istniejące: " + result.getMatchingExistingCount()
-                            + ", duplikaty w pliku: " + result.getDuplicateInFileCount()
-                            + ", nieprawidłowe: " + result.getInvalidRowsCount()
-                            + ", delimiter: '" + printableDelimiter(result.getDelimiter()) + "'."
-            );
-            String headers = result.getResolvedHeaders().isEmpty() ? "brak rozpoznanych nagłówków" : String.join(", ", result.getResolvedHeaders());
-            contrahentsImportPreviewStatusLabel.setText(
-                    "Preview importu kontrahentów działa w trybie tylko do odczytu. Rozpoznane kolumny: " + headers + ". Zapis do bazy nie jest jeszcze aktywny."
-            );
-        } catch (Exception e) {
-            contrahentsImportPreviewRows.clear();
-            contrahentsImportPreviewFileLabel.setText("Plik preview: " + selectedFile.getAbsolutePath());
-            contrahentsImportPreviewSummaryLabel.setText("Preview importu nie powiódł się.");
-            contrahentsImportPreviewStatusLabel.setText("Błąd preview importu kontrahentów: " + e.getMessage());
-        }
-    }
-
-    @FXML
-    private void clearContrahentsImportPreview() {
-        resetContrahentsImportPreviewState();
-    }
-
-    private void resetPlantsImportPreviewState() {
-        plantsImportPreviewRows.clear();
-        if (plantsImportPreviewFileLabel != null) {
-            plantsImportPreviewFileLabel.setText("Plik preview: nie wybrano pliku.");
-        }
-        if (plantsImportPreviewSummaryLabel != null) {
-            plantsImportPreviewSummaryLabel.setText("Preview importu: brak danych do wyświetlenia.");
-        }
-        if (plantsImportPreviewStatusLabel != null) {
-            plantsImportPreviewStatusLabel.setText(
-                    "Preview CSV dla Plants jest dostępny w Ustawieniach w trybie tylko do odczytu. "
-                            + plantCsvImportService.getSupportedColumnsSummary()
-            );
-        }
-    }
-
-    private void resetContrahentsImportPreviewState() {
-        contrahentsImportPreviewRows.clear();
-        if (contrahentsImportPreviewFileLabel != null) {
-            contrahentsImportPreviewFileLabel.setText("Plik preview: nie wybrano pliku.");
-        }
-        if (contrahentsImportPreviewSummaryLabel != null) {
-            contrahentsImportPreviewSummaryLabel.setText("Preview importu: brak danych do wyświetlenia.");
-        }
-        if (contrahentsImportPreviewStatusLabel != null) {
-            contrahentsImportPreviewStatusLabel.setText(
-                    "Preview CSV dla kontrahentów jest dostępny w Ustawieniach w trybie tylko do odczytu. "
-                            + contrahentCsvImportService.getSupportedColumnsSummary()
-            );
-        }
-    }
-
-    private File chooseCsvFile(String title) {
-        FileChooser fileChooser = new FileChooser();
-        fileChooser.setTitle(title);
-        fileChooser.getExtensionFilters().addAll(
-                new FileChooser.ExtensionFilter("Pliki CSV", "*.csv"),
-                new FileChooser.ExtensionFilter("Pliki tekstowe", "*.txt", "*.tsv"),
-                new FileChooser.ExtensionFilter("Wszystkie pliki", "*.*")
-        );
-
-        Window window = infoLabel != null && infoLabel.getScene() != null ? infoLabel.getScene().getWindow() : null;
-        return fileChooser.showOpenDialog(window);
-    }
-
-    private String printableDelimiter(char delimiter) {
-        if (delimiter == '\t') {
-            return "\\t";
-        }
-        return String.valueOf(delimiter);
     }
 
     private void configureUserControls() {
@@ -438,7 +156,6 @@ public class SettingsController {
                 return;
             }
             appUserService.setDefaultUserId(newVal != null ? newVal.getId() : null);
-            refreshAuditLogView();
         });
     }
 
@@ -454,12 +171,6 @@ public class SettingsController {
                 setText(empty || item == null ? "" : item.country() + " (" + item.countryCode() + ")");
             }
         });
-
-        customCountryEntriesList.setPlaceholder(new Label("Brak własnych wpisów słownika krajów."));
-
-        if (customCountrySearchField != null) {
-            customCountrySearchField.textProperty().addListener((obs, oldVal, newVal) -> applyCustomCountryFilter());
-        }
     }
 
     private void configureIssuerCountryControls() {
@@ -479,172 +190,6 @@ public class SettingsController {
 
         issuerCountryField.valueProperty().addListener((obs, oldVal, newVal) -> syncIssuerCodeFromCountry());
         issuerCountryCodeField.valueProperty().addListener((obs, oldVal, newVal) -> syncIssuerCountryFromCode());
-    }
-
-    private void configureAuditLogControls() {
-        if (auditLogEntriesList == null) {
-            return;
-        }
-
-        auditLogEntriesList.setPlaceholder(new Label("Brak wpisów audytowych."));
-        auditLogEntriesList.setCellFactory(list -> new ListCell<>() {
-            @Override
-            protected void updateItem(AuditLogEntry item, boolean empty) {
-                super.updateItem(item, empty);
-                if (empty || item == null) {
-                    setText("");
-                    return;
-                }
-
-                String description = safe(item.getDescription());
-                if (description.isBlank()) {
-                    description = "Brak opisu zmiany.";
-                }
-
-                String entityIdPart = item.getEntityId() == null ? "" : " #" + item.getEntityId();
-
-                setText(
-                        safe(item.getChangedAt())
-                                + " | " + safe(item.getActor())
-                                + " | " + safe(item.getEntityType()) + entityIdPart
-                                + " | " + safe(item.getActionType())
-                                + "\n" + description
-                );
-            }
-        });
-
-        if (auditLogEntityTypeFilterBox != null) {
-            auditLogEntityTypeFilterBox.valueProperty().addListener((obs, oldVal, newVal) -> applyAuditLogFilters());
-        }
-
-        if (auditLogActionTypeFilterBox != null) {
-            auditLogActionTypeFilterBox.valueProperty().addListener((obs, oldVal, newVal) -> applyAuditLogFilters());
-        }
-
-        if (auditLogSearchField != null) {
-            auditLogSearchField.textProperty().addListener((obs, oldVal, newVal) -> applyAuditLogFilters());
-        }
-    }
-
-    @FXML
-    private void refreshAuditLogView() {
-        if (auditLogEntriesList == null || auditLogService == null) {
-            return;
-        }
-
-        List<AuditLogEntry> entries = auditLogService.getRecentEntries(200);
-        auditLogMasterEntries.setAll(entries);
-        refreshAuditLogFilterOptions(entries);
-        applyAuditLogFilters();
-
-        int totalEntries = auditLogService.getEntryCount();
-
-        if (auditLogCountLabel != null) {
-            auditLogCountLabel.setText(
-                    "Liczba wpisów w bazie: " + totalEntries
-                            + " | Załadowano do widoku: " + entries.size()
-                            + " | Po filtrach: " + auditLogEntriesList.getItems().size()
-            );
-        }
-
-        if (auditLogLatestEntryLabel != null) {
-            auditLogLatestEntryLabel.setText("Ostatni wpis: " + auditLogService.getLatestEntrySummary());
-        }
-
-        if (auditLogReadinessLabel != null) {
-            auditLogReadinessLabel.setText(
-                    entries.isEmpty()
-                            ? "Fundament Audit Log jest już podłączony. Brak wpisów oznacza, że w tej bazie nie wykonano jeszcze zmian objętych audytem."
-                            : "Audit Log zapisuje już zmiany dla Settings, głównych modułów CRUD i EPPO. Widok ma teraz podstawowe filtrowanie i wyszukiwarkę, nadal bez paginacji i filtrów bazodanowych."
-            );
-        }
-    }
-
-    private void refreshAuditLogFilterOptions(List<AuditLogEntry> entries) {
-        refreshAuditLogComboOptions(
-                auditLogEntityTypeFilterBox,
-                entries.stream().map(AuditLogEntry::getEntityType).toList(),
-                "Wszystkie encje"
-        );
-
-        refreshAuditLogComboOptions(
-                auditLogActionTypeFilterBox,
-                entries.stream().map(AuditLogEntry::getActionType).toList(),
-                "Wszystkie akcje"
-        );
-    }
-
-    private void refreshAuditLogComboOptions(ComboBox<String> comboBox, List<String> values, String allLabel) {
-        if (comboBox == null) {
-            return;
-        }
-
-        String currentValue = comboBox.getValue();
-        Set<String> distinctValues = new LinkedHashSet<>();
-        distinctValues.add(allLabel);
-
-        for (String value : values) {
-            String safeValue = safe(value).trim();
-            if (!safeValue.isBlank()) {
-                distinctValues.add(safeValue);
-            }
-        }
-
-        comboBox.setItems(FXCollections.observableArrayList(distinctValues));
-        if (currentValue != null && distinctValues.contains(currentValue)) {
-            comboBox.setValue(currentValue);
-        } else {
-            comboBox.setValue(allLabel);
-        }
-    }
-
-    private void applyAuditLogFilters() {
-        if (auditLogEntriesList == null) {
-            return;
-        }
-
-        String entityTypeFilter = selectedAuditLogFilterValue(auditLogEntityTypeFilterBox, "Wszystkie encje");
-        String actionTypeFilter = selectedAuditLogFilterValue(auditLogActionTypeFilterBox, "Wszystkie akcje");
-        String searchText = auditLogSearchField == null ? "" : safe(auditLogSearchField.getText()).trim().toLowerCase(Locale.ROOT);
-
-        List<AuditLogEntry> filteredEntries = auditLogMasterEntries.stream()
-                .filter(entry -> matchesAuditLogFilter(entry.getEntityType(), entityTypeFilter, "Wszystkie encje"))
-                .filter(entry -> matchesAuditLogFilter(entry.getActionType(), actionTypeFilter, "Wszystkie akcje"))
-                .filter(entry -> matchesAuditLogSearch(entry, searchText))
-                .toList();
-
-        auditLogEntriesList.setItems(FXCollections.observableArrayList(filteredEntries));
-    }
-
-    private String selectedAuditLogFilterValue(ComboBox<String> comboBox, String defaultValue) {
-        if (comboBox == null || comboBox.getValue() == null || comboBox.getValue().isBlank()) {
-            return defaultValue;
-        }
-        return comboBox.getValue();
-    }
-
-    private boolean matchesAuditLogFilter(String value, String selectedFilter, String allLabel) {
-        if (selectedFilter == null || selectedFilter.isBlank() || allLabel.equals(selectedFilter)) {
-            return true;
-        }
-        return safe(value).equalsIgnoreCase(selectedFilter);
-    }
-
-    private boolean matchesAuditLogSearch(AuditLogEntry entry, String searchText) {
-        if (searchText == null || searchText.isBlank()) {
-            return true;
-        }
-
-        String haystack = String.join(" ",
-                safe(entry.getChangedAt()),
-                safe(entry.getActor()),
-                safe(entry.getEntityType()),
-                safe(entry.getActionType()),
-                safe(entry.getDescription()),
-                entry.getEntityId() == null ? "" : String.valueOf(entry.getEntityId())
-        ).toLowerCase(Locale.ROOT);
-
-        return haystack.contains(searchText);
     }
 
     private void configureDictionarySelections() {
@@ -721,81 +266,36 @@ public class SettingsController {
         }
 
         List<CountryDirectory.CountryEntry> entries = countryDirectoryService.getCustomEntries();
-        customCountryMasterEntries.setAll(entries);
-        applyCustomCountryFilter();
+        customCountryEntriesList.setItems(FXCollections.observableArrayList(entries));
         updateCountryDictionaryStatus();
-    }
-
-
-    private void applyCustomCountryFilter() {
-        if (customCountryEntriesList == null) {
-            return;
-        }
-
-        String filter = safe(customCountrySearchField == null ? null : customCountrySearchField.getText())
-                .toLowerCase(Locale.ROOT);
-
-        List<CountryDirectory.CountryEntry> filtered = customCountryMasterEntries.stream()
-                .filter(entry -> matchesCustomCountryFilter(entry, filter))
-                .toList();
-
-        customCountryEntriesList.setItems(FXCollections.observableArrayList(filtered));
-    }
-
-    private boolean matchesCustomCountryFilter(CountryDirectory.CountryEntry entry, String filter) {
-        if (entry == null) {
-            return false;
-        }
-
-        if (filter == null || filter.isBlank()) {
-            return true;
-        }
-
-        String haystack = (safe(entry.country()) + " " + safe(entry.countryCode())).toLowerCase(Locale.ROOT);
-        return haystack.contains(filter);
-    }
-
-    private void selectCustomCountryEntry(String country) {
-        if (customCountryEntriesList == null || country == null || country.isBlank()) {
-            return;
-        }
-
-        CountryDirectory.CountryEntry selected = customCountryMasterEntries.stream()
-                .filter(entry -> entry != null && entry.country().equalsIgnoreCase(country))
-                .findFirst()
-                .orElse(null);
-
-        if (selected == null) {
-            return;
-        }
-
-        customCountryEntriesList.getSelectionModel().select(selected);
-        customCountryEntriesList.scrollTo(selected);
     }
 
     @FXML
     private void saveCustomCountryEntry() {
         try {
             String country = ValidationUtil.requireText(customCountryNameField.getText(), "Kraj");
-            String code = ValidationUtil.requireText(customCountryCodeField.getText(), "Kod kraju").toUpperCase(Locale.ROOT);
+            String code = ValidationUtil.requireText(customCountryCodeField.getText(), "Kod kraju").toUpperCase();
 
-            if (editingCustomCountryEntry != null) {
-                countryDirectoryService.saveCustomEntry(
+            if (editingCustomCountryEntry != null
+                    && !editingCustomCountryEntry.country().equalsIgnoreCase(country.trim())) {
+                countryDirectoryService.deleteCustomEntry(
                         editingCustomCountryEntry.country(),
-                        editingCustomCountryEntry.countryCode(),
-                        country,
-                        code
+                        editingCustomCountryEntry.countryCode()
                 );
-            } else {
-                countryDirectoryService.saveCustomEntry(country, code);
             }
+
+            countryDirectoryService.saveCustomEntry(country, code);
             loadCustomCountryEntries();
             refreshSharedCountryCombos();
-            selectCustomCountryEntry(country.trim());
+            customCountryEntriesList.getSelectionModel().select(
+                    countryDirectoryService.getCustomEntries().stream()
+                            .filter(entry -> entry.country().equalsIgnoreCase(country.trim()))
+                            .findFirst()
+                            .orElse(null)
+            );
             DialogUtil.showSuccess(editingCustomCountryEntry == null
                     ? "Wpis słownika krajów został dodany."
                     : "Wpis słownika krajów został zaktualizowany.");
-            refreshAuditLogView();
         } catch (IllegalArgumentException e) {
             DialogUtil.showWarning("Błędne dane", e.getMessage());
         } catch (Exception e) {
@@ -821,7 +321,6 @@ public class SettingsController {
         refreshSharedCountryCombos();
         clearCustomCountryEntryForm();
         DialogUtil.showSuccess("Wpis słownika krajów został usunięty.");
-        refreshAuditLogView();
     }
 
     @FXML
@@ -876,7 +375,6 @@ public class SettingsController {
             appSettingsService.setPlantPassportRequiredForAll(enabled);
             updatePlantPassportModeStatus(enabled);
             DialogUtil.showSuccess("Ustawienie paszportów roślin zostało zapisane.");
-            refreshAuditLogView();
         } catch (Exception e) {
             e.printStackTrace();
             DialogUtil.showError("Błąd zapisu", "Nie udało się zapisać ustawienia paszportów roślin.");
@@ -910,7 +408,6 @@ public class SettingsController {
             appSettingsService.setPlantFullCatalogEnabled(enabled);
             updatePlantCatalogModeStatus(enabled);
             DialogUtil.showSuccess("Tryb bazy roślin został zapisany.");
-            refreshAuditLogView();
         } catch (Exception e) {
             e.printStackTrace();
             DialogUtil.showError("Błąd zapisu", "Nie udało się zapisać trybu bazy roślin.");
@@ -945,7 +442,6 @@ public class SettingsController {
             refreshDocumentTypes();
             clearDocumentTypeForm();
             DialogUtil.showSuccess("Typ dokumentu został zapisany.");
-            refreshAuditLogView();
         } catch (Exception e) {
             DialogUtil.showWarning("Błędne dane", e.getMessage());
         }
@@ -967,7 +463,6 @@ public class SettingsController {
         refreshDocumentTypes();
         clearDocumentTypeForm();
         DialogUtil.showSuccess("Typ dokumentu został usunięty.");
-        refreshAuditLogView();
     }
 
     @FXML
@@ -990,7 +485,6 @@ public class SettingsController {
             clearUserForm();
             loadDefaultUser();
             DialogUtil.showSuccess("Użytkownik został zapisany.");
-            refreshAuditLogView();
         } catch (Exception e) {
             DialogUtil.showWarning("Błędne dane", e.getMessage());
         }
@@ -1013,7 +507,6 @@ public class SettingsController {
         clearUserForm();
         loadDefaultUser();
         DialogUtil.showSuccess("Użytkownik został usunięty.");
-        refreshAuditLogView();
     }
 
     @FXML
@@ -1141,14 +634,10 @@ public class SettingsController {
             numberingConfigService.saveConfig(config);
             DialogUtil.showSuccess("Konfiguracja numeratora została zapisana.");
             loadConfig(config.getType());
-            infoLabel.setText("Konfiguracja numeratora została zapisana. Podgląd pokazuje kolejny numer dla bieżącej konfiguracji.");
-            refreshAuditLogView();
         } catch (IllegalArgumentException e) {
-            infoLabel.setText(e.getMessage());
             DialogUtil.showWarning("Błędne dane", e.getMessage());
         } catch (Exception e) {
             e.printStackTrace();
-            infoLabel.setText("Nie udało się zapisać konfiguracji numeratora.");
             DialogUtil.showError("Błąd zapisu", "Nie udało się zapisać konfiguracji numeratora.");
         }
     }
@@ -1177,19 +666,14 @@ public class SettingsController {
         currentCounterField.setText("0");
         loading = false;
         updatePreview();
-        infoLabel.setText("Przywrócono wartości domyślne w formularzu. Zapisz, aby je utrwalić.");
     }
 
     @FXML
     private void saveIssuerProfile() {
         try {
-            IssuerProfile profile = validateIssuerProfile(buildIssuerProfileFromForm());
-            appSettingsService.saveIssuerProfile(profile);
+            appSettingsService.saveIssuerProfile(buildIssuerProfileFromForm());
             loadIssuerProfile();
             DialogUtil.showSuccess("Dane podmiotu zostały zapisane.");
-            refreshAuditLogView();
-        } catch (IllegalArgumentException e) {
-            DialogUtil.showWarning("Błędne dane", e.getMessage());
         } catch (Exception e) {
             e.printStackTrace();
             DialogUtil.showError("Błąd zapisu", "Nie udało się zapisać danych podmiotu.");
@@ -1206,72 +690,6 @@ public class SettingsController {
         issuerStreetField.clear();
         issuerPhytosanitaryNumberField.clear();
         issuerStatusLabel.setText("Formularz wyczyszczony. Zapisz, aby usunąć dane z ustawień.");
-    }
-
-
-    private IssuerProfile validateIssuerProfile(IssuerProfile profile) {
-        if (profile == null) {
-            throw new IllegalArgumentException("Dane podmiotu nie mogą być puste.");
-        }
-
-        boolean hasAnyValue = hasText(profile.getNurseryName())
-                || hasText(profile.getCountry())
-                || hasText(profile.getCountryCode())
-                || hasText(profile.getPostalCode())
-                || hasText(profile.getCity())
-                || hasText(profile.getStreet())
-                || hasText(profile.getPhytosanitaryNumber());
-
-        if (!hasAnyValue) {
-            return profile;
-        }
-
-        if (!hasText(profile.getNurseryName())) {
-            throw new IllegalArgumentException("Nazwa podmiotu jest wymagana, jeśli uzupełniasz dane wystawcy.");
-        }
-
-        String country = safe(profile.getCountry());
-        String countryCode = safe(profile.getCountryCode()).toUpperCase(Locale.ROOT);
-
-        if (country.isBlank() && !countryCode.isBlank()) {
-            String detectedCountry = countryDirectoryService.findCountryByCode(countryCode);
-            if (detectedCountry == null || detectedCountry.isBlank()) {
-                throw new IllegalArgumentException("Nie znaleziono kraju dla kodu: " + countryCode + ".");
-            }
-            country = detectedCountry;
-        }
-
-        if (!country.isBlank() && countryCode.isBlank()) {
-            String detectedCode = countryDirectoryService.findCodeByCountry(country);
-            if (detectedCode == null || detectedCode.isBlank()) {
-                throw new IllegalArgumentException("Nie znaleziono kodu kraju dla wartości: " + country + ".");
-            }
-            countryCode = detectedCode;
-        }
-
-        if (!countryCode.isBlank() && !countryCode.matches("[A-Z]{2}")) {
-            throw new IllegalArgumentException("Kod kraju musi składać się z dokładnie 2 liter, np. PL.");
-        }
-
-        if (!country.isBlank() && !countryCode.isBlank()) {
-            String detectedCode = countryDirectoryService.findCodeByCountry(country);
-            if (detectedCode != null && !detectedCode.isBlank() && !countryCode.equalsIgnoreCase(detectedCode)) {
-                throw new IllegalArgumentException("Kraj i kod kraju nie są spójne. Dla kraju " + country + " oczekiwany kod to " + detectedCode + ".");
-            }
-
-            String detectedCountry = countryDirectoryService.findCountryByCode(countryCode);
-            if (detectedCountry != null && !detectedCountry.isBlank() && !country.equalsIgnoreCase(detectedCountry)) {
-                throw new IllegalArgumentException("Kod kraju " + countryCode + " jest przypisany do kraju: " + detectedCountry + ".");
-            }
-        }
-
-        profile.setCountry(country);
-        profile.setCountryCode(countryCode);
-        return profile;
-    }
-
-    private boolean hasText(String value) {
-        return value != null && !value.trim().isBlank();
     }
 
     private void loadIssuerProfile() {
@@ -1338,7 +756,6 @@ public class SettingsController {
             String backupTimestamp = LocalDateTime.now().format(BACKUP_DATE_TIME_FORMATTER);
             appSettingsService.saveLastBackup(backupPath.toString(), backupTimestamp);
             refreshBackupStatus();
-            refreshAuditLogView();
             DialogUtil.showSuccess("Backup został utworzony:\n" + backupPath);
         } catch (IllegalArgumentException | IllegalStateException e) {
             backupStatusLabel.setText(e.getMessage());

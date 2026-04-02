@@ -12,7 +12,6 @@ import com.egen.fitogen.model.PlantBatchStatus;
 import com.egen.fitogen.repository.DocumentItemRepository;
 import com.egen.fitogen.repository.DocumentRepository;
 
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -24,28 +23,17 @@ public class DocumentService {
     private final DocumentItemRepository itemRepository;
     private final NumberingService numberingService;
     private final PlantBatchService plantBatchService;
-    private final AuditLogService auditLogService;
 
     public DocumentService(
             DocumentRepository documentRepository,
             DocumentItemRepository itemRepository,
             NumberingService numberingService,
             PlantBatchService plantBatchService) {
-        this(documentRepository, itemRepository, numberingService, plantBatchService, null);
-    }
-
-    public DocumentService(
-            DocumentRepository documentRepository,
-            DocumentItemRepository itemRepository,
-            NumberingService numberingService,
-            PlantBatchService plantBatchService,
-            AuditLogService auditLogService) {
 
         this.documentRepository = documentRepository;
         this.itemRepository = itemRepository;
         this.numberingService = numberingService;
         this.plantBatchService = plantBatchService;
-        this.auditLogService = auditLogService;
     }
 
     public void createDocument(DocumentDTO dto) {
@@ -64,7 +52,6 @@ public class DocumentService {
         documentRepository.save(document);
 
         saveItems(document.getId(), dto.getItems());
-        log("CREATE", document.getId(), "Dodano dokument: " + describe(document, dto.getItems()));
     }
 
     public DocumentDTO getDocumentDetails(int documentId) {
@@ -96,8 +83,6 @@ public class DocumentService {
 
         validateDocument(dto, dto.getId());
 
-        List<DocumentItem> existingItems = itemRepository.findByDocumentId(dto.getId());
-
         dto.setDocumentNumber(existing.getDocumentNumber());
         dto.setStatus(existing.getStatus());
 
@@ -106,12 +91,6 @@ public class DocumentService {
 
         itemRepository.deleteByDocumentId(dto.getId());
         saveItems(dto.getId(), dto.getItems());
-        log(
-                "UPDATE",
-                dto.getId(),
-                "Zaktualizowano dokument z " + describeFromEntities(existing, existingItems)
-                        + " na " + describe(updated, dto.getItems())
-        );
     }
 
     public void deleteDocument(int documentId) {
@@ -123,16 +102,6 @@ public class DocumentService {
 
         existing.setStatus(DocumentStatus.CANCELLED);
         documentRepository.update(existing);
-        log(
-                "DELETE",
-                documentId,
-                "Anulowano dokument: " + describeFromEntities(existing, itemRepository.findByDocumentId(documentId))
-        );
-    }
-
-
-    public List<Document> getAllDocuments() {
-        return documentRepository.findAll();
     }
 
     public int getAvailableQtyForBatch(int batchId) {
@@ -299,106 +268,5 @@ public class DocumentService {
             return batch.getExteriorBatchNo();
         }
         return "ID " + batch.getId();
-    }
-
-    private void log(String actionType, Integer entityId, String description) {
-        if (auditLogService == null) {
-            return;
-        }
-        auditLogService.log("DOCUMENT", entityId, actionType, description);
-    }
-
-    private String describe(Document document, List<DocumentItemDTO> items) {
-        if (document == null) {
-            return "[brak dokumentu]";
-        }
-
-        StringBuilder sb = new StringBuilder();
-        appendValue(sb, firstNotBlank(document.getDocumentNumber()), null);
-        appendValue(sb, firstNotBlank(document.getDocumentType()), "typ");
-
-        LocalDate issueDate = document.getIssueDate();
-        if (issueDate != null) {
-            appendValue(sb, issueDate.toString(), "data");
-        }
-
-        appendValue(sb, String.valueOf(document.getContrahentId()), "contrahentId");
-        appendValue(sb, firstNotBlank(document.getCreatedBy()), "utworzył");
-        appendValue(sb, String.valueOf(items == null ? 0 : items.size()), "pozycje");
-        appendValue(sb, String.valueOf(totalQty(items)), "ilość");
-        appendValue(sb, String.valueOf(document.getStatus() == null ? DocumentStatus.ACTIVE : document.getStatus()), "status");
-
-        return sb.toString();
-    }
-
-    private String describeFromEntities(Document document, List<DocumentItem> items) {
-        return describe(document, mapItems(items));
-    }
-
-    private List<DocumentItemDTO> mapItems(List<DocumentItem> items) {
-        List<DocumentItemDTO> result = new ArrayList<>();
-        if (items == null) {
-            return result;
-        }
-
-        for (DocumentItem item : items) {
-            DocumentItemDTO dto = new DocumentItemDTO();
-            dto.setPlantBatchId(item.getPlantBatchId());
-            dto.setQty(item.getQty());
-            dto.setPassportRequired(item.isPassportRequired());
-            result.add(dto);
-        }
-
-        return result;
-    }
-
-    private int totalQty(List<DocumentItemDTO> items) {
-        if (items == null || items.isEmpty()) {
-            return 0;
-        }
-
-        int total = 0;
-        for (DocumentItemDTO item : items) {
-            if (item != null) {
-                total += item.getQty();
-            }
-        }
-        return total;
-    }
-
-    private void appendValue(StringBuilder sb, String value, String label) {
-        String normalized = firstNotBlank(value);
-        if (normalized == null) {
-            return;
-        }
-
-        if (!sb.isEmpty()) {
-            sb.append(' ');
-        }
-
-        if (label != null && !label.isBlank()) {
-            sb.append('[').append(label).append(": ").append(normalized).append(']');
-        } else {
-            sb.append(normalized);
-        }
-    }
-
-    private String firstNotBlank(String... values) {
-        if (values == null) {
-            return null;
-        }
-
-        for (String value : values) {
-            if (value == null) {
-                continue;
-            }
-
-            String normalized = value.trim().replaceAll("\\s+", " ");
-            if (!normalized.isBlank()) {
-                return normalized;
-            }
-        }
-
-        return null;
     }
 }

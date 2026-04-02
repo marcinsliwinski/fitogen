@@ -8,15 +8,9 @@ import java.util.List;
 public class EppoZoneService {
 
     private final EppoZoneRepository repository;
-    private final AuditLogService auditLogService;
 
     public EppoZoneService(EppoZoneRepository repository) {
-        this(repository, null);
-    }
-
-    public EppoZoneService(EppoZoneRepository repository, AuditLogService auditLogService) {
         this.repository = repository;
-        this.auditLogService = auditLogService;
     }
 
     public List<EppoZone> getAll() {
@@ -38,21 +32,14 @@ public class EppoZoneService {
         validate(eppoZone);
 
         if (eppoZone.getId() > 0) {
-            EppoZone existing = repository.findById(eppoZone.getId());
             repository.update(eppoZone);
-            log("UPDATE", eppoZone.getId(), "Zaktualizowano strefę EPPO z " + describe(existing) + " na " + describe(eppoZone));
         } else {
             repository.save(eppoZone);
-            EppoZone persisted = repository.findByCode(eppoZone.getCode());
-            Integer entityId = persisted == null ? null : persisted.getId();
-            log("CREATE", entityId, "Dodano strefę EPPO: " + describe(persisted == null ? eppoZone : persisted));
         }
     }
 
     public void delete(int id) {
-        EppoZone existing = repository.findById(id);
         repository.deleteById(id);
-        log("DELETE", id, "Usunięto strefę EPPO: " + describe(existing));
     }
 
     private void validate(EppoZone eppoZone) {
@@ -83,50 +70,6 @@ public class EppoZoneService {
         eppoZone.setStatus(normalizeStatus(eppoZone.getStatus()));
     }
 
-    private void log(String actionType, Integer entityId, String description) {
-        if (auditLogService == null) {
-            return;
-        }
-        auditLogService.log("EPPO_ZONE", entityId, actionType, description);
-    }
-
-    private String describe(EppoZone eppoZone) {
-        if (eppoZone == null) {
-            return "[brak strefy EPPO]";
-        }
-
-        String code = normalizeText(eppoZone.getCode());
-        String name = normalizeText(eppoZone.getName());
-        String countryCode = normalizeText(eppoZone.getCountryCode());
-        String status = normalizeText(eppoZone.getStatus());
-
-        StringBuilder sb = new StringBuilder();
-        if (code != null && !code.isBlank()) {
-            sb.append(code);
-        }
-        if (name != null && !name.isBlank()) {
-            if (!sb.isEmpty()) {
-                sb.append(" | ");
-            }
-            sb.append(name);
-        }
-        if (countryCode != null && !countryCode.isBlank()) {
-            if (!sb.isEmpty()) {
-                sb.append(" ");
-            }
-            sb.append("[").append(countryCode).append("]");
-        }
-        if (status != null && !status.isBlank()) {
-            if (!sb.isEmpty()) {
-                sb.append(" ");
-            }
-            sb.append("[").append(status).append("]");
-        }
-
-        String description = sb.toString().trim();
-        return description.isBlank() ? "[brak strefy EPPO]" : description;
-    }
-
     private String normalizeCode(String value) {
         String normalized = normalizeText(value);
         return normalized == null ? null : normalized.toUpperCase();
@@ -147,7 +90,7 @@ public class EppoZoneService {
             return null;
         }
 
-        String normalized = value.trim().replaceAll("\s+", " ");
+        String normalized = value.trim().replaceAll("\\s+", " ");
         return normalized.isEmpty() ? "" : normalized;
     }
 }

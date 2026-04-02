@@ -133,29 +133,6 @@ public class DatabaseInitializer {
                 )
             """);
 
-            // AUDIT LOG
-            stmt.execute("""
-                CREATE TABLE IF NOT EXISTS audit_log (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    entity_type TEXT NOT NULL,
-                    entity_id INTEGER,
-                    action_type TEXT NOT NULL,
-                    actor TEXT,
-                    description TEXT,
-                    changed_at TEXT NOT NULL
-                )
-            """);
-
-            stmt.execute("""
-                CREATE INDEX IF NOT EXISTS ix_audit_log_changed_at
-                ON audit_log (changed_at DESC)
-            """);
-
-            stmt.execute("""
-                CREATE INDEX IF NOT EXISTS ix_audit_log_entity_type
-                ON audit_log (entity_type)
-            """);
-
             // EPPO CODES
             stmt.execute("""
                 CREATE TABLE IF NOT EXISTS eppo_codes (
