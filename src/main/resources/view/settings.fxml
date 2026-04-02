@@ -10,6 +10,7 @@
 <?import javafx.scene.control.Separator?>
 <?import javafx.scene.control.Tab?>
 <?import javafx.scene.control.TabPane?>
+<?import javafx.scene.control.TextArea?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.control.TableColumn?>
 <?import javafx.scene.control.TableView?>
@@ -197,6 +198,43 @@
                                 <HBox spacing="10">
                                     <Button text="Wyczyść" onAction="#clearDefaultUser" styleClass="button-secondary"/>
                                 </HBox>
+                            </VBox>
+                        </VBox>
+                    </content>
+                </ScrollPane>
+            </Tab>
+
+
+            <Tab text="Import / Eksport CSV">
+                <ScrollPane fitToWidth="true" fitToHeight="true">
+                    <content>
+                        <VBox spacing="16" styleClass="content-card">
+                            <padding><Insets top="16" right="16" bottom="16" left="16"/></padding>
+
+                            <VBox spacing="12" styleClass="stat-card">
+                                <Label text="Plants CSV" styleClass="stat-title"/>
+                                <Label text="Lokalne preview importu i eksport CSV dla roślin. Ten obszar pozostaje w Settings i nie jest częścią modułu Updates." wrapText="true" styleClass="page-subtitle"/>
+                                <Label fx:id="plantsCsvColumnsLabel" wrapText="true" styleClass="page-subtitle"/>
+                                <Label fx:id="plantsCsvStatusLabel" wrapText="true" styleClass="page-subtitle"/>
+                                <HBox spacing="10">
+                                    <Button text="Preview importu Plants CSV" onAction="#previewPlantsCsvImport"/>
+                                    <Button text="Eksport Plants CSV" onAction="#exportPlantsCsv" styleClass="button-secondary"/>
+                                </HBox>
+                                <TextArea fx:id="plantsCsvPreviewArea" editable="false" wrapText="true" prefRowCount="10"/>
+                            </VBox>
+
+                            <Separator/>
+
+                            <VBox spacing="12" styleClass="stat-card">
+                                <Label text="Contrahents CSV" styleClass="stat-title"/>
+                                <Label text="Lokalne preview importu i eksport CSV dla kontrahentów w tym samym standardzie ustawień lokalnych." wrapText="true" styleClass="page-subtitle"/>
+                                <Label fx:id="contrahentsCsvColumnsLabel" wrapText="true" styleClass="page-subtitle"/>
+                                <Label fx:id="contrahentsCsvStatusLabel" wrapText="true" styleClass="page-subtitle"/>
+                                <HBox spacing="10">
+                                    <Button text="Preview importu Contrahents CSV" onAction="#previewContrahentsCsvImport"/>
+                                    <Button text="Eksport Contrahents CSV" onAction="#exportContrahentsCsv" styleClass="button-secondary"/>
+                                </HBox>
+                                <TextArea fx:id="contrahentsCsvPreviewArea" editable="false" wrapText="true" prefRowCount="10"/>
                             </VBox>
                         </VBox>
                     </content>

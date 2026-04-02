@@ -13,6 +13,10 @@ import com.egen.fitogen.service.BackupService;
 import com.egen.fitogen.service.CountryDirectoryService;
 import com.egen.fitogen.service.DocumentTypeService;
 import com.egen.fitogen.service.NumberingConfigService;
+import com.egen.fitogen.service.PlantCsvExportService;
+import com.egen.fitogen.service.PlantCsvImportService;
+import com.egen.fitogen.service.ContrahentCsvExportService;
+import com.egen.fitogen.service.ContrahentCsvImportService;
 import com.egen.fitogen.ui.util.CountryDirectory;
 import com.egen.fitogen.ui.util.DialogUtil;
 import com.egen.fitogen.ui.util.ValidationUtil;
@@ -23,8 +27,10 @@ import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
+import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.stage.DirectoryChooser;
+import javafx.stage.FileChooser;
 import javafx.stage.Window;
 import javafx.util.StringConverter;
 
@@ -82,12 +88,23 @@ public class SettingsController {
     @FXML private CheckBox plantFullCatalogEnabledCheckBox;
     @FXML private Label plantCatalogModeStatusLabel;
 
+    @FXML private Label plantsCsvColumnsLabel;
+    @FXML private Label plantsCsvStatusLabel;
+    @FXML private TextArea plantsCsvPreviewArea;
+    @FXML private Label contrahentsCsvColumnsLabel;
+    @FXML private Label contrahentsCsvStatusLabel;
+    @FXML private TextArea contrahentsCsvPreviewArea;
+
     private final NumberingConfigService numberingConfigService = AppContext.getNumberingConfigService();
     private final BackupService backupService = AppContext.getBackupService();
     private final DocumentTypeService documentTypeService = AppContext.getDocumentTypeService();
     private final AppUserService appUserService = AppContext.getAppUserService();
     private final AppSettingsService appSettingsService = AppContext.getAppSettingsService();
     private final CountryDirectoryService countryDirectoryService = AppContext.getCountryDirectoryService();
+    private final PlantCsvImportService plantCsvImportService = new PlantCsvImportService(AppContext.getPlantService(), AppContext.getAppSettingsService());
+    private final PlantCsvExportService plantCsvExportService = new PlantCsvExportService(AppContext.getPlantService());
+    private final ContrahentCsvImportService contrahentCsvImportService = new ContrahentCsvImportService(AppContext.getContrahentService(), AppContext.getCountryDirectoryService());
+    private final ContrahentCsvExportService contrahentCsvExportService = new ContrahentCsvExportService(AppContext.getContrahentService());
 
     private boolean loading;
     private boolean updatingDefaultUserSelection;
@@ -118,6 +135,7 @@ public class SettingsController {
         loadCustomCountryEntries();
         loadPlantPassportMode();
         loadPlantCatalogMode();
+        loadCsvOverview();
         refreshBackupStatus();
         loadConfig(NumberingType.DOCUMENT);
     }
@@ -922,6 +940,208 @@ public class SettingsController {
         if (comboBox.getEditor() != null) {
             comboBox.getEditor().setText(value == null ? "" : value);
         }
+    }
+
+    private void loadCsvOverview() {
+        if (plantsCsvColumnsLabel != null) {
+            plantsCsvColumnsLabel.setText(plantCsvImportService.getSupportedColumnsSummary() + " " + plantCsvExportService.getSupportedColumnsSummary());
+        }
+        if (contrahentsCsvColumnsLabel != null) {
+            contrahentsCsvColumnsLabel.setText(contrahentCsvImportService.getSupportedColumnsSummary() + " " + contrahentCsvExportService.getSupportedColumnsSummary());
+        }
+        if (plantsCsvStatusLabel != null) {
+            plantsCsvStatusLabel.setText("Wybierz plik CSV, aby zobaczyć preview importu Plants, albo zapisz aktualny eksport do pliku.");
+        }
+        if (contrahentsCsvStatusLabel != null) {
+            contrahentsCsvStatusLabel.setText("Wybierz plik CSV, aby zobaczyć preview importu Contrahents, albo zapisz aktualny eksport do pliku.");
+        }
+        if (plantsCsvPreviewArea != null) {
+            plantsCsvPreviewArea.setText("Brak preview importu Plants.");
+        }
+        if (contrahentsCsvPreviewArea != null) {
+            contrahentsCsvPreviewArea.setText("Brak preview importu Contrahents.");
+        }
+    }
+
+    @FXML
+    private void previewPlantsCsvImport() {
+        Path selectedPath = chooseCsvToOpen("Wybierz plik CSV roślin");
+        if (selectedPath == null) {
+            return;
+        }
+
+        try {
+            var result = plantCsvImportService.preview(selectedPath);
+            plantsCsvStatusLabel.setText(
+                    "Preview Plants: nowych=" + result.getNewRowsCount()
+                            + ", istniejących=" + result.getMatchingExistingCount()
+                            + ", duplikatów w pliku=" + result.getDuplicateInFileCount()
+                            + ", błędnych=" + result.getInvalidRowsCount()
+                            + ", łącznie=" + result.getTotalRowsCount()
+            );
+            plantsCsvPreviewArea.setText(buildPlantsPreviewText(result));
+        } catch (Exception e) {
+            e.printStackTrace();
+            plantsCsvStatusLabel.setText("Nie udało się przygotować preview importu Plants.");
+            DialogUtil.showError("Preview importu Plants CSV", "Nie udało się odczytać ani przeanalizować pliku CSV roślin.");
+        }
+    }
+
+    @FXML
+    private void exportPlantsCsv() {
+        Path selectedPath = chooseCsvToSave("Eksportuj Plants do CSV", "plants-export.csv");
+        if (selectedPath == null) {
+            return;
+        }
+
+        try {
+            Path exported = plantCsvExportService.export(selectedPath);
+            plantsCsvStatusLabel.setText("Eksport Plants zakończony powodzeniem: " + exported);
+            DialogUtil.showSuccess("Plants zostały wyeksportowane do pliku:\n" + exported);
+        } catch (Exception e) {
+            e.printStackTrace();
+            plantsCsvStatusLabel.setText("Nie udało się wyeksportować Plants do CSV.");
+            DialogUtil.showError("Eksport Plants CSV", "Nie udało się wyeksportować roślin do pliku CSV.");
+        }
+    }
+
+    @FXML
+    private void previewContrahentsCsvImport() {
+        Path selectedPath = chooseCsvToOpen("Wybierz plik CSV kontrahentów");
+        if (selectedPath == null) {
+            return;
+        }
+
+        try {
+            var result = contrahentCsvImportService.preview(selectedPath);
+            contrahentsCsvStatusLabel.setText(
+                    "Preview Contrahents: nowych=" + result.getNewRowsCount()
+                            + ", istniejących=" + result.getMatchingExistingCount()
+                            + ", duplikatów w pliku=" + result.getDuplicateInFileCount()
+                            + ", błędnych=" + result.getInvalidRowsCount()
+                            + ", łącznie=" + result.getTotalRowsCount()
+            );
+            contrahentsCsvPreviewArea.setText(buildContrahentsPreviewText(result));
+        } catch (Exception e) {
+            e.printStackTrace();
+            contrahentsCsvStatusLabel.setText("Nie udało się przygotować preview importu Contrahents.");
+            DialogUtil.showError("Preview importu Contrahents CSV", "Nie udało się odczytać ani przeanalizować pliku CSV kontrahentów.");
+        }
+    }
+
+    @FXML
+    private void exportContrahentsCsv() {
+        Path selectedPath = chooseCsvToSave("Eksportuj Contrahents do CSV", "contrahents-export.csv");
+        if (selectedPath == null) {
+            return;
+        }
+
+        try {
+            Path exported = contrahentCsvExportService.export(selectedPath);
+            contrahentsCsvStatusLabel.setText("Eksport Contrahents zakończony powodzeniem: " + exported);
+            DialogUtil.showSuccess("Contrahents zostali wyeksportowani do pliku:\n" + exported);
+        } catch (Exception e) {
+            e.printStackTrace();
+            contrahentsCsvStatusLabel.setText("Nie udało się wyeksportować Contrahents do CSV.");
+            DialogUtil.showError("Eksport Contrahents CSV", "Nie udało się wyeksportować kontrahentów do pliku CSV.");
+        }
+    }
+
+    private Path chooseCsvToOpen(String title) {
+        FileChooser chooser = createCsvFileChooser(title, null);
+        Window window = previewLabel.getScene() != null ? previewLabel.getScene().getWindow() : null;
+        File selectedFile = chooser.showOpenDialog(window);
+        return selectedFile == null ? null : selectedFile.toPath();
+    }
+
+    private Path chooseCsvToSave(String title, String initialFileName) {
+        FileChooser chooser = createCsvFileChooser(title, initialFileName);
+        Window window = previewLabel.getScene() != null ? previewLabel.getScene().getWindow() : null;
+        File selectedFile = chooser.showSaveDialog(window);
+        return selectedFile == null ? null : selectedFile.toPath();
+    }
+
+    private FileChooser createCsvFileChooser(String title, String initialFileName) {
+        FileChooser chooser = new FileChooser();
+        chooser.setTitle(title);
+        chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Pliki CSV", "*.csv"));
+        if (initialFileName != null && !initialFileName.isBlank()) {
+            chooser.setInitialFileName(initialFileName);
+        }
+        return chooser;
+    }
+
+    private String buildPlantsPreviewText(com.egen.fitogen.dto.PlantImportPreviewResult result) {
+        StringBuilder builder = new StringBuilder();
+        builder.append("Źródło: ").append(result.getSourceName()).append("\n");
+        builder.append("Separator: ").append(printableDelimiter(result.getDelimiter())).append("\n");
+        builder.append("Nagłówki: ").append(String.join(", ", result.getResolvedHeaders())).append("\n\n");
+
+        int previewLimit = Math.min(result.getRows().size(), 12);
+        for (int i = 0; i < previewLimit; i++) {
+            var row = result.getRows().get(i);
+            builder.append("#").append(row.getRowNumber())
+                    .append(" | status=").append(row.getStatus())
+                    .append(" | gatunek=").append(row.getSpecies())
+                    .append(" | odmiana=").append(row.getVariety())
+                    .append(" | podkładka=").append(row.getRootstock())
+                    .append(" | EPPO=").append(row.getEppoCode())
+                    .append(" | paszport=").append(row.isPassportRequired())
+                    .append(" | widoczność=").append(row.getVisibilityStatus());
+            if (row.getMessage() != null && !row.getMessage().isBlank()) {
+                builder.append(" | uwaga=").append(row.getMessage());
+            }
+            builder.append("\n");
+        }
+
+        if (result.getRows().size() > previewLimit) {
+            builder.append("\nPokazano ").append(previewLimit).append(" z ").append(result.getRows().size()).append(" wierszy preview.");
+        }
+
+        return builder.toString();
+    }
+
+    private String buildContrahentsPreviewText(com.egen.fitogen.dto.ContrahentImportPreviewResult result) {
+        StringBuilder builder = new StringBuilder();
+        builder.append("Źródło: ").append(result.getSourceName()).append("\n");
+        builder.append("Separator: ").append(printableDelimiter(result.getDelimiter())).append("\n");
+        builder.append("Nagłówki: ").append(String.join(", ", result.getResolvedHeaders())).append("\n\n");
+
+        int previewLimit = Math.min(result.getRows().size(), 12);
+        for (int i = 0; i < previewLimit; i++) {
+            var row = result.getRows().get(i);
+            builder.append("#").append(row.getRowNumber())
+                    .append(" | status=").append(row.getStatus())
+                    .append(" | nazwa=").append(row.getName())
+                    .append(" | kraj=").append(row.getCountry())
+                    .append(" | kod=").append(row.getCountryCode())
+                    .append(" | miasto=").append(row.getCity())
+                    .append(" | dostawca=").append(row.isSupplier())
+                    .append(" | odbiorca=").append(row.isClient());
+            if (row.getMessage() != null && !row.getMessage().isBlank()) {
+                builder.append(" | uwaga=").append(row.getMessage());
+            }
+            builder.append("\n");
+        }
+
+        if (result.getRows().size() > previewLimit) {
+            builder.append("\nPokazano ").append(previewLimit).append(" z ").append(result.getRows().size()).append(" wierszy preview.");
+        }
+
+        return builder.toString();
+    }
+
+    private String printableDelimiter(char delimiter) {
+        if (delimiter == '	') {
+            return "TAB";
+        }
+        if (delimiter == ';') {
+            return ";";
+        }
+        if (delimiter == ',') {
+            return ",";
+        }
+        return String.valueOf(delimiter);
     }
 
     private String safe(String value) {
