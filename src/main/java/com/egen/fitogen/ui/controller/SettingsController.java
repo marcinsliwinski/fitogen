@@ -4,6 +4,11 @@ import com.egen.fitogen.config.AppContext;
 import com.egen.fitogen.domain.NumberingConfig;
 import com.egen.fitogen.domain.NumberingSectionType;
 import com.egen.fitogen.domain.NumberingType;
+
+import com.egen.fitogen.dto.ContrahentImportPreviewResult;
+import com.egen.fitogen.dto.ContrahentImportPreviewRow;
+import com.egen.fitogen.dto.PlantImportPreviewResult;
+import com.egen.fitogen.dto.PlantImportPreviewRow;
 import com.egen.fitogen.model.AppUser;
 import com.egen.fitogen.model.AuditLogEntry;
 import com.egen.fitogen.model.DocumentType;
@@ -12,12 +17,19 @@ import com.egen.fitogen.service.AppSettingsService;
 import com.egen.fitogen.service.AppUserService;
 import com.egen.fitogen.service.AuditLogService;
 import com.egen.fitogen.service.BackupService;
+import com.egen.fitogen.service.ContrahentCsvImportService;
 import com.egen.fitogen.service.CountryDirectoryService;
 import com.egen.fitogen.service.DocumentTypeService;
 import com.egen.fitogen.service.NumberingConfigService;
+import com.egen.fitogen.service.PlantCsvImportService;
+import com.egen.fitogen.service.PlantService;
+import com.egen.fitogen.service.ContrahentService;
 import com.egen.fitogen.ui.util.CountryDirectory;
 import com.egen.fitogen.ui.util.DialogUtil;
 import com.egen.fitogen.ui.util.ValidationUtil;
+import javafx.beans.property.SimpleBooleanProperty;
+import javafx.beans.property.SimpleIntegerProperty;
+import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
@@ -26,8 +38,11 @@ import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
+import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.stage.DirectoryChooser;
+import javafx.stage.FileChooser;
 import javafx.stage.Window;
 import javafx.util.StringConverter;
 
@@ -97,6 +112,44 @@ public class SettingsController {
     @FXML private CheckBox plantFullCatalogEnabledCheckBox;
     @FXML private Label plantCatalogModeStatusLabel;
 
+    @FXML private Label importExportScopeSummaryLabel;
+    @FXML private Label importExportRecommendationLabel;
+    @FXML private Label exportCsvPlanLabel;
+    @FXML private Label plantsImportSyncLabel;
+    @FXML private Label eppoImportSyncLabel;
+    @FXML private Label countriesImportSyncLabel;
+    @FXML private Label contrahentsImportOnlyLabel;
+    @FXML private Label documentsImportOnlyLabel;
+
+    @FXML private Label plantsImportPreviewStatusLabel;
+    @FXML private Label plantsImportPreviewFileLabel;
+    @FXML private Label plantsImportPreviewSummaryLabel;
+    @FXML private TableView<PlantImportPreviewRow> plantsImportPreviewTable;
+    @FXML private TableColumn<PlantImportPreviewRow, Number> plantsColRowNumber;
+    @FXML private TableColumn<PlantImportPreviewRow, String> plantsColSpecies;
+    @FXML private TableColumn<PlantImportPreviewRow, String> plantsColVariety;
+    @FXML private TableColumn<PlantImportPreviewRow, String> plantsColRootstock;
+    @FXML private TableColumn<PlantImportPreviewRow, String> plantsColEppoCode;
+    @FXML private TableColumn<PlantImportPreviewRow, Boolean> plantsColPassportRequired;
+    @FXML private TableColumn<PlantImportPreviewRow, String> plantsColVisibilityStatus;
+    @FXML private TableColumn<PlantImportPreviewRow, String> plantsColImportStatus;
+    @FXML private TableColumn<PlantImportPreviewRow, String> plantsColImportMessage;
+
+    @FXML private Label contrahentsImportPreviewStatusLabel;
+    @FXML private Label contrahentsImportPreviewFileLabel;
+    @FXML private Label contrahentsImportPreviewSummaryLabel;
+    @FXML private TableView<ContrahentImportPreviewRow> contrahentsImportPreviewTable;
+    @FXML private TableColumn<ContrahentImportPreviewRow, Number> contrahentsColRowNumber;
+    @FXML private TableColumn<ContrahentImportPreviewRow, String> contrahentsColName;
+    @FXML private TableColumn<ContrahentImportPreviewRow, String> contrahentsColCountry;
+    @FXML private TableColumn<ContrahentImportPreviewRow, String> contrahentsColCountryCode;
+    @FXML private TableColumn<ContrahentImportPreviewRow, String> contrahentsColCity;
+    @FXML private TableColumn<ContrahentImportPreviewRow, String> contrahentsColPostalCode;
+    @FXML private TableColumn<ContrahentImportPreviewRow, Boolean> contrahentsColSupplier;
+    @FXML private TableColumn<ContrahentImportPreviewRow, Boolean> contrahentsColClient;
+    @FXML private TableColumn<ContrahentImportPreviewRow, String> contrahentsColImportStatus;
+    @FXML private TableColumn<ContrahentImportPreviewRow, String> contrahentsColImportMessage;
+
     private final NumberingConfigService numberingConfigService = AppContext.getNumberingConfigService();
     private final BackupService backupService = AppContext.getBackupService();
     private final DocumentTypeService documentTypeService = AppContext.getDocumentTypeService();
@@ -104,6 +157,13 @@ public class SettingsController {
     private final AppSettingsService appSettingsService = AppContext.getAppSettingsService();
     private final CountryDirectoryService countryDirectoryService = AppContext.getCountryDirectoryService();
     private final AuditLogService auditLogService = AppContext.getAuditLogService();
+    private final PlantService plantService = AppContext.getPlantService();
+    private final ContrahentService contrahentService = AppContext.getContrahentService();
+    private final PlantCsvImportService plantCsvImportService = new PlantCsvImportService(plantService, appSettingsService);
+    private final ContrahentCsvImportService contrahentCsvImportService = new ContrahentCsvImportService(contrahentService, countryDirectoryService);
+
+    private final ObservableList<PlantImportPreviewRow> plantsImportPreviewRows = FXCollections.observableArrayList();
+    private final ObservableList<ContrahentImportPreviewRow> contrahentsImportPreviewRows = FXCollections.observableArrayList();
 
     private boolean loading;
     private boolean updatingDefaultUserSelection;
@@ -123,6 +183,7 @@ public class SettingsController {
         configureCustomCountryControls();
         configureIssuerCountryControls();
         configureAuditLogControls();
+        configureImportExportPreviewControls();
 
         numberingTypeBox.getItems().setAll(NumberingType.values());
         numberingTypeBox.setValue(NumberingType.DOCUMENT);
@@ -139,7 +200,208 @@ public class SettingsController {
         loadPlantCatalogMode();
         refreshBackupStatus();
         refreshAuditLogView();
+        loadImportExportOverview();
         loadConfig(NumberingType.DOCUMENT);
+    }
+
+
+    private void configureImportExportPreviewControls() {
+        configurePlantsImportPreviewTable();
+        configureContrahentsImportPreviewTable();
+        resetPlantsImportPreviewState();
+        resetContrahentsImportPreviewState();
+    }
+
+    private void configurePlantsImportPreviewTable() {
+        if (plantsImportPreviewTable == null) {
+            return;
+        }
+        plantsColRowNumber.setCellValueFactory(cell -> new SimpleIntegerProperty(cell.getValue().getRowNumber()));
+        plantsColSpecies.setCellValueFactory(cell -> new SimpleStringProperty(safe(cell.getValue().getSpecies())));
+        plantsColVariety.setCellValueFactory(cell -> new SimpleStringProperty(safe(cell.getValue().getVariety())));
+        plantsColRootstock.setCellValueFactory(cell -> new SimpleStringProperty(safe(cell.getValue().getRootstock())));
+        plantsColEppoCode.setCellValueFactory(cell -> new SimpleStringProperty(safe(cell.getValue().getEppoCode())));
+        plantsColPassportRequired.setCellValueFactory(cell -> new SimpleBooleanProperty(cell.getValue().isPassportRequired()));
+        plantsColVisibilityStatus.setCellValueFactory(cell -> new SimpleStringProperty(safe(cell.getValue().getVisibilityStatus())));
+        plantsColImportStatus.setCellValueFactory(cell -> new SimpleStringProperty(safe(cell.getValue().getStatus())));
+        plantsColImportMessage.setCellValueFactory(cell -> new SimpleStringProperty(safe(cell.getValue().getMessage())));
+        plantsImportPreviewTable.setItems(plantsImportPreviewRows);
+    }
+
+    private void configureContrahentsImportPreviewTable() {
+        if (contrahentsImportPreviewTable == null) {
+            return;
+        }
+        contrahentsColRowNumber.setCellValueFactory(cell -> new SimpleIntegerProperty(cell.getValue().getRowNumber()));
+        contrahentsColName.setCellValueFactory(cell -> new SimpleStringProperty(safe(cell.getValue().getName())));
+        contrahentsColCountry.setCellValueFactory(cell -> new SimpleStringProperty(safe(cell.getValue().getCountry())));
+        contrahentsColCountryCode.setCellValueFactory(cell -> new SimpleStringProperty(safe(cell.getValue().getCountryCode())));
+        contrahentsColCity.setCellValueFactory(cell -> new SimpleStringProperty(safe(cell.getValue().getCity())));
+        contrahentsColPostalCode.setCellValueFactory(cell -> new SimpleStringProperty(safe(cell.getValue().getPostalCode())));
+        contrahentsColSupplier.setCellValueFactory(cell -> new SimpleBooleanProperty(cell.getValue().isSupplier()));
+        contrahentsColClient.setCellValueFactory(cell -> new SimpleBooleanProperty(cell.getValue().isClient()));
+        contrahentsColImportStatus.setCellValueFactory(cell -> new SimpleStringProperty(safe(cell.getValue().getStatus())));
+        contrahentsColImportMessage.setCellValueFactory(cell -> new SimpleStringProperty(safe(cell.getValue().getMessage())));
+        contrahentsImportPreviewTable.setItems(contrahentsImportPreviewRows);
+    }
+
+    private void loadImportExportOverview() {
+        if (importExportScopeSummaryLabel == null) {
+            return;
+        }
+
+        int plantCount = plantService.getAllPlants().size();
+        int contrahentCount = contrahentService.getAllContrahents().size();
+        int countryCount = countryDirectoryService.getEntries().size();
+
+        importExportScopeSummaryLabel.setText(
+                "Importy i eksporty CSV są od tego kroku prowadzone w Ustawieniach. Zakres docelowy rozdziela procesy import-only oraz import + aktualizacja z serwera."
+        );
+        plantsImportSyncLabel.setText(
+                "Rośliny — import CSV + późniejsza aktualizacja z serwera. Aktualny stan: " + plantCount + " rekordów. Preview CSV działa w trybie tylko do odczytu."
+        );
+        eppoImportSyncLabel.setText(
+                "EPPO — import + aktualizacja z serwera. Docelowo obejmie kody EPPO razem z gatunkami i krajami/strefami przypisanymi do kodów."
+        );
+        countriesImportSyncLabel.setText(
+                "Lista krajów — import + aktualizacja z serwera. Aktualny stan: " + countryCount + " wpisów wspólnego słownika krajów."
+        );
+        contrahentsImportOnlyLabel.setText(
+                "Kontrahenci — tylko import CSV. Aktualny stan: " + contrahentCount + " rekordów. Preview CSV działa w trybie tylko do odczytu."
+        );
+        documentsImportOnlyLabel.setText(
+                "Dokumenty — tylko import CSV. To obszar o najwyższej złożoności walidacyjnej, dlatego pozostaje po roślinach i kontrahentach."
+        );
+        exportCsvPlanLabel.setText(
+                "Eksport CSV zostanie wdrożony w dokładnie tych samych standardach co import: preview zakresu, spójne kolumny, walidacja i bezpieczne operacje na danych. Najpierw rośliny i kontrahenci, potem pozostałe obszary."
+        );
+        importExportRecommendationLabel.setText(
+                "Najbezpieczniejszy następny krok po tym etapie: domknąć preview-only dla kontrahentów w Ustawieniach, a potem dołożyć pierwsze eksporty CSV w tych samych standardach UX i walidacji."
+        );
+    }
+
+    @FXML
+    private void previewPlantsImportCsv() {
+        File selectedFile = chooseCsvFile("Wybierz plik CSV do preview importu roślin");
+        if (selectedFile == null) {
+            return;
+        }
+
+        try {
+            PlantImportPreviewResult result = plantCsvImportService.preview(selectedFile.toPath());
+            plantsImportPreviewRows.setAll(result.getRows());
+            plantsImportPreviewFileLabel.setText("Plik preview: " + selectedFile.getAbsolutePath());
+            plantsImportPreviewSummaryLabel.setText(
+                    "Wiersze: " + result.getTotalRowsCount()
+                            + ", nowe: " + result.getNewRowsCount()
+                            + ", już istniejące: " + result.getMatchingExistingCount()
+                            + ", duplikaty w pliku: " + result.getDuplicateInFileCount()
+                            + ", nieprawidłowe: " + result.getInvalidRowsCount()
+                            + ", delimiter: '" + printableDelimiter(result.getDelimiter()) + "'."
+            );
+            String headers = result.getResolvedHeaders().isEmpty() ? "brak rozpoznanych nagłówków" : String.join(", ", result.getResolvedHeaders());
+            plantsImportPreviewStatusLabel.setText(
+                    "Preview importu Plants działa w trybie tylko do odczytu. Rozpoznane kolumny: " + headers + ". Zapis do bazy nie jest jeszcze aktywny."
+            );
+        } catch (Exception e) {
+            plantsImportPreviewRows.clear();
+            plantsImportPreviewFileLabel.setText("Plik preview: " + selectedFile.getAbsolutePath());
+            plantsImportPreviewSummaryLabel.setText("Preview importu nie powiódł się.");
+            plantsImportPreviewStatusLabel.setText("Błąd preview importu Plants: " + e.getMessage());
+        }
+    }
+
+    @FXML
+    private void clearPlantsImportPreview() {
+        resetPlantsImportPreviewState();
+    }
+
+    @FXML
+    private void previewContrahentsImportCsv() {
+        File selectedFile = chooseCsvFile("Wybierz plik CSV do preview importu kontrahentów");
+        if (selectedFile == null) {
+            return;
+        }
+
+        try {
+            ContrahentImportPreviewResult result = contrahentCsvImportService.preview(selectedFile.toPath());
+            contrahentsImportPreviewRows.setAll(result.getRows());
+            contrahentsImportPreviewFileLabel.setText("Plik preview: " + selectedFile.getAbsolutePath());
+            contrahentsImportPreviewSummaryLabel.setText(
+                    "Wiersze: " + result.getTotalRowsCount()
+                            + ", nowe: " + result.getNewRowsCount()
+                            + ", już istniejące: " + result.getMatchingExistingCount()
+                            + ", duplikaty w pliku: " + result.getDuplicateInFileCount()
+                            + ", nieprawidłowe: " + result.getInvalidRowsCount()
+                            + ", delimiter: '" + printableDelimiter(result.getDelimiter()) + "'."
+            );
+            String headers = result.getResolvedHeaders().isEmpty() ? "brak rozpoznanych nagłówków" : String.join(", ", result.getResolvedHeaders());
+            contrahentsImportPreviewStatusLabel.setText(
+                    "Preview importu kontrahentów działa w trybie tylko do odczytu. Rozpoznane kolumny: " + headers + ". Zapis do bazy nie jest jeszcze aktywny."
+            );
+        } catch (Exception e) {
+            contrahentsImportPreviewRows.clear();
+            contrahentsImportPreviewFileLabel.setText("Plik preview: " + selectedFile.getAbsolutePath());
+            contrahentsImportPreviewSummaryLabel.setText("Preview importu nie powiódł się.");
+            contrahentsImportPreviewStatusLabel.setText("Błąd preview importu kontrahentów: " + e.getMessage());
+        }
+    }
+
+    @FXML
+    private void clearContrahentsImportPreview() {
+        resetContrahentsImportPreviewState();
+    }
+
+    private void resetPlantsImportPreviewState() {
+        plantsImportPreviewRows.clear();
+        if (plantsImportPreviewFileLabel != null) {
+            plantsImportPreviewFileLabel.setText("Plik preview: nie wybrano pliku.");
+        }
+        if (plantsImportPreviewSummaryLabel != null) {
+            plantsImportPreviewSummaryLabel.setText("Preview importu: brak danych do wyświetlenia.");
+        }
+        if (plantsImportPreviewStatusLabel != null) {
+            plantsImportPreviewStatusLabel.setText(
+                    "Preview CSV dla Plants jest dostępny w Ustawieniach w trybie tylko do odczytu. "
+                            + plantCsvImportService.getSupportedColumnsSummary()
+            );
+        }
+    }
+
+    private void resetContrahentsImportPreviewState() {
+        contrahentsImportPreviewRows.clear();
+        if (contrahentsImportPreviewFileLabel != null) {
+            contrahentsImportPreviewFileLabel.setText("Plik preview: nie wybrano pliku.");
+        }
+        if (contrahentsImportPreviewSummaryLabel != null) {
+            contrahentsImportPreviewSummaryLabel.setText("Preview importu: brak danych do wyświetlenia.");
+        }
+        if (contrahentsImportPreviewStatusLabel != null) {
+            contrahentsImportPreviewStatusLabel.setText(
+                    "Preview CSV dla kontrahentów jest dostępny w Ustawieniach w trybie tylko do odczytu. "
+                            + contrahentCsvImportService.getSupportedColumnsSummary()
+            );
+        }
+    }
+
+    private File chooseCsvFile(String title) {
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle(title);
+        fileChooser.getExtensionFilters().addAll(
+                new FileChooser.ExtensionFilter("Pliki CSV", "*.csv"),
+                new FileChooser.ExtensionFilter("Pliki tekstowe", "*.txt", "*.tsv"),
+                new FileChooser.ExtensionFilter("Wszystkie pliki", "*.*")
+        );
+
+        Window window = infoLabel != null && infoLabel.getScene() != null ? infoLabel.getScene().getWindow() : null;
+        return fileChooser.showOpenDialog(window);
+    }
+
+    private String printableDelimiter(char delimiter) {
+        if (delimiter == '\t') {
+            return "\\t";
+        }
+        return String.valueOf(delimiter);
     }
 
     private void configureUserControls() {
