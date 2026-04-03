@@ -1,0 +1,8 @@
+name;country;countryCode;city;postalCode;street;phytosanitaryNumber;supplier;client
+Brunatny Grab nad Doliną;Estonia;EE;Ykhurfk;837465;Shtemrsterya 3;EE-FK/pp/927;true;true
+Gospodarstwo Szkółkarskie Ruda Wiewiórka;Polska;PL;Jaworek 7;09-555;;PL-02846/38465;true;true
+Pod Jarzębiną;Polska;PL;Zabrze;44-917;Kolorowa 1e;PL-sk8883765;true;true
+Szkółka Banan;Niemcy;DE;Duseldorf;56847;Gruzkie 6;DE-789437438724;true;true
+Szkółka Zielona;Polska;PL;Warszawa;00-001;Ogrodowa 1;PL12345;true;true
+Zielona Dolina Wrzośców;Polska;PL;Kazimierów;37-812;Nowojorska 414a.8;PL-8461/A/496;false;true
+Zielony Zakątek Zdrowia 3Z;Polska;PL;Zawady Wielkie;84-290;Kopernika 4a;PL-26/CCC-48928375;true;false
