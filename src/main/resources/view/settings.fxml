@@ -229,6 +229,7 @@
                                 <HBox spacing="10">
                                     <Button text="Preview importu Plants CSV" onAction="#previewPlantsCsvImport"/>
                                     <Button text="Eksport Plants CSV" onAction="#exportPlantsCsv" styleClass="button-secondary"/>
+                                    <Button text="Wyczyść preview" onAction="#clearPlantsCsvPreview" styleClass="button-secondary"/>
                                 </HBox>
                                 <TextArea fx:id="plantsCsvPreviewArea" editable="false" wrapText="true" prefRowCount="10"/>
                             </VBox>
@@ -243,6 +244,7 @@
                                 <HBox spacing="10">
                                     <Button text="Preview importu Contrahents CSV" onAction="#previewContrahentsCsvImport"/>
                                     <Button text="Eksport Contrahents CSV" onAction="#exportContrahentsCsv" styleClass="button-secondary"/>
+                                    <Button text="Wyczyść preview" onAction="#clearContrahentsCsvPreview" styleClass="button-secondary"/>
                                 </HBox>
                                 <TextArea fx:id="contrahentsCsvPreviewArea" editable="false" wrapText="true" prefRowCount="10"/>
                             </VBox>

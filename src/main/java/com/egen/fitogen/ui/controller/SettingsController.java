@@ -1053,12 +1053,8 @@ public class SettingsController {
         if (contrahentsCsvStatusLabel != null) {
             contrahentsCsvStatusLabel.setText("Wybierz plik CSV, aby zobaczyć preview importu Contrahents, albo zapisz aktualny eksport do pliku.");
         }
-        if (plantsCsvPreviewArea != null) {
-            plantsCsvPreviewArea.setText("Brak preview importu Plants.");
-        }
-        if (contrahentsCsvPreviewArea != null) {
-            contrahentsCsvPreviewArea.setText("Brak preview importu Contrahents.");
-        }
+        resetPlantsCsvPreview();
+        resetContrahentsCsvPreview();
     }
 
     @FXML
@@ -1070,13 +1066,7 @@ public class SettingsController {
 
         try {
             var result = plantCsvImportService.preview(selectedPath);
-            plantsCsvStatusLabel.setText(
-                    "Preview Plants: nowych=" + result.getNewRowsCount()
-                            + ", istniejących=" + result.getMatchingExistingCount()
-                            + ", duplikatów w pliku=" + result.getDuplicateInFileCount()
-                            + ", błędnych=" + result.getInvalidRowsCount()
-                            + ", łącznie=" + result.getTotalRowsCount()
-            );
+            plantsCsvStatusLabel.setText(buildPlantsPreviewStatus(result));
             plantsCsvPreviewArea.setText(buildPlantsPreviewText(result));
         } catch (Exception e) {
             e.printStackTrace();
@@ -1112,13 +1102,7 @@ public class SettingsController {
 
         try {
             var result = contrahentCsvImportService.preview(selectedPath);
-            contrahentsCsvStatusLabel.setText(
-                    "Preview Contrahents: nowych=" + result.getNewRowsCount()
-                            + ", istniejących=" + result.getMatchingExistingCount()
-                            + ", duplikatów w pliku=" + result.getDuplicateInFileCount()
-                            + ", błędnych=" + result.getInvalidRowsCount()
-                            + ", łącznie=" + result.getTotalRowsCount()
-            );
+            contrahentsCsvStatusLabel.setText(buildContrahentsPreviewStatus(result));
             contrahentsCsvPreviewArea.setText(buildContrahentsPreviewText(result));
         } catch (Exception e) {
             e.printStackTrace();
@@ -1142,6 +1126,23 @@ public class SettingsController {
             e.printStackTrace();
             contrahentsCsvStatusLabel.setText("Nie udało się wyeksportować Contrahents do CSV.");
             DialogUtil.showError("Eksport Contrahents CSV", "Nie udało się wyeksportować kontrahentów do pliku CSV.");
+        }
+    }
+
+
+    @FXML
+    private void clearPlantsCsvPreview() {
+        resetPlantsCsvPreview();
+        if (plantsCsvStatusLabel != null) {
+            plantsCsvStatusLabel.setText("Preview Plants zostało wyczyszczone. Wybierz plik CSV, aby uruchomić analizę ponownie.");
+        }
+    }
+
+    @FXML
+    private void clearContrahentsCsvPreview() {
+        resetContrahentsCsvPreview();
+        if (contrahentsCsvStatusLabel != null) {
+            contrahentsCsvStatusLabel.setText("Preview Contrahents zostało wyczyszczone. Wybierz plik CSV, aby uruchomić analizę ponownie.");
         }
     }
 
@@ -1169,64 +1170,151 @@ public class SettingsController {
         return chooser;
     }
 
+
+    private String buildPlantsPreviewStatus(com.egen.fitogen.dto.PlantImportPreviewResult result) {
+        return "Plants CSV — łącznie: " + result.getTotalRowsCount()
+                + ", nowych: " + result.getNewRowsCount()
+                + ", istniejących: " + result.getMatchingExistingCount()
+                + ", duplikatów w pliku: " + result.getDuplicateInFileCount()
+                + ", błędnych: " + result.getInvalidRowsCount();
+    }
+
+    private String buildContrahentsPreviewStatus(com.egen.fitogen.dto.ContrahentImportPreviewResult result) {
+        return "Contrahents CSV — łącznie: " + result.getTotalRowsCount()
+                + ", nowych: " + result.getNewRowsCount()
+                + ", istniejących: " + result.getMatchingExistingCount()
+                + ", duplikatów w pliku: " + result.getDuplicateInFileCount()
+                + ", błędnych: " + result.getInvalidRowsCount();
+    }
+
+    private void resetPlantsCsvPreview() {
+        if (plantsCsvPreviewArea != null) {
+            plantsCsvPreviewArea.setText("Brak preview importu Plants.\n\nPo uruchomieniu analizy zobaczysz tutaj podsumowanie pliku, nagłówki oraz próbkę wierszy.");
+        }
+    }
+
+    private void resetContrahentsCsvPreview() {
+        if (contrahentsCsvPreviewArea != null) {
+            contrahentsCsvPreviewArea.setText("Brak preview importu Contrahents.\n\nPo uruchomieniu analizy zobaczysz tutaj podsumowanie pliku, nagłówki oraz próbkę wierszy.");
+        }
+    }
+
     private String buildPlantsPreviewText(com.egen.fitogen.dto.PlantImportPreviewResult result) {
         StringBuilder builder = new StringBuilder();
-        builder.append("Źródło: ").append(result.getSourceName()).append("\n");
-        builder.append("Separator: ").append(printableDelimiter(result.getDelimiter())).append("\n");
-        builder.append("Nagłówki: ").append(String.join(", ", result.getResolvedHeaders())).append("\n\n");
+        builder.append("PODSUMOWANIE PLIKU\n");
+        builder.append("- Źródło: ").append(result.getSourceName()).append("\n");
+        builder.append("- Separator: ").append(printableDelimiter(result.getDelimiter())).append("\n");
+        builder.append("- Nagłówki: ").append(String.join(", ", result.getResolvedHeaders())).append("\n");
+        builder.append("- Łącznie wierszy: ").append(result.getTotalRowsCount()).append("\n");
+        builder.append("- Nowe rekordy: ").append(result.getNewRowsCount()).append("\n");
+        builder.append("- Istniejące rekordy: ").append(result.getMatchingExistingCount()).append("\n");
+        builder.append("- Duplikaty w pliku: ").append(result.getDuplicateInFileCount()).append("\n");
+        builder.append("- Błędne wiersze: ").append(result.getInvalidRowsCount()).append("\n\n");
 
-        int previewLimit = Math.min(result.getRows().size(), 12);
+        builder.append("PRÓBKA WIERSZY\n");
+        int previewLimit = Math.min(result.getRows().size(), 10);
         for (int i = 0; i < previewLimit; i++) {
             var row = result.getRows().get(i);
             builder.append("#").append(row.getRowNumber())
-                    .append(" | status=").append(row.getStatus())
-                    .append(" | gatunek=").append(row.getSpecies())
-                    .append(" | odmiana=").append(row.getVariety())
-                    .append(" | podkładka=").append(row.getRootstock())
-                    .append(" | EPPO=").append(row.getEppoCode())
-                    .append(" | paszport=").append(row.isPassportRequired())
-                    .append(" | widoczność=").append(row.getVisibilityStatus());
+                    .append(" [").append(row.getStatus()).append("] ")
+                    .append(safe(row.getSpecies()));
+            if (!safe(row.getVariety()).isBlank()) {
+                builder.append(" | odmiana: ").append(safe(row.getVariety()));
+            }
+            if (!safe(row.getRootstock()).isBlank()) {
+                builder.append(" | podkładka: ").append(safe(row.getRootstock()));
+            }
+            if (!safe(row.getEppoCode()).isBlank()) {
+                builder.append(" | EPPO: ").append(safe(row.getEppoCode()));
+            }
+            builder.append(" | paszport: ").append(row.isPassportRequired() ? "tak" : "nie")
+                    .append(" | widoczność: ").append(safe(row.getVisibilityStatus()));
             if (row.getMessage() != null && !row.getMessage().isBlank()) {
-                builder.append(" | uwaga=").append(row.getMessage());
+                builder.append(" | uwaga: ").append(row.getMessage());
             }
             builder.append("\n");
         }
 
-        if (result.getRows().size() > previewLimit) {
-            builder.append("\nPokazano ").append(previewLimit).append(" z ").append(result.getRows().size()).append(" wierszy preview.");
-        }
-
+        appendPlantIssuesSection(builder, result);
         return builder.toString();
     }
 
     private String buildContrahentsPreviewText(com.egen.fitogen.dto.ContrahentImportPreviewResult result) {
         StringBuilder builder = new StringBuilder();
-        builder.append("Źródło: ").append(result.getSourceName()).append("\n");
-        builder.append("Separator: ").append(printableDelimiter(result.getDelimiter())).append("\n");
-        builder.append("Nagłówki: ").append(String.join(", ", result.getResolvedHeaders())).append("\n\n");
+        builder.append("PODSUMOWANIE PLIKU\n");
+        builder.append("- Źródło: ").append(result.getSourceName()).append("\n");
+        builder.append("- Separator: ").append(printableDelimiter(result.getDelimiter())).append("\n");
+        builder.append("- Nagłówki: ").append(String.join(", ", result.getResolvedHeaders())).append("\n");
+        builder.append("- Łącznie wierszy: ").append(result.getTotalRowsCount()).append("\n");
+        builder.append("- Nowe rekordy: ").append(result.getNewRowsCount()).append("\n");
+        builder.append("- Istniejące rekordy: ").append(result.getMatchingExistingCount()).append("\n");
+        builder.append("- Duplikaty w pliku: ").append(result.getDuplicateInFileCount()).append("\n");
+        builder.append("- Błędne wiersze: ").append(result.getInvalidRowsCount()).append("\n\n");
 
-        int previewLimit = Math.min(result.getRows().size(), 12);
+        builder.append("PRÓBKA WIERSZY\n");
+        int previewLimit = Math.min(result.getRows().size(), 10);
         for (int i = 0; i < previewLimit; i++) {
             var row = result.getRows().get(i);
             builder.append("#").append(row.getRowNumber())
-                    .append(" | status=").append(row.getStatus())
-                    .append(" | nazwa=").append(row.getName())
-                    .append(" | kraj=").append(row.getCountry())
-                    .append(" | kod=").append(row.getCountryCode())
-                    .append(" | miasto=").append(row.getCity())
-                    .append(" | dostawca=").append(row.isSupplier())
-                    .append(" | odbiorca=").append(row.isClient());
+                    .append(" [").append(row.getStatus()).append("] ")
+                    .append(safe(row.getName()));
+            if (!safe(row.getCountry()).isBlank()) {
+                builder.append(" | kraj: ").append(safe(row.getCountry()));
+            }
+            if (!safe(row.getCountryCode()).isBlank()) {
+                builder.append(" | kod: ").append(safe(row.getCountryCode()));
+            }
+            if (!safe(row.getCity()).isBlank()) {
+                builder.append(" | miasto: ").append(safe(row.getCity()));
+            }
+            builder.append(" | dostawca: ").append(row.isSupplier() ? "tak" : "nie")
+                    .append(" | odbiorca: ").append(row.isClient() ? "tak" : "nie");
             if (row.getMessage() != null && !row.getMessage().isBlank()) {
-                builder.append(" | uwaga=").append(row.getMessage());
+                builder.append(" | uwaga: ").append(row.getMessage());
             }
             builder.append("\n");
         }
 
-        if (result.getRows().size() > previewLimit) {
-            builder.append("\nPokazano ").append(previewLimit).append(" z ").append(result.getRows().size()).append(" wierszy preview.");
+        appendContrahentIssuesSection(builder, result);
+        return builder.toString();
+    }
+
+    private void appendPlantIssuesSection(StringBuilder builder, com.egen.fitogen.dto.PlantImportPreviewResult result) {
+        List<String> problemRows = new ArrayList<>();
+        for (var row : result.getRows()) {
+            if (row.getMessage() != null && !row.getMessage().isBlank()) {
+                problemRows.add("#" + row.getRowNumber() + " [" + row.getStatus() + "] " + row.getMessage());
+            }
+            if (problemRows.size() >= 5) {
+                break;
+            }
         }
 
-        return builder.toString();
+        if (!problemRows.isEmpty()) {
+            builder.append("\nNAJWAŻNIEJSZE UWAGI\n");
+            for (String problem : problemRows) {
+                builder.append("- ").append(problem).append("\n");
+            }
+        }
+    }
+
+    private void appendContrahentIssuesSection(StringBuilder builder, com.egen.fitogen.dto.ContrahentImportPreviewResult result) {
+        List<String> problemRows = new ArrayList<>();
+        for (var row : result.getRows()) {
+            if (row.getMessage() != null && !row.getMessage().isBlank()) {
+                problemRows.add("#" + row.getRowNumber() + " [" + row.getStatus() + "] " + row.getMessage());
+            }
+            if (problemRows.size() >= 5) {
+                break;
+            }
+        }
+
+        if (!problemRows.isEmpty()) {
+            builder.append("\nNAJWAŻNIEJSZE UWAGI\n");
+            for (String problem : problemRows) {
+                builder.append("- ").append(problem).append("\n");
+            }
+        }
     }
 
     private String printableDelimiter(char delimiter) {
