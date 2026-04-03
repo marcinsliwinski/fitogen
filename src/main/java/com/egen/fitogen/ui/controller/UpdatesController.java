@@ -53,22 +53,78 @@ public class UpdatesController {
                 "Server Update dla wspólnego słownika krajów nie jest jeszcze aktywny. Docelowo tutaj będą obsługiwane import i aktualizacja słownika krajów z serwera."
         );
 
-        refreshBackupInfo();
-        refreshReadinessSummary();
+        refreshTechnicalState();
         initializeDryRunPreviewState();
     }
 
     private void initializeDryRunPreviewState() {
-        if (dryRunStatusLabel != null) {
-            dryRunStatusLabel.setText("Preview / dry-run pokazuje tylko lokalne podsumowanie gotowości. Nie pobiera danych z serwera i nie zapisuje zmian.");
-        }
+        setDryRunStatus("Preview / dry-run pokazuje tylko lokalne podsumowanie gotowości. Nie pobiera danych z serwera i nie zapisuje zmian.");
         resetPlantsDryRunPreview();
         resetEppoDryRunPreview();
         resetCountriesDryRunPreview();
     }
 
     @FXML
+    private void previewAllDryRun() {
+        refreshTechnicalState();
+        plantsDryRunPreviewArea.setText(buildPlantsDryRunPreview());
+        eppoDryRunPreviewArea.setText(buildEppoDryRunPreview());
+        countriesDryRunPreviewArea.setText(buildCountriesDryRunPreview());
+        setDryRunStatus("Wygenerowano pełny preview Server Update dla Plants, EPPO i wspólnego słownika krajów bez pobierania danych z serwera.");
+    }
+
+    @FXML
+    private void clearAllDryRunPreviews() {
+        resetPlantsDryRunPreview();
+        resetEppoDryRunPreview();
+        resetCountriesDryRunPreview();
+        refreshTechnicalState();
+        setDryRunStatus("Wyczyszczono wszystkie sekcje preview / dry-run.");
+    }
+
+    @FXML
     private void previewPlantsDryRun() {
+        refreshTechnicalState();
+        plantsDryRunPreviewArea.setText(buildPlantsDryRunPreview());
+        setDryRunStatus("Wygenerowano preview Plants Server Update bez pobierania danych z serwera.");
+    }
+
+    @FXML
+    private void previewEppoDryRun() {
+        refreshTechnicalState();
+        eppoDryRunPreviewArea.setText(buildEppoDryRunPreview());
+        setDryRunStatus("Wygenerowano preview EPPO Server Update bez pobierania danych z serwera.");
+    }
+
+    @FXML
+    private void previewCountriesDryRun() {
+        refreshTechnicalState();
+        countriesDryRunPreviewArea.setText(buildCountriesDryRunPreview());
+        setDryRunStatus("Wygenerowano preview wspólnego słownika krajów bez pobierania danych z serwera.");
+    }
+
+    @FXML
+    private void clearPlantsDryRunPreview() {
+        resetPlantsDryRunPreview();
+        refreshTechnicalState();
+        setDryRunStatus("Wyczyszczono preview Plants Server Update.");
+    }
+
+    @FXML
+    private void clearEppoDryRunPreview() {
+        resetEppoDryRunPreview();
+        refreshTechnicalState();
+        setDryRunStatus("Wyczyszczono preview EPPO Server Update.");
+    }
+
+    @FXML
+    private void clearCountriesDryRunPreview() {
+        resetCountriesDryRunPreview();
+        refreshTechnicalState();
+        setDryRunStatus("Wyczyszczono preview wspólnego słownika krajów.");
+    }
+
+    private String buildPlantsDryRunPreview() {
         List<com.egen.fitogen.model.Plant> plants = plantService.getAllPlants();
         long passportRequiredCount = plants.stream().filter(com.egen.fitogen.model.Plant::isPassportRequired).count();
         long withEppoCount = plants.stream().filter(plant -> !isBlank(plant.getEppoCode())).count();
@@ -88,27 +144,12 @@ public class UpdatesController {
         builder.append("Ocena gotowości: ")
                 .append(buildPlantsReadinessStatus(plants.size(), missingSpeciesCount, missingVisibilityCount))
                 .append("\n\n");
-        builder.append("Próbka pierwszych rekordów:\n");
-
-        int limit = Math.min(plants.size(), 8);
-        for (int i = 0; i < limit; i++) {
-            com.egen.fitogen.model.Plant plant = plants.get(i);
-            builder.append("- ")
-                    .append(buildPlantDisplay(plant))
-                    .append(" | status=").append(valueOrDash(plant.getVisibilityStatus()))
-                    .append(" | paszport=").append(plant.isPassportRequired() ? "TAK" : "NIE")
-                    .append(" | EPPO=").append(valueOrDash(plant.getEppoCode()))
-                    .append("\n");
-        }
-
+        appendPlantsPreviewSample(builder, plants);
         builder.append("\nTo jest tylko lokalny preview gotowości pod przyszły Server Update Plants.");
-        plantsDryRunPreviewArea.setText(builder.toString());
-        dryRunStatusLabel.setText("Wygenerowano preview Plants Server Update bez pobierania danych z serwera.");
-        refreshReadinessSummary();
+        return builder.toString();
     }
 
-    @FXML
-    private void previewEppoDryRun() {
+    private String buildEppoDryRunPreview() {
         List<com.egen.fitogen.model.EppoCode> codes = eppoCodeService.getAll();
         long activeCount = codes.stream().filter(this::isEppoActive).count();
         long missingCodeCount = codes.stream().filter(code -> isBlank(code.getCode())).count();
@@ -126,27 +167,12 @@ public class UpdatesController {
         builder.append("Ocena gotowości: ")
                 .append(buildEppoReadinessStatus(codes.size(), missingCodeCount, missingDisplayNameCount))
                 .append("\n\n");
-        builder.append("Próbka pierwszych rekordów:\n");
-
-        int limit = Math.min(codes.size(), 8);
-        for (int i = 0; i < limit; i++) {
-            com.egen.fitogen.model.EppoCode code = codes.get(i);
-            builder.append("- ")
-                    .append(valueOrDash(code.getCode()))
-                    .append(" | nazwa=").append(valueOrDash(code.getDisplaySpeciesName()))
-                    .append(" | łacina=").append(valueOrDash(code.getDisplayLatinSpeciesName()))
-                    .append(" | status=").append(valueOrDash(code.getStatus()))
-                    .append("\n");
-        }
-
+        appendEppoPreviewSample(builder, codes);
         builder.append("\nTo jest tylko lokalny preview gotowości pod przyszły Server Update EPPO.");
-        eppoDryRunPreviewArea.setText(builder.toString());
-        dryRunStatusLabel.setText("Wygenerowano preview EPPO Server Update bez pobierania danych z serwera.");
-        refreshReadinessSummary();
+        return builder.toString();
     }
 
-    @FXML
-    private void previewCountriesDryRun() {
+    private String buildCountriesDryRunPreview() {
         List<CountryDirectory.CountryEntry> entries = countryDirectoryService.getEntries();
         List<CountryDirectory.CountryEntry> customEntries = countryDirectoryService.getCustomEntries();
         long missingCountryCount = entries.stream().filter(entry -> isBlank(entry.country())).count();
@@ -162,7 +188,57 @@ public class UpdatesController {
         builder.append("Ocena gotowości: ")
                 .append(buildCountriesReadinessStatus(entries.size(), missingCountryCount, missingCodeCount, duplicateCodeCount))
                 .append("\n\n");
+        appendCountriesPreviewSample(builder, entries, customEntries);
+        builder.append("\nTo jest tylko lokalny preview gotowości pod przyszły Server Update wspólnego słownika krajów.");
+        return builder.toString();
+    }
+
+    private void appendPlantsPreviewSample(StringBuilder builder, List<com.egen.fitogen.model.Plant> plants) {
         builder.append("Próbka pierwszych rekordów:\n");
+        if (plants.isEmpty()) {
+            builder.append("- Brak lokalnych rekordów Plants.\n");
+            return;
+        }
+
+        int limit = Math.min(plants.size(), 8);
+        for (int i = 0; i < limit; i++) {
+            com.egen.fitogen.model.Plant plant = plants.get(i);
+            builder.append("- ")
+                    .append(buildPlantDisplay(plant))
+                    .append(" | status=").append(valueOrDash(plant.getVisibilityStatus()))
+                    .append(" | paszport=").append(plant.isPassportRequired() ? "TAK" : "NIE")
+                    .append(" | EPPO=").append(valueOrDash(plant.getEppoCode()))
+                    .append("\n");
+        }
+    }
+
+    private void appendEppoPreviewSample(StringBuilder builder, List<com.egen.fitogen.model.EppoCode> codes) {
+        builder.append("Próbka pierwszych rekordów:\n");
+        if (codes.isEmpty()) {
+            builder.append("- Brak lokalnych rekordów EPPO.\n");
+            return;
+        }
+
+        int limit = Math.min(codes.size(), 8);
+        for (int i = 0; i < limit; i++) {
+            com.egen.fitogen.model.EppoCode code = codes.get(i);
+            builder.append("- ")
+                    .append(valueOrDash(code.getCode()))
+                    .append(" | nazwa=").append(valueOrDash(code.getDisplaySpeciesName()))
+                    .append(" | łacina=").append(valueOrDash(code.getDisplayLatinSpeciesName()))
+                    .append(" | status=").append(valueOrDash(code.getStatus()))
+                    .append("\n");
+        }
+    }
+
+    private void appendCountriesPreviewSample(StringBuilder builder,
+                                              List<CountryDirectory.CountryEntry> entries,
+                                              List<CountryDirectory.CountryEntry> customEntries) {
+        builder.append("Próbka pierwszych rekordów:\n");
+        if (entries.isEmpty()) {
+            builder.append("- Brak lokalnych rekordów słownika krajów.\n");
+            return;
+        }
 
         int limit = Math.min(entries.size(), 10);
         for (int i = 0; i < limit; i++) {
@@ -175,29 +251,6 @@ public class UpdatesController {
             }
             builder.append("\n");
         }
-
-        builder.append("\nTo jest tylko lokalny preview gotowości pod przyszły Server Update wspólnego słownika krajów.");
-        countriesDryRunPreviewArea.setText(builder.toString());
-        dryRunStatusLabel.setText("Wygenerowano preview wspólnego słownika krajów bez pobierania danych z serwera.");
-        refreshReadinessSummary();
-    }
-
-    @FXML
-    private void clearPlantsDryRunPreview() {
-        resetPlantsDryRunPreview();
-        dryRunStatusLabel.setText("Wyczyszczono preview Plants Server Update.");
-    }
-
-    @FXML
-    private void clearEppoDryRunPreview() {
-        resetEppoDryRunPreview();
-        dryRunStatusLabel.setText("Wyczyszczono preview EPPO Server Update.");
-    }
-
-    @FXML
-    private void clearCountriesDryRunPreview() {
-        resetCountriesDryRunPreview();
-        dryRunStatusLabel.setText("Wyczyszczono preview wspólnego słownika krajów.");
     }
 
     private void resetPlantsDryRunPreview() {
@@ -216,6 +269,11 @@ public class UpdatesController {
         if (countriesDryRunPreviewArea != null) {
             countriesDryRunPreviewArea.setText("Brak preview wspólnego słownika krajów.");
         }
+    }
+
+    private void refreshTechnicalState() {
+        refreshBackupInfo();
+        refreshReadinessSummary();
     }
 
     private void refreshBackupInfo() {
@@ -271,6 +329,12 @@ public class UpdatesController {
                 .append(")");
 
         readinessSummaryLabel.setText(builder.toString());
+    }
+
+    private void setDryRunStatus(String message) {
+        if (dryRunStatusLabel != null) {
+            dryRunStatusLabel.setText(message);
+        }
     }
 
     private String buildPlantsReadinessStatus(long totalCount, long missingSpeciesCount, long missingVisibilityCount) {

@@ -61,6 +61,10 @@
             <VBox styleClass="content-card" spacing="12">
                 <Label text="Preview / dry-run Server Update" styleClass="section-title" style="-fx-font-size: 18px;"/>
                 <Label fx:id="dryRunStatusLabel" wrapText="true"/>
+                <HBox spacing="10">
+                    <Button text="Generuj pełny preview" onAction="#previewAllDryRun"/>
+                    <Button text="Wyczyść wszystko" onAction="#clearAllDryRunPreviews" styleClass="button-secondary"/>
+                </HBox>
 
                 <VBox spacing="8">
                     <Label text="Plants" styleClass="stat-title"/>
