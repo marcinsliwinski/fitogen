@@ -166,7 +166,9 @@
                             <VBox spacing="12" styleClass="stat-card">
                                 <Label text="Wspólny słownik krajów" styleClass="stat-title"/>
                                 <Label text="Ten słownik jest współdzielony przez Kontrahentów, EPPO i dane podmiotu. Możesz dopisywać własne wpisy bez zmiany schematu bazy." wrapText="true" styleClass="page-subtitle"/>
+                                <TextField fx:id="customCountrySearchField" promptText="Filtruj własne wpisy po nazwie kraju lub kodzie"/>
                                 <Label fx:id="countryDictionaryStatusLabel" wrapText="true" styleClass="page-subtitle"/>
+                                <Label fx:id="countryDictionarySummaryLabel" wrapText="true" styleClass="page-subtitle"/>
                                 <HBox spacing="14">
                                     <ListView fx:id="customCountryEntriesList" prefWidth="320" prefHeight="220"/>
                                     <VBox spacing="10" HBox.hgrow="ALWAYS">
@@ -174,6 +176,7 @@
                                         <TextField fx:id="customCountryCodeField" promptText="Kod kraju, np. PL"/>
                                         <HBox spacing="10">
                                             <Button text="Nowy" onAction="#clearCustomCountryEntryForm" styleClass="button-secondary"/>
+                                            <Button text="Wyczyść filtr" onAction="#clearCustomCountryFilter" styleClass="button-secondary"/>
                                             <Button text="Zapisz wpis" onAction="#saveCustomCountryEntry"/>
                                             <Button text="Usuń wpis" onAction="#deleteCustomCountryEntry" styleClass="button-danger"/>
                                         </HBox>
