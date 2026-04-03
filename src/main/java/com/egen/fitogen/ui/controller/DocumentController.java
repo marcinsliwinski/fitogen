@@ -2,10 +2,12 @@ package com.egen.fitogen.ui.controller;
 
 import com.egen.fitogen.config.AppContext;
 import com.egen.fitogen.database.SqliteContrahentRepository;
+import com.egen.fitogen.database.SqliteDocumentRepository;
 import com.egen.fitogen.model.Contrahent;
 import com.egen.fitogen.model.Document;
 import com.egen.fitogen.model.DocumentStatus;
 import com.egen.fitogen.repository.ContrahentRepository;
+import com.egen.fitogen.repository.DocumentRepository;
 import com.egen.fitogen.service.DocumentService;
 import com.egen.fitogen.ui.util.DialogUtil;
 import com.egen.fitogen.ui.util.ModalViewUtil;
@@ -40,6 +42,7 @@ public class DocumentController {
     @FXML private TextField searchField;
     @FXML private ComboBox<String> statusFilterBox;
 
+    private final DocumentRepository documentRepository = new SqliteDocumentRepository();
     private final ContrahentRepository contrahentRepository = new SqliteContrahentRepository();
     private final DocumentService documentService = AppContext.getDocumentService();
 
@@ -160,7 +163,7 @@ public class DocumentController {
 
     private void refresh() {
         loadContrahents();
-        masterData.setAll(documentService.getAllDocuments());
+        masterData.setAll(documentRepository.findAll());
         applyFilters();
     }
 
