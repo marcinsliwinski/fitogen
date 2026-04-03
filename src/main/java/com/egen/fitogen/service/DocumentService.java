@@ -23,17 +23,20 @@ public class DocumentService {
     private final DocumentItemRepository itemRepository;
     private final NumberingService numberingService;
     private final PlantBatchService plantBatchService;
+    private final AuditLogService auditLogService;
 
     public DocumentService(
             DocumentRepository documentRepository,
             DocumentItemRepository itemRepository,
             NumberingService numberingService,
-            PlantBatchService plantBatchService) {
+            PlantBatchService plantBatchService,
+            AuditLogService auditLogService) {
 
         this.documentRepository = documentRepository;
         this.itemRepository = itemRepository;
         this.numberingService = numberingService;
         this.plantBatchService = plantBatchService;
+        this.auditLogService = auditLogService;
     }
 
     public void createDocument(DocumentDTO dto) {
@@ -52,6 +55,8 @@ public class DocumentService {
         documentRepository.save(document);
 
         saveItems(document.getId(), dto.getItems());
+        logAudit("DOCUMENT", document.getId(), "CREATE",
+                "Utworzono dokument " + buildDocumentSummary(document, dto.getItems()));
     }
 
     public DocumentDTO getDocumentDetails(int documentId) {
@@ -91,6 +96,10 @@ public class DocumentService {
 
         itemRepository.deleteByDocumentId(dto.getId());
         saveItems(dto.getId(), dto.getItems());
+
+        logAudit("DOCUMENT", updated.getId(), "UPDATE",
+                "Zaktualizowano dokument " + buildDocumentSummary(updated, dto.getItems())
+                        + ". Wcześniej: " + buildDocumentSummary(existing, itemRepository.findByDocumentId(existing.getId())));
     }
 
     public void deleteDocument(int documentId) {
@@ -102,6 +111,8 @@ public class DocumentService {
 
         existing.setStatus(DocumentStatus.CANCELLED);
         documentRepository.update(existing);
+        logAudit("DOCUMENT", existing.getId(), "DELETE",
+                "Anulowano dokument " + buildDocumentSummary(existing, itemRepository.findByDocumentId(existing.getId())));
     }
 
     public int getAvailableQtyForBatch(int batchId) {
@@ -269,4 +280,37 @@ public class DocumentService {
         }
         return "ID " + batch.getId();
     }
+
+    private String buildDocumentSummary(Document document, List<?> items) {
+        if (document == null) {
+            return "[brak danych]";
+        }
+
+        String number = safe(document.getDocumentNumber());
+        String type = safe(document.getDocumentType());
+        String date = document.getIssueDate() == null ? "brak daty" : document.getIssueDate().toString();
+        String status = document.getStatus() == null ? "UNKNOWN" : document.getStatus().name();
+        int itemCount = items == null ? 0 : items.size();
+
+        return "nr " + fallback(number, "[bez numeru]")
+                + ", typ " + fallback(type, "[bez typu]")
+                + ", data " + date
+                + ", status " + status
+                + ", pozycji: " + itemCount;
+    }
+
+    private String safe(String value) {
+        return value == null ? "" : value.trim();
+    }
+
+    private String fallback(String value, String fallbackValue) {
+        return value == null || value.isBlank() ? fallbackValue : value;
+    }
+
+    private void logAudit(String entityType, Integer entityId, String actionType, String description) {
+        if (auditLogService != null) {
+            auditLogService.log(entityType, entityId, actionType, description);
+        }
+    }
+
 }

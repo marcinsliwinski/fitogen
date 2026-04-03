@@ -10,13 +10,16 @@ public class NumberingConfigService {
 
     private final NumberingConfigRepository repository;
     private final NumberingService numberingService;
+    private final AuditLogService auditLogService;
 
     public NumberingConfigService(
             NumberingConfigRepository repository,
-            NumberingService numberingService) {
+            NumberingService numberingService,
+            AuditLogService auditLogService) {
 
         this.repository = repository;
         this.numberingService = numberingService;
+        this.auditLogService = auditLogService;
     }
 
     public NumberingConfig getConfigOrDefault(NumberingType type) {
@@ -84,11 +87,16 @@ public class NumberingConfigService {
 
         if (existing == null) {
             repository.save(config);
+            logAudit(config, "CREATE", "Utworzono konfigurację numeracji: " + summarize(config));
             return;
         }
 
+        NumberingConfig previous = copyOf(existing);
         config.setId(existing.getId());
         repository.update(config);
+        logAudit(config, "UPDATE",
+                "Zaktualizowano konfigurację numeracji: " + summarize(config)
+                        + ". Wcześniej: " + summarize(previous));
     }
 
     public String preview(NumberingConfig config) {
@@ -104,4 +112,45 @@ public class NumberingConfigService {
                 && config.getSection2Type() == null
                 && config.getSection3Type() == null;
     }
+
+    private NumberingConfig copyOf(NumberingConfig source) {
+        if (source == null) {
+            return null;
+        }
+
+        NumberingConfig copy = new NumberingConfig();
+        copy.setId(source.getId());
+        copy.setType(source.getType());
+        copy.setSection1Type(source.getSection1Type());
+        copy.setSection1StaticValue(source.getSection1StaticValue());
+        copy.setSection1Separator(source.getSection1Separator());
+        copy.setSection2Type(source.getSection2Type());
+        copy.setSection2StaticValue(source.getSection2StaticValue());
+        copy.setSection2Separator(source.getSection2Separator());
+        copy.setSection3Type(source.getSection3Type());
+        copy.setSection3StaticValue(source.getSection3StaticValue());
+        copy.setSection3Separator(source.getSection3Separator());
+        copy.setCurrentCounter(source.getCurrentCounter());
+        return copy;
+    }
+
+    private void logAudit(NumberingConfig config, String actionType, String description) {
+        if (auditLogService != null) {
+            Integer entityId = config == null || config.getId() <= 0 ? null : config.getId();
+            auditLogService.log("NUMBERING_CONFIG", entityId, actionType, description);
+        }
+    }
+
+    private String summarize(NumberingConfig config) {
+        if (config == null) {
+            return "[brak danych]";
+        }
+
+        return "typ=" + config.getType()
+                + ", sekcja1=" + config.getSection1Type()
+                + ", sekcja2=" + config.getSection2Type()
+                + ", sekcja3=" + config.getSection3Type()
+                + ", licznik=" + config.getCurrentCounter();
+    }
+
 }

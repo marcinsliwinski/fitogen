@@ -1198,6 +1198,14 @@ public class SettingsController {
             Path backupPath = backupService.createBackup(selectedDirectory.toPath());
             String backupTimestamp = LocalDateTime.now().format(BACKUP_DATE_TIME_FORMATTER);
             appSettingsService.saveLastBackup(backupPath.toString(), backupTimestamp);
+            if (auditLogService != null) {
+                auditLogService.log(
+                        "APP_SETTINGS",
+                        null,
+                        "UPDATE",
+                        "Utworzono backup bazy danych w lokalizacji " + backupPath
+                );
+            }
             refreshBackupStatus();
             DialogUtil.showSuccess("Backup został utworzony:\n" + backupPath);
         } catch (IllegalArgumentException | IllegalStateException e) {

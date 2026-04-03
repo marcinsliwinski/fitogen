@@ -24,9 +24,11 @@ public class AppSettingsService {
     public static final String CUSTOM_COUNTRY_DIRECTORY_ENTRIES = "dictionary.country.custom_entries";
 
     private final AppSettingsRepository appSettingsRepository;
+    private final AuditLogService auditLogService;
 
-    public AppSettingsService(AppSettingsRepository appSettingsRepository) {
+    public AppSettingsService(AppSettingsRepository appSettingsRepository, AuditLogService auditLogService) {
         this.appSettingsRepository = appSettingsRepository;
+        this.auditLogService = auditLogService;
     }
 
     public String getSetting(String key) {
@@ -34,7 +36,25 @@ public class AppSettingsService {
     }
 
     public void saveSetting(String key, String value) {
-        appSettingsRepository.upsert(key, value == null ? "" : value.trim());
+        saveSetting(key, value, true);
+    }
+
+    public void saveSetting(String key, String value, boolean logChange) {
+        String normalizedKey = key == null ? "" : key.trim();
+        String newValue = value == null ? "" : value.trim();
+        String oldValue = appSettingsRepository.findValueByKey(normalizedKey).orElse("");
+        appSettingsRepository.upsert(normalizedKey, newValue);
+
+        if (logChange && auditLogService != null && !oldValue.equals(newValue)) {
+            auditLogService.log(
+                    "APP_SETTINGS",
+                    null,
+                    "UPDATE",
+                    "Zmieniono ustawienie " + normalizedKey
+                            + " z " + summarizeValue(oldValue)
+                            + " na " + summarizeValue(newValue)
+            );
+        }
     }
 
     public String getValue(String key) {
@@ -70,18 +90,23 @@ public class AppSettingsService {
             profile = new IssuerProfile();
         }
 
-        saveSetting(ISSUER_NURSERY_NAME, profile.getNurseryName());
-        saveSetting(ISSUER_COUNTRY, profile.getCountry());
-        saveSetting(ISSUER_COUNTRY_CODE, profile.getCountryCode());
-        saveSetting(ISSUER_POSTAL_CODE, profile.getPostalCode());
-        saveSetting(ISSUER_CITY, profile.getCity());
-        saveSetting(ISSUER_STREET, profile.getStreet());
-        saveSetting(ISSUER_PHYTOSANITARY_NUMBER, profile.getPhytosanitaryNumber());
+        saveSetting(ISSUER_NURSERY_NAME, profile.getNurseryName(), false);
+        saveSetting(ISSUER_COUNTRY, profile.getCountry(), false);
+        saveSetting(ISSUER_COUNTRY_CODE, profile.getCountryCode(), false);
+        saveSetting(ISSUER_POSTAL_CODE, profile.getPostalCode(), false);
+        saveSetting(ISSUER_CITY, profile.getCity(), false);
+        saveSetting(ISSUER_STREET, profile.getStreet(), false);
+        saveSetting(ISSUER_PHYTOSANITARY_NUMBER, profile.getPhytosanitaryNumber(), false);
+
+        if (auditLogService != null) {
+            auditLogService.log("APP_SETTINGS", null, "UPDATE",
+                    "Zapisano dane wystawcy: " + summarizeIssuerProfile(profile));
+        }
     }
 
     public void saveLastBackup(String path, String at) {
-        saveSetting(LAST_BACKUP_PATH, path);
-        saveSetting(LAST_BACKUP_AT, at);
+        saveSetting(LAST_BACKUP_PATH, path, false);
+        saveSetting(LAST_BACKUP_AT, at, false);
     }
 
     public String getLastBackupPath() {
@@ -121,7 +146,11 @@ public class AppSettingsService {
 
     public void saveCustomCountryEntries(List<CountryDirectory.CountryEntry> entries) {
         if (entries == null || entries.isEmpty()) {
-            saveSetting(CUSTOM_COUNTRY_DIRECTORY_ENTRIES, "");
+            saveSetting(CUSTOM_COUNTRY_DIRECTORY_ENTRIES, "", false);
+            if (auditLogService != null) {
+                auditLogService.log("COUNTRY_DICTIONARY", null, "UPDATE",
+                        "Wyczyszczono własne wpisy wspólnego słownika krajów.");
+            }
             return;
         }
 
@@ -140,7 +169,11 @@ public class AppSettingsService {
                     .append(escape(entry.countryCode().trim().toUpperCase()));
         }
 
-        saveSetting(CUSTOM_COUNTRY_DIRECTORY_ENTRIES, serialized.toString());
+        saveSetting(CUSTOM_COUNTRY_DIRECTORY_ENTRIES, serialized.toString(), false);
+        if (auditLogService != null) {
+            auditLogService.log("COUNTRY_DICTIONARY", null, "UPDATE",
+                    "Zapisano własne wpisy wspólnego słownika krajów. Liczba wpisów: " + entries.size() + ".");
+        }
     }
 
     public boolean isPlantFullCatalogEnabled() {
@@ -210,4 +243,26 @@ public class AppSettingsService {
         }
         return result.toString();
     }
+
+    private String summarizeIssuerProfile(IssuerProfile profile) {
+        if (profile == null) {
+            return "[brak danych]";
+        }
+
+        return "nazwa=" + summarizeValue(profile.getNurseryName())
+                + ", kraj=" + summarizeValue(profile.getCountry())
+                + ", kod kraju=" + summarizeValue(profile.getCountryCode())
+                + ", miasto=" + summarizeValue(profile.getCity())
+                + ", numer fitosanitarny=" + summarizeValue(profile.getPhytosanitaryNumber());
+    }
+
+    private String summarizeValue(String value) {
+        if (value == null || value.isBlank()) {
+            return "[puste]";
+        }
+
+        String normalized = value.trim().replaceAll("\\s+", " ");
+        return "\"" + (normalized.length() > 80 ? normalized.substring(0, 77) + "..." : normalized) + "\"";
+    }
+
 }
