@@ -25,11 +25,14 @@ public class MainAppFX extends Application {
         URL mainViewUrl = resolveResource("view/main.fxml");
         FXMLLoader loader = new FXMLLoader(mainViewUrl);
 
-        Scene scene = new Scene(loader.load(), 1200, 800);
-
-        stage.setTitle("FitoGen Free Edition");
-        stage.setScene(scene);
-        stage.show();
+        try {
+            Scene scene = new Scene(loader.load(), 1200, 800);
+            stage.setTitle("FitoGen Free Edition");
+            stage.setScene(scene);
+            stage.show();
+        } catch (Exception e) {
+            throw new IllegalStateException("Nie udało się załadować głównego widoku aplikacji: view/main.fxml", e);
+        }
     }
 
     private URL resolveResource(String relativeResourcePath) {

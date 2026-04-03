@@ -5,6 +5,7 @@ import javafx.scene.Scene;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 
+import java.net.URL;
 import java.util.function.Consumer;
 
 public final class ModalViewUtil {
@@ -22,11 +23,18 @@ public final class ModalViewUtil {
             Consumer<T> controllerInitializer
     ) {
         try {
-            FXMLLoader loader = new FXMLLoader(ModalViewUtil.class.getResource(fxmlPath));
+            URL resourceUrl = ModalViewUtil.class.getResource(fxmlPath);
+            if (resourceUrl == null) {
+                throw new IllegalStateException("Nie znaleziono widoku modalnego: " + fxmlPath);
+            }
+
+            FXMLLoader loader = new FXMLLoader(resourceUrl);
             Scene scene = new Scene(loader.load(), width, height);
-            scene.getStylesheets().add(
-                    ModalViewUtil.class.getResource("/styles/app.css").toExternalForm()
-            );
+
+            URL stylesheetUrl = ModalViewUtil.class.getResource("/styles/app.css");
+            if (stylesheetUrl != null) {
+                scene.getStylesheets().add(stylesheetUrl.toExternalForm());
+            }
 
             Stage stage = new Stage();
             stage.setScene(scene);

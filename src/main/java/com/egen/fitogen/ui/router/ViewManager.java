@@ -1,5 +1,6 @@
 package com.egen.fitogen.ui.router;
 
+import com.egen.fitogen.ui.util.DialogUtil;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
 import javafx.scene.layout.StackPane;
@@ -65,6 +66,7 @@ public final class ViewManager {
 
         } catch (Exception e) {
             e.printStackTrace();
+            DialogUtil.showError("Błąd widoku", "Nie udało się otworzyć widoku: " + viewKey + ".");
         }
     }
 
