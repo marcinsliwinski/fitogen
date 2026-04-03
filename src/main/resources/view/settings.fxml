@@ -127,27 +127,37 @@
                 </ScrollPane>
             </Tab>
 
+            <Tab text="Typy dokumentów">
+                <ScrollPane fitToWidth="true" fitToHeight="true">
+                    <content>
+                        <VBox spacing="16" styleClass="content-card">
+                            <padding><Insets top="16" right="16" bottom="16" left="16"/></padding>
+                            <VBox spacing="12" styleClass="stat-card">
+                                <Label text="Typy dokumentów" styleClass="stat-title"/>
+                                <Label text="Słownik typów dokumentów używanych w formularzach i na listach dokumentów. Na tym etapie pozostaje bez zmian w logice zapisu." wrapText="true" styleClass="page-subtitle"/>
+                                <HBox spacing="14">
+                                    <ListView fx:id="documentTypesList" prefWidth="320" prefHeight="220"/>
+                                    <VBox spacing="10" HBox.hgrow="ALWAYS">
+                                        <TextField fx:id="documentTypeNameField" promptText="Nazwa typu dokumentu"/>
+                                        <TextField fx:id="documentTypeCodeField" promptText="Kod, np. DD"/>
+                                        <HBox spacing="10">
+                                            <Button text="Nowy" onAction="#clearDocumentTypeForm" styleClass="button-secondary"/>
+                                            <Button text="Zapisz typ" onAction="#saveDocumentType"/>
+                                            <Button text="Usuń typ" onAction="#deleteDocumentType" styleClass="button-danger"/>
+                                        </HBox>
+                                    </VBox>
+                                </HBox>
+                            </VBox>
+                        </VBox>
+                    </content>
+                </ScrollPane>
+            </Tab>
+
             <Tab text="Słowniki">
                 <ScrollPane fitToWidth="true" fitToHeight="true">
                     <content>
                         <VBox spacing="16" styleClass="content-card">
                             <padding><Insets top="16" right="16" bottom="16" left="16"/></padding>
-                            <Label text="Typy dokumentów" styleClass="stat-title"/>
-                            <HBox spacing="14">
-                                <ListView fx:id="documentTypesList" prefWidth="320" prefHeight="220"/>
-                                <VBox spacing="10" HBox.hgrow="ALWAYS">
-                                    <TextField fx:id="documentTypeNameField" promptText="Nazwa typu dokumentu"/>
-                                    <TextField fx:id="documentTypeCodeField" promptText="Kod, np. DD"/>
-                                    <HBox spacing="10">
-                                        <Button text="Nowy" onAction="#clearDocumentTypeForm" styleClass="button-secondary"/>
-                                        <Button text="Zapisz typ" onAction="#saveDocumentType"/>
-                                        <Button text="Usuń typ" onAction="#deleteDocumentType" styleClass="button-danger"/>
-                                    </HBox>
-                                </VBox>
-                            </HBox>
-
-                            <Separator/>
-
                             <VBox spacing="12" styleClass="stat-card">
                                 <Label text="Wspólny słownik krajów" styleClass="stat-title"/>
                                 <Label text="Ten słownik jest współdzielony przez Kontrahentów, EPPO i dane podmiotu. Możesz dopisywać własne wpisy bez zmiany schematu bazy." wrapText="true" styleClass="page-subtitle"/>
