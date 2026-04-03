@@ -264,6 +264,7 @@
                                 <Label fx:id="auditLogStatusLabel" wrapText="true" styleClass="page-subtitle"/>
                                 <Label text="Najnowszy wpis" styleClass="stat-title"/>
                                 <Label fx:id="auditLogSummaryLabel" wrapText="true" styleClass="page-subtitle"/>
+                                <TextField fx:id="auditLogSearchField" promptText="Filtruj wpisy Audit Log po użytkowniku, encji, akcji lub opisie..."/>
                                 <HBox spacing="10">
                                     <Button text="Odśwież Audit Log" onAction="#refreshAuditLog" styleClass="button-secondary"/>
                                 </HBox>

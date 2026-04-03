@@ -24,6 +24,8 @@ import com.egen.fitogen.ui.util.ValidationUtil;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+import javafx.collections.transformation.FilteredList;
 import javafx.fxml.FXML;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
@@ -101,6 +103,7 @@ public class SettingsController {
     @FXML private TextArea contrahentsCsvPreviewArea;
 
     @FXML private Label auditLogStatusLabel;
+    @FXML private TextField auditLogSearchField;
     @FXML private Label auditLogSummaryLabel;
     @FXML private TableView<com.egen.fitogen.model.AuditLogEntry> auditLogTable;
     @FXML private TableColumn<com.egen.fitogen.model.AuditLogEntry, String> colAuditChangedAt;
@@ -129,6 +132,8 @@ public class SettingsController {
     private DocumentType editingDocumentType;
     private CountryDirectory.CountryEntry editingCustomCountryEntry;
     private AppUser editingUser;
+    private final ObservableList<com.egen.fitogen.model.AuditLogEntry> auditLogMasterData = FXCollections.observableArrayList();
+    private FilteredList<com.egen.fitogen.model.AuditLogEntry> auditLogFilteredData;
 
     @FXML
     public void initialize() {
@@ -137,6 +142,7 @@ public class SettingsController {
         configureUserControls();
         configureCustomCountryControls();
         configureIssuerCountryControls();
+        configureAuditLogControls();
 
         numberingTypeBox.getItems().setAll(NumberingType.values());
         numberingTypeBox.setValue(NumberingType.DOCUMENT);
@@ -225,6 +231,39 @@ public class SettingsController {
 
         issuerCountryField.valueProperty().addListener((obs, oldVal, newVal) -> syncIssuerCodeFromCountry());
         issuerCountryCodeField.valueProperty().addListener((obs, oldVal, newVal) -> syncIssuerCountryFromCode());
+    }
+
+    private void configureAuditLogControls() {
+        if (auditLogTable == null) {
+            return;
+        }
+
+        auditLogFilteredData = new FilteredList<>(auditLogMasterData, entry -> true);
+        auditLogTable.setItems(auditLogFilteredData);
+
+        if (auditLogSearchField != null) {
+            auditLogSearchField.textProperty().addListener((obs, oldVal, newVal) -> applyAuditLogFilter(newVal));
+        }
+    }
+
+    private void applyAuditLogFilter(String rawFilter) {
+        if (auditLogFilteredData == null) {
+            return;
+        }
+
+        String keyword = rawFilter == null ? "" : rawFilter.trim().toLowerCase();
+        auditLogFilteredData.setPredicate(entry -> {
+            if (keyword.isBlank()) {
+                return true;
+            }
+
+            return containsIgnoreCase(entry.getChangedAt(), keyword)
+                    || containsIgnoreCase(entry.getActor(), keyword)
+                    || containsIgnoreCase(entry.getEntityType(), keyword)
+                    || containsIgnoreCase(String.valueOf(entry.getEntityId()), keyword)
+                    || containsIgnoreCase(entry.getActionType(), keyword)
+                    || containsIgnoreCase(entry.getDescription(), keyword);
+        });
     }
 
     private void configureDictionarySelections() {
@@ -980,7 +1019,8 @@ public class SettingsController {
         }
 
         configureAuditLogTable();
-        auditLogTable.setItems(FXCollections.observableArrayList(auditLogService.getRecentEntries(200)));
+        auditLogMasterData.setAll(auditLogService.getRecentEntries(200));
+        applyAuditLogFilter(auditLogSearchField == null ? "" : auditLogSearchField.getText());
 
         int totalEntries = auditLogService.getEntryCount();
         auditLogStatusLabel.setText("Liczba wpisów audit log: " + totalEntries + ". Tabela pokazuje ostatnie 200 wpisów w trybie tylko do odczytu.");
@@ -1200,6 +1240,10 @@ public class SettingsController {
             return ",";
         }
         return String.valueOf(delimiter);
+    }
+
+    private boolean containsIgnoreCase(String value, String keyword) {
+        return value != null && value.toLowerCase().contains(keyword);
     }
 
     private String safe(String value) {
