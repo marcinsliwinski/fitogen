@@ -240,6 +240,14 @@ public class SettingsController {
 
         auditLogFilteredData = new FilteredList<>(auditLogMasterData, entry -> true);
         auditLogTable.setItems(auditLogFilteredData);
+        auditLogTable.setPlaceholder(new Label("Brak wpisów Audit Log do wyświetlenia."));
+        auditLogTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        auditLogTable.setEditable(false);
+        auditLogTable.getSortOrder().clear();
+        if (colAuditChangedAt != null) {
+            colAuditChangedAt.setSortType(TableColumn.SortType.DESCENDING);
+            auditLogTable.getSortOrder().add(colAuditChangedAt);
+        }
 
         if (auditLogSearchField != null) {
             auditLogSearchField.textProperty().addListener((obs, oldVal, newVal) -> applyAuditLogFilter(newVal));
@@ -264,6 +272,11 @@ public class SettingsController {
                     || containsIgnoreCase(entry.getActionType(), keyword)
                     || containsIgnoreCase(entry.getDescription(), keyword);
         });
+
+        updateAuditLogVisibleSummary(keyword);
+        if (auditLogTable != null) {
+            auditLogTable.sort();
+        }
     }
 
     private void configureDictionarySelections() {
@@ -1013,6 +1026,51 @@ public class SettingsController {
         colAuditDescription.setCellValueFactory(cell -> new SimpleStringProperty(safe(cell.getValue().getDescription())));
     }
 
+
+    private void updateAuditLogVisibleSummary(String keyword) {
+        if (auditLogStatusLabel == null || auditLogSummaryLabel == null || auditLogFilteredData == null) {
+            return;
+        }
+
+        int totalEntries = auditLogService.getEntryCount();
+        int visibleEntries = auditLogFilteredData.size();
+        String filterSuffix = keyword == null || keyword.isBlank()
+                ? ""
+                : " Filtr: \"" + keyword + "\".";
+
+        auditLogStatusLabel.setText(
+                "Liczba wpisów audit log: " + totalEntries
+                        + ". Widoczne po filtrze: " + visibleEntries
+                        + ". Tabela działa w trybie tylko do odczytu."
+                        + filterSuffix
+        );
+
+        String latestVisible = auditLogFilteredData.stream()
+                .findFirst()
+                .map(this::buildAuditLogEntrySummary)
+                .orElse("Brak wpisów spełniających bieżący filtr.");
+        auditLogSummaryLabel.setText(latestVisible);
+    }
+
+    private String buildAuditLogEntrySummary(com.egen.fitogen.model.AuditLogEntry entry) {
+        if (entry == null) {
+            return "Brak wpisów audytowych.";
+        }
+
+        StringBuilder builder = new StringBuilder();
+        builder.append(safe(entry.getChangedAt()));
+        builder.append(" | ").append(safe(entry.getActor()));
+        builder.append(" | ").append(safe(entry.getEntityType()));
+        if (entry.getEntityId() != null) {
+            builder.append(" #").append(entry.getEntityId());
+        }
+        builder.append(" | ").append(safe(entry.getActionType()));
+        if (!safe(entry.getDescription()).isBlank()) {
+            builder.append(" | ").append(safe(entry.getDescription()));
+        }
+        return builder.toString();
+    }
+
     private void loadAuditLogOverview() {
         if (auditLogTable == null) {
             return;
@@ -1021,10 +1079,6 @@ public class SettingsController {
         configureAuditLogTable();
         auditLogMasterData.setAll(auditLogService.getRecentEntries(200));
         applyAuditLogFilter(auditLogSearchField == null ? "" : auditLogSearchField.getText());
-
-        int totalEntries = auditLogService.getEntryCount();
-        auditLogStatusLabel.setText("Liczba wpisów audit log: " + totalEntries + ". Tabela pokazuje ostatnie 200 wpisów w trybie tylko do odczytu.");
-        auditLogSummaryLabel.setText(auditLogService.getLatestEntrySummary());
     }
 
     @FXML
@@ -1037,6 +1091,15 @@ public class SettingsController {
                 auditLogStatusLabel.setText("Nie udało się odświeżyć Audit Log.");
             }
             DialogUtil.showError("Audit Log", "Nie udało się odczytać wpisów Audit Log.");
+        }
+    }
+
+    @FXML
+    private void clearAuditLogFilter() {
+        if (auditLogSearchField != null) {
+            auditLogSearchField.clear();
+        } else {
+            applyAuditLogFilter("");
         }
     }
 

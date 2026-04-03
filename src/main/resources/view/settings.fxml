@@ -269,6 +269,7 @@
                                 <TextField fx:id="auditLogSearchField" promptText="Filtruj wpisy Audit Log po użytkowniku, encji, akcji lub opisie..."/>
                                 <HBox spacing="10">
                                     <Button text="Odśwież Audit Log" onAction="#refreshAuditLog" styleClass="button-secondary"/>
+                                    <Button text="Wyczyść filtr" onAction="#clearAuditLogFilter" styleClass="button-secondary"/>
                                 </HBox>
                                 <TableView fx:id="auditLogTable" prefHeight="420">
                                     <columns>
