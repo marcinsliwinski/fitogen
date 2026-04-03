@@ -26,6 +26,7 @@ import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
+import javafx.collections.transformation.SortedList;
 import javafx.fxml.FXML;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
@@ -145,6 +146,7 @@ public class SettingsController {
     private AppUser editingUser;
     private final ObservableList<com.egen.fitogen.model.AuditLogEntry> auditLogMasterData = FXCollections.observableArrayList();
     private FilteredList<com.egen.fitogen.model.AuditLogEntry> auditLogFilteredData;
+    private SortedList<com.egen.fitogen.model.AuditLogEntry> auditLogSortedData;
 
     @FXML
     public void initialize() {
@@ -357,7 +359,9 @@ public class SettingsController {
         }
 
         auditLogFilteredData = new FilteredList<>(auditLogMasterData, entry -> true);
-        auditLogTable.setItems(auditLogFilteredData);
+        auditLogSortedData = new SortedList<>(auditLogFilteredData);
+        auditLogSortedData.comparatorProperty().bind(auditLogTable.comparatorProperty());
+        auditLogTable.setItems(auditLogSortedData);
         auditLogTable.setPlaceholder(new Label("Brak wpisów Audit Log do wyświetlenia."));
         auditLogTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
         auditLogTable.setEditable(false);
@@ -366,6 +370,8 @@ public class SettingsController {
             colAuditChangedAt.setSortType(TableColumn.SortType.DESCENDING);
             auditLogTable.getSortOrder().add(colAuditChangedAt);
         }
+
+        auditLogTable.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> updateAuditLogSelectionSummary(newVal));
 
         if (auditLogSearchField != null) {
             auditLogSearchField.textProperty().addListener((obs, oldVal, newVal) -> applyAuditLogFilter(newVal));
@@ -1409,11 +1415,29 @@ public class SettingsController {
                         + filterSuffix
         );
 
-        String latestVisible = auditLogFilteredData.stream()
-                .findFirst()
-                .map(this::buildAuditLogEntrySummary)
-                .orElse("Brak wpisów spełniających bieżący filtr.");
-        auditLogSummaryLabel.setText(latestVisible);
+        updateAuditLogSelectionSummary(auditLogTable == null ? null : auditLogTable.getSelectionModel().getSelectedItem());
+    }
+
+
+    private void updateAuditLogSelectionSummary(com.egen.fitogen.model.AuditLogEntry selectedEntry) {
+        if (auditLogSummaryLabel == null) {
+            return;
+        }
+
+        com.egen.fitogen.model.AuditLogEntry entryToDescribe = selectedEntry;
+        if (entryToDescribe == null) {
+            entryToDescribe = auditLogSortedData == null || auditLogSortedData.isEmpty()
+                    ? null
+                    : auditLogSortedData.get(0);
+        }
+
+        if (entryToDescribe == null) {
+            auditLogSummaryLabel.setText("Brak wpisów spełniających bieżący filtr.");
+            return;
+        }
+
+        String prefix = selectedEntry == null ? "Najnowszy widoczny wpis: " : "Wybrany wpis: ";
+        auditLogSummaryLabel.setText(prefix + buildAuditLogEntrySummary(entryToDescribe));
     }
 
     private String buildAuditLogEntrySummary(com.egen.fitogen.model.AuditLogEntry entry) {
@@ -1441,8 +1465,38 @@ public class SettingsController {
         }
 
         configureAuditLogTable();
+        com.egen.fitogen.model.AuditLogEntry selected = auditLogTable.getSelectionModel().getSelectedItem();
+        String selectionKey = buildAuditLogSelectionKey(selected);
         auditLogMasterData.setAll(auditLogService.getRecentEntries(200));
         applyAuditLogFilter(auditLogSearchField == null ? "" : auditLogSearchField.getText());
+        restoreAuditLogSelection(selectionKey);
+    }
+
+
+    private void restoreAuditLogSelection(String selectionKey) {
+        if (auditLogTable == null || selectionKey == null || selectionKey.isBlank() || auditLogSortedData == null) {
+            return;
+        }
+
+        for (com.egen.fitogen.model.AuditLogEntry entry : auditLogSortedData) {
+            if (buildAuditLogSelectionKey(entry).equals(selectionKey)) {
+                auditLogTable.getSelectionModel().select(entry);
+                auditLogTable.scrollTo(entry);
+                return;
+            }
+        }
+    }
+
+    private String buildAuditLogSelectionKey(com.egen.fitogen.model.AuditLogEntry entry) {
+        if (entry == null) {
+            return "";
+        }
+
+        return safe(entry.getChangedAt())
+                + "|" + safe(entry.getActor())
+                + "|" + safe(entry.getEntityType())
+                + "|" + safe(entry.getActionType())
+                + "|" + safe(entry.getDescription());
     }
 
     @FXML
