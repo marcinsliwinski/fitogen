@@ -32,6 +32,8 @@ public class PlantsController {
     @FXML private TableColumn<Plant, String> colVisibility;
     @FXML private TextField searchField;
     @FXML private Label catalogModeInfoLabel;
+    @FXML private Label filterStatusLabel;
+    @FXML private Label filterSummaryLabel;
 
     private final PlantService plantService = AppContext.getPlantService();
     private final AppSettingsService appSettingsService = AppContext.getAppSettingsService();
@@ -42,6 +44,7 @@ public class PlantsController {
     @FXML
     public void initialize() {
         configureColumns();
+        configureTableBehavior();
         configureRowFactory();
         configureSearch();
         refresh();
@@ -61,6 +64,15 @@ public class PlantsController {
     }
 
 
+
+    private void configureTableBehavior() {
+        if (table == null) {
+            return;
+        }
+
+        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        table.setPlaceholder(new Label("Brak roślin do wyświetlenia."));
+    }
     private void configureRowFactory() {
         table.setRowFactory(tv -> new TableRow<>() {
             @Override
@@ -83,7 +95,12 @@ public class PlantsController {
     private void configureSearch() {
         filteredData = new FilteredList<>(masterData, p -> true);
 
-        searchField.textProperty().addListener((obs, oldVal, newVal) -> applyFilters());
+        if (searchField != null) {
+            searchField.textProperty().addListener((obs, oldVal, newVal) -> applyFilters());
+        }
+        if (table != null) {
+            table.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> updateFilterSummary());
+        }
 
         SortedList<Plant> sortedData = new SortedList<>(filteredData);
         sortedData.comparatorProperty().bind(table.comparatorProperty());
@@ -115,8 +132,69 @@ public class PlantsController {
                     || safeContains(plant.isPassportRequired() ? "tak" : "nie", keyword)
                     || safeContains(plant.getVisibilityStatus(), keyword);
         });
+
+        updateFilterSummary();
     }
 
+
+    private void updateFilterSummary() {
+        if (filterStatusLabel == null || filterSummaryLabel == null || filteredData == null) {
+            return;
+        }
+
+        String keyword = searchField == null || searchField.getText() == null ? "" : searchField.getText().trim();
+        long totalCount = masterData.size();
+        long visibleCount = filteredData.size();
+        boolean fullCatalogEnabled = appSettingsService.isPlantFullCatalogEnabled();
+        long usedCount = filteredData.stream().filter(plant -> !isUnusedPlant(plant)).count();
+        long unusedCount = filteredData.stream().filter(this::isUnusedPlant).count();
+        long passportRequiredCount = filteredData.stream().filter(Plant::isPassportRequired).count();
+
+        StringBuilder statusBuilder = new StringBuilder();
+        statusBuilder.append("Łącznie roślin: ").append(totalCount)
+                .append(". Widoczne po filtrach: ").append(visibleCount)
+                .append(". Używane: ").append(usedCount)
+                .append(". Nieużywane: ").append(unusedCount)
+                .append(". Wymagają paszportu: ").append(passportRequiredCount)
+                .append(". Tryb pełnej bazy: ").append(fullCatalogEnabled ? "włączony" : "wyłączony").append('.');
+        if (!keyword.isBlank()) {
+            statusBuilder.append(" Fraza: \"").append(keyword).append("\".");
+        }
+        filterStatusLabel.setText(statusBuilder.toString());
+
+        Plant selected = table == null ? null : table.getSelectionModel().getSelectedItem();
+        if (selected == null) {
+            selected = filteredData.stream().findFirst().orElse(null);
+        }
+
+        if (selected == null) {
+            filterSummaryLabel.setText("Brak roślin spełniających bieżące filtry.");
+            return;
+        }
+
+        filterSummaryLabel.setText(buildPlantSummary(selected));
+    }
+
+    private String buildPlantSummary(Plant plant) {
+        return "Podgląd rośliny: " + buildPlantLabel(plant)
+                + ", nazwa łacińska " + firstNonBlank(safe(plant.getLatinSpeciesName()).trim(), "—")
+                + ", kod EPPO " + firstNonBlank(safe(plant.getEppoCode()).trim(), "—")
+                + ", paszport " + (plant.isPassportRequired() ? "wymagany" : "niewymagany")
+                + ", status indeksu " + firstNonBlank(safe(plant.getVisibilityStatus()).trim(), "—")
+                + ".";
+    }
+
+    private String firstNonBlank(String... values) {
+        if (values == null) {
+            return "";
+        }
+        for (String value : values) {
+            if (value != null && !value.isBlank()) {
+                return value;
+            }
+        }
+        return "";
+    }
     private boolean isUnusedPlant(Plant plant) {
         return plant.getVisibilityStatus() != null
                 && plant.getVisibilityStatus().trim().equalsIgnoreCase("Nieużywany");
@@ -175,6 +253,14 @@ public class PlantsController {
 
     private String safe(String value) {
         return value == null ? "" : value;
+    }
+
+    @FXML
+    private void clearFilters() {
+        if (searchField != null) {
+            searchField.clear();
+        }
+        applyFilters();
     }
 
     @FXML

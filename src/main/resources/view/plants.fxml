@@ -20,7 +20,11 @@
         <TextField fx:id="searchField"
                    promptText="Szukaj po gatunku, odmianie, podkładce, nazwie łacińskiej, kodzie EPPO, paszporcie lub statusie..."
                    HBox.hgrow="ALWAYS"/>
+            <Button text="Wyczyść filtr" onAction="#clearFilters" styleClass="button-secondary"/>
     </HBox>
+
+    <Label fx:id="filterStatusLabel" styleClass="page-subtitle" wrapText="true"/>
+    <Label fx:id="filterSummaryLabel" styleClass="page-subtitle" wrapText="true"/>
 
     <TableView fx:id="table" VBox.vgrow="ALWAYS">
         <columns>
