@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.TextArea?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
 
@@ -54,6 +56,53 @@
                 <Label text="Stan techniczny" styleClass="section-title" style="-fx-font-size: 18px;"/>
                 <Label fx:id="lastBackupInfoLabel" wrapText="true"/>
                 <Label fx:id="readinessSummaryLabel" wrapText="true"/>
+            </VBox>
+
+            <VBox styleClass="content-card" spacing="12">
+                <Label text="Preview / dry-run Server Update" styleClass="section-title" style="-fx-font-size: 18px;"/>
+                <Label fx:id="dryRunStatusLabel" wrapText="true"/>
+
+                <VBox spacing="8">
+                    <Label text="Plants" styleClass="stat-title"/>
+                    <HBox spacing="10">
+                        <Label text="Lokalny preview gotowości pod przyszły Server Update Plants." wrapText="true" HBox.hgrow="ALWAYS"/>
+                    </HBox>
+                    <HBox spacing="10">
+                        <Label text="To nie pobiera danych z serwera i nie zapisuje zmian." wrapText="true" HBox.hgrow="ALWAYS"/>
+                    </HBox>
+                    <HBox spacing="10">
+                        <Button text="Generuj preview Plants" onAction="#previewPlantsDryRun"/>
+                    </HBox>
+                    <TextArea fx:id="plantsDryRunPreviewArea" editable="false" wrapText="true" prefRowCount="8"/>
+                </VBox>
+
+                <VBox spacing="8">
+                    <Label text="EPPO" styleClass="stat-title"/>
+                    <HBox spacing="10">
+                        <Label text="Lokalny preview gotowości pod przyszły Server Update EPPO." wrapText="true" HBox.hgrow="ALWAYS"/>
+                    </HBox>
+                    <HBox spacing="10">
+                        <Label text="To nie pobiera danych z serwera i nie zapisuje zmian." wrapText="true" HBox.hgrow="ALWAYS"/>
+                    </HBox>
+                    <HBox spacing="10">
+                        <Button text="Generuj preview EPPO" onAction="#previewEppoDryRun"/>
+                    </HBox>
+                    <TextArea fx:id="eppoDryRunPreviewArea" editable="false" wrapText="true" prefRowCount="8"/>
+                </VBox>
+
+                <VBox spacing="8">
+                    <Label text="Wspólny słownik krajów" styleClass="stat-title"/>
+                    <HBox spacing="10">
+                        <Label text="Lokalny preview gotowości pod przyszły Server Update wspólnego słownika krajów." wrapText="true" HBox.hgrow="ALWAYS"/>
+                    </HBox>
+                    <HBox spacing="10">
+                        <Label text="To nie pobiera danych z serwera i nie zapisuje zmian." wrapText="true" HBox.hgrow="ALWAYS"/>
+                    </HBox>
+                    <HBox spacing="10">
+                        <Button text="Generuj preview słownika krajów" onAction="#previewCountriesDryRun"/>
+                    </HBox>
+                    <TextArea fx:id="countriesDryRunPreviewArea" editable="false" wrapText="true" prefRowCount="8"/>
+                </VBox>
             </VBox>
         </VBox>
     </content>
