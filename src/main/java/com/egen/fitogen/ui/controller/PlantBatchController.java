@@ -18,6 +18,7 @@ import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
 import javafx.collections.transformation.SortedList;
 import javafx.fxml.FXML;
+import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
@@ -41,18 +42,22 @@ public class PlantBatchController {
     @FXML private TableColumn<PlantBatch, String> colSourceOrigin;
     @FXML private TableColumn<PlantBatch, String> colStatus;
     @FXML private TextField searchField;
+    @FXML private Label filterStatusLabel;
+    @FXML private Label filterSummaryLabel;
 
     private final PlantBatchService plantBatchService = AppContext.getPlantBatchService();
     private final PlantRepository plantRepository = new SqlitePlantRepository();
     private final ContrahentRepository contrahentRepository = new SqliteContrahentRepository();
 
     private final ObservableList<PlantBatch> masterData = FXCollections.observableArrayList();
+    private FilteredList<PlantBatch> filteredData;
     private final Map<Integer, String> plantNames = new HashMap<>();
     private final Map<Integer, String> contrahentNames = new HashMap<>();
 
     @FXML
     public void initialize() {
         configureColumns();
+        configureTableBehavior();
         configureRowFactory();
         configureSearch();
         refresh();
@@ -75,6 +80,16 @@ public class PlantBatchController {
         colStatus.setCellValueFactory(cell ->
                 new SimpleStringProperty(formatStatus(cell.getValue().getStatus()))
         );
+    }
+
+
+    private void configureTableBehavior() {
+        if (table == null) {
+            return;
+        }
+
+        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        table.setPlaceholder(new Label("Brak partii roślin do wyświetlenia."));
     }
 
     private void configureRowFactory() {
@@ -100,35 +115,102 @@ public class PlantBatchController {
     }
 
     private void configureSearch() {
-        FilteredList<PlantBatch> filtered = new FilteredList<>(masterData, b -> true);
+        filteredData = new FilteredList<>(masterData, b -> true);
 
-        searchField.textProperty().addListener((obs, oldVal, newVal) -> {
-            String keyword = newVal == null ? "" : newVal.trim().toLowerCase();
+        if (searchField != null) {
+            searchField.textProperty().addListener((obs, oldVal, newVal) -> applyFilters());
+        }
+        if (table != null) {
+            table.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> updateFilterSummary());
+        }
 
-            filtered.setPredicate(batch -> {
-                if (keyword.isBlank()) {
-                    return true;
-                }
-
-                return contains(buildPlantLabel(batch.getPlantId()), keyword)
-                        || contains(batch.getInteriorBatchNo(), keyword)
-                        || contains(batch.getExteriorBatchNo(), keyword)
-                        || contains(getSourceOriginLabel(batch), keyword)
-                        || contains(batch.getManufacturerCountryCode(), keyword)
-                        || contains(batch.getFitoQualificationCategory(), keyword)
-                        || contains(batch.getEppoCode(), keyword)
-                        || contains(batch.getZpZone(), keyword)
-                        || contains(batch.getComments(), keyword)
-                        || contains(formatStatus(batch.getStatus()), keyword)
-                        || contains(batch.isInternalSource() ? "wewnętrzne" : "zewnętrzne", keyword)
-                        || String.valueOf(batch.getQty()).contains(keyword)
-                        || contains(formatDate(batch.getCreationDate()), keyword);
-            });
-        });
-
-        SortedList<PlantBatch> sorted = new SortedList<>(filtered);
+        SortedList<PlantBatch> sorted = new SortedList<>(filteredData);
         sorted.comparatorProperty().bind(table.comparatorProperty());
         table.setItems(sorted);
+    }
+
+    private void applyFilters() {
+        if (filteredData == null) {
+            return;
+        }
+
+        String keyword = searchField == null || searchField.getText() == null
+                ? ""
+                : searchField.getText().trim().toLowerCase();
+
+        filteredData.setPredicate(batch -> {
+            if (keyword.isBlank()) {
+                return true;
+            }
+
+            return contains(buildPlantLabel(batch.getPlantId()), keyword)
+                    || contains(batch.getInteriorBatchNo(), keyword)
+                    || contains(batch.getExteriorBatchNo(), keyword)
+                    || contains(getSourceOriginLabel(batch), keyword)
+                    || contains(batch.getManufacturerCountryCode(), keyword)
+                    || contains(batch.getFitoQualificationCategory(), keyword)
+                    || contains(batch.getEppoCode(), keyword)
+                    || contains(batch.getZpZone(), keyword)
+                    || contains(batch.getComments(), keyword)
+                    || contains(formatStatus(batch.getStatus()), keyword)
+                    || contains(batch.isInternalSource() ? "wewnętrzne" : "zewnętrzne", keyword)
+                    || String.valueOf(batch.getQty()).contains(keyword)
+                    || contains(formatDate(batch.getCreationDate()), keyword);
+        });
+
+        updateFilterSummary();
+    }
+
+    private void updateFilterSummary() {
+        if (filterStatusLabel == null || filterSummaryLabel == null || filteredData == null) {
+            return;
+        }
+
+        String keyword = searchField == null || searchField.getText() == null ? "" : searchField.getText().trim();
+        long totalCount = masterData.size();
+        long visibleCount = filteredData.size();
+        long activeCount = filteredData.stream()
+                .filter(batch -> batch.getStatus() == null || batch.getStatus() == PlantBatchStatus.ACTIVE)
+                .count();
+        long cancelledCount = filteredData.stream()
+                .filter(batch -> batch.getStatus() == PlantBatchStatus.CANCELLED)
+                .count();
+
+        StringBuilder statusBuilder = new StringBuilder();
+        statusBuilder.append("Łącznie partii: ").append(totalCount)
+                .append(". Widoczne po filtrze: ").append(visibleCount)
+                .append(". Aktywne: ").append(activeCount)
+                .append(". Anulowane: ").append(cancelledCount).append('.');
+        if (!keyword.isBlank()) {
+            statusBuilder.append(" Fraza: \"").append(keyword).append("\".");
+        }
+        filterStatusLabel.setText(statusBuilder.toString());
+
+        PlantBatch selected = table == null ? null : table.getSelectionModel().getSelectedItem();
+        if (selected == null) {
+            selected = filteredData.stream().findFirst().orElse(null);
+        }
+
+        if (selected == null) {
+            filterSummaryLabel.setText("Brak partii roślin spełniających bieżący filtr.");
+            return;
+        }
+
+        filterSummaryLabel.setText(buildBatchSummary(selected));
+    }
+
+    private String buildBatchSummary(PlantBatch batch) {
+        return "Podgląd partii: roślina " + safe(buildPlantLabel(batch.getPlantId()))
+                + ", nr wewnętrzny " + safe(batch.getInteriorBatchNo())
+                + ", nr zewnętrzny " + safe(batch.getExteriorBatchNo())
+                + ", źródło " + safe(getSourceOriginLabel(batch))
+                + ", status " + safe(formatStatus(batch.getStatus()))
+                + ", ilość " + batch.getQty()
+                + ".";
+    }
+
+    private String safe(String value) {
+        return value == null || value.isBlank() ? "—" : value;
     }
 
     private boolean contains(String value, String keyword) {
@@ -139,6 +221,7 @@ public class PlantBatchController {
         loadPlantNames();
         loadContrahentNames();
         masterData.setAll(plantBatchService.getAllBatches());
+        applyFilters();
     }
 
     private void loadPlantNames() {
@@ -203,6 +286,14 @@ public class PlantBatchController {
             case ACTIVE -> "Aktywna";
             case CANCELLED -> "Anulowana";
         };
+    }
+
+    @FXML
+    private void clearFilters() {
+        if (searchField != null) {
+            searchField.clear();
+        }
+        applyFilters();
     }
 
     @FXML
