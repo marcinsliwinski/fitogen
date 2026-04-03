@@ -18,6 +18,7 @@ import javafx.collections.transformation.FilteredList;
 import javafx.collections.transformation.SortedList;
 import javafx.fxml.FXML;
 import javafx.scene.control.ComboBox;
+import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
@@ -41,6 +42,8 @@ public class DocumentController {
     @FXML private TableColumn<Document, String> colStatus;
     @FXML private TextField searchField;
     @FXML private ComboBox<String> statusFilterBox;
+    @FXML private Label filterStatusLabel;
+    @FXML private Label filterSummaryLabel;
 
     private final DocumentRepository documentRepository = new SqliteDocumentRepository();
     private final ContrahentRepository contrahentRepository = new SqliteContrahentRepository();
@@ -56,6 +59,7 @@ public class DocumentController {
         configureRowFactory();
         configureStatusFilter();
         configureSearch();
+        configureTableBehavior();
         refresh();
     }
 
@@ -120,10 +124,20 @@ public class DocumentController {
 
         searchField.textProperty().addListener((obs, oldVal, newVal) -> applyFilters());
         statusFilterBox.valueProperty().addListener((obs, oldVal, newVal) -> applyFilters());
+        table.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> updateFilterSummary());
 
         SortedList<Document> sorted = new SortedList<>(filtered);
         sorted.comparatorProperty().bind(table.comparatorProperty());
         table.setItems(sorted);
+    }
+
+    private void configureTableBehavior() {
+        if (table == null) {
+            return;
+        }
+
+        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        table.setPlaceholder(new Label("Brak dokumentów do wyświetlenia."));
     }
 
     private void applyFilters() {
@@ -131,6 +145,7 @@ public class DocumentController {
         String selectedStatus = statusFilterBox.getValue() == null ? "Wszystkie" : statusFilterBox.getValue();
 
         filtered.setPredicate(document -> matchesSearch(document, keyword) && matchesStatus(document, selectedStatus));
+        updateFilterSummary();
     }
 
     private boolean matchesSearch(Document document, String keyword) {
@@ -165,6 +180,7 @@ public class DocumentController {
         loadContrahents();
         masterData.setAll(documentRepository.findAll());
         applyFilters();
+        updateFilterSummary();
     }
 
     private void loadContrahents() {
@@ -190,6 +206,73 @@ public class DocumentController {
         };
     }
 
+
+    private void updateFilterSummary() {
+        if (filterStatusLabel == null || filterSummaryLabel == null || filtered == null) {
+            return;
+        }
+
+        String keyword = searchField == null || searchField.getText() == null ? "" : searchField.getText().trim();
+        String selectedStatus = statusFilterBox == null || statusFilterBox.getValue() == null ? "Wszystkie" : statusFilterBox.getValue();
+        long totalCount = masterData.size();
+        long visibleCount = filtered.size();
+        long activeCount = filtered.stream().filter(document -> (document.getStatus() == null ? DocumentStatus.ACTIVE : document.getStatus()) == DocumentStatus.ACTIVE).count();
+        long cancelledCount = filtered.stream().filter(document -> (document.getStatus() == null ? DocumentStatus.ACTIVE : document.getStatus()) == DocumentStatus.CANCELLED).count();
+
+        StringBuilder statusBuilder = new StringBuilder();
+        statusBuilder.append("Łącznie dokumentów: ").append(totalCount)
+                .append(". Widoczne po filtrach: ").append(visibleCount)
+                .append(". Aktywne: ").append(activeCount)
+                .append(". Anulowane: ").append(cancelledCount)
+                .append(". Status listy: ").append(selectedStatus).append('.');
+        if (!keyword.isBlank()) {
+            statusBuilder.append(" Fraza: ").append(keyword).append(".");
+        }
+        filterStatusLabel.setText(statusBuilder.toString());
+
+        Document selected = table == null ? null : table.getSelectionModel().getSelectedItem();
+        if (selected != null) {
+            filterSummaryLabel.setText(buildDocumentSummary(selected));
+            return;
+        }
+
+        Document firstVisible = filtered.stream().findFirst().orElse(null);
+        if (firstVisible != null) {
+            filterSummaryLabel.setText(buildDocumentSummary(firstVisible));
+        } else {
+            filterSummaryLabel.setText("Brak dokumentów spełniających bieżące filtry.");
+        }
+    }
+
+    private String buildDocumentSummary(Document document) {
+        String number = safe(document.getDocumentNumber());
+        String type = safe(document.getDocumentType());
+        String contrahent = safe(getContrahentName(document.getContrahentId()));
+        String issueDate = document.getIssueDate() == null ? "—" : document.getIssueDate().toString();
+        String comments = safe(document.getComments());
+        String commentsSuffix = comments.isBlank() ? "" : " Uwagi: " + comments;
+
+        return "Dokument „" + number + "” | Typ: " + (type.isBlank() ? "—" : type)
+                + " | Klient: " + (contrahent.isBlank() ? "—" : contrahent)
+                + " | Data wystawienia: " + issueDate
+                + " | Status: " + formatStatus(document.getStatus())
+                + commentsSuffix;
+    }
+
+    private String safe(String value) {
+        return value == null ? "" : value.trim();
+    }
+
+    @FXML
+    private void clearFilters() {
+        if (searchField != null) {
+            searchField.clear();
+        }
+        if (statusFilterBox != null) {
+            statusFilterBox.setValue("Wszystkie");
+        }
+        applyFilters();
+    }
     @FXML
     private void addDocument() {
         ModalViewUtil.openModal(

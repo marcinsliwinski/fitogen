@@ -22,7 +22,11 @@
                    promptText="Szukaj po numerze, typie, kontrahencie, statusie, dacie, utworzył i uwagach..."
                    HBox.hgrow="ALWAYS"/>
         <ComboBox fx:id="statusFilterBox" prefWidth="160"/>
+        <Button text="Wyczyść filtry" onAction="#clearFilters" styleClass="button-secondary"/>
     </HBox>
+
+    <Label fx:id="filterStatusLabel" wrapText="true" styleClass="page-subtitle"/>
+    <Label fx:id="filterSummaryLabel" wrapText="true" styleClass="page-subtitle"/>
 
     <TableView fx:id="table" VBox.vgrow="ALWAYS">
         <columns>
