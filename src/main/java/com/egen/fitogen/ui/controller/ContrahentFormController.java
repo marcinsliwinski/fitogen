@@ -10,6 +10,7 @@ import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
+import javafx.scene.Node;
 import javafx.stage.Stage;
 
 import java.util.ArrayList;
@@ -261,7 +262,29 @@ public class ContrahentFormController {
     }
 
     private void close() {
-        Stage stage = (Stage) nameField.getScene().getWindow();
-        stage.close();
+        Stage stage = resolveStage();
+        if (stage != null) {
+            stage.close();
+        }
+    }
+
+    private Stage resolveStage() {
+        Node[] candidates = {
+                nameField,
+                countryField,
+                countryCodeField,
+                postalCodeField,
+                cityField,
+                streetField,
+                phytosanitaryNumberField
+        };
+
+        for (Node candidate : candidates) {
+            if (candidate != null && candidate.getScene() != null && candidate.getScene().getWindow() instanceof Stage stage) {
+                return stage;
+            }
+        }
+
+        return null;
     }
 }

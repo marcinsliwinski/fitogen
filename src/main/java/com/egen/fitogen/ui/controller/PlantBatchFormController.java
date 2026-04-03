@@ -215,8 +215,9 @@ public class PlantBatchFormController {
 
     @FXML
     private void close() {
-        if (cancelButton != null && cancelButton.getScene() != null) {
-            cancelButton.getScene().getWindow().hide();
+        Node owner = cancelButton != null ? cancelButton : (saveButton != null ? saveButton : plantComboBox);
+        if (owner != null && owner.getScene() != null && owner.getScene().getWindow() != null) {
+            owner.getScene().getWindow().hide();
         }
     }
 

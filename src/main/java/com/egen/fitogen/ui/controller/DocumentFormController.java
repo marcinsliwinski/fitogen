@@ -195,8 +195,9 @@ public class DocumentFormController {
     }
 
     private void close() {
-        if (cancelButton != null && cancelButton.getScene() != null) {
-            cancelButton.getScene().getWindow().hide();
+        javafx.scene.Node owner = cancelButton != null ? cancelButton : (saveButton != null ? saveButton : itemsTable);
+        if (owner != null && owner.getScene() != null && owner.getScene().getWindow() != null) {
+            owner.getScene().getWindow().hide();
         }
     }
 
@@ -321,7 +322,6 @@ public class DocumentFormController {
             autoAppendIfReady(row);
             itemsTable.refresh();
             refreshEppoInfo();
-            refreshEppoInfo();
         });
 
         row.batchProperty().addListener((obs, oldVal, newVal) -> {
@@ -406,7 +406,10 @@ public class DocumentFormController {
         javafx.fxml.FXMLLoader loader = new javafx.fxml.FXMLLoader(getClass().getResource("/view/plant_batch_form.fxml"));
         try {
             javafx.scene.Scene scene = new javafx.scene.Scene(loader.load(), 900, 760);
-            scene.getStylesheets().add(getClass().getResource("/styles/app.css").toExternalForm());
+            java.net.URL stylesheetUrl = getClass().getResource("/styles/app.css");
+            if (stylesheetUrl != null) {
+                scene.getStylesheets().add(stylesheetUrl.toExternalForm());
+            }
 
             javafx.stage.Stage stage = new javafx.stage.Stage();
             stage.setTitle("Dodaj partię roślin");
