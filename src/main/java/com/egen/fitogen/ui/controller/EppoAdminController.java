@@ -36,6 +36,7 @@ public class EppoAdminController {
     @FXML private Label plantCountLabel;
 
     @FXML private TextField codeSearchField;
+    @FXML private Label codeSummaryLabel;
     @FXML private TableView<EppoCode> codeTable;
     @FXML private TableColumn<EppoCode, Integer> colCodeId;
     @FXML private TableColumn<EppoCode, String> colCodeValue;
@@ -46,6 +47,7 @@ public class EppoAdminController {
     @FXML private Label selectedCodeLabel;
     @FXML private Label recordSummaryLabel;
     @FXML private TextField recordSearchField;
+    @FXML private Label recordDetailLabel;
     @FXML private TableView<EppoRecordRow> recordTable;
     @FXML private TableColumn<EppoRecordRow, Integer> colRecordZoneId;
     @FXML private TableColumn<EppoRecordRow, String> colRecordEppoCode;
@@ -75,6 +77,7 @@ public class EppoAdminController {
         configureRowFactories();
         configureCodeSearch();
         configureRecordSearch();
+        configureTableBehavior();
         configureSelectionBehavior();
         refresh();
     }
@@ -218,9 +221,24 @@ public class EppoAdminController {
         recordTable.setItems(sortedData);
     }
 
+
+    private void configureTableBehavior() {
+        if (codeTable != null) {
+            codeTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+            codeTable.setPlaceholder(new Label("Brak kodów EPPO do wyświetlenia."));
+        }
+        if (recordTable != null) {
+            recordTable.setPlaceholder(new Label("Brak rekordów EPPO do wyświetlenia."));
+        }
+    }
+
     private void configureSelectionBehavior() {
-        codeTable.getSelectionModel().selectedItemProperty().addListener((obs, oldValue, newValue) ->
-                updateSelectedCodeHeader(newValue)
+        codeTable.getSelectionModel().selectedItemProperty().addListener((obs, oldValue, newValue) -> {
+            updateSelectedCodeHeader(newValue);
+            updateCodeSummary();
+        });
+        recordTable.getSelectionModel().selectedItemProperty().addListener((obs, oldValue, newValue) ->
+                updateRecordDetail(newValue)
         );
     }
 
@@ -250,6 +268,7 @@ public class EppoAdminController {
 
         EppoCode selectedCode = codeTable.getSelectionModel().getSelectedItem();
         updateSelectedCodeHeader(selectedCode);
+        updateCodeSummary();
         rebuildRecordRows();
         applyRecordFilter();
         updateRecordSummary();
@@ -280,6 +299,15 @@ public class EppoAdminController {
         }
     }
 
+    @FXML
+    private void clearCodeFilter() {
+        if (codeSearchField != null) {
+            codeSearchField.clear();
+        } else {
+            applyCodeFilter();
+        }
+    }
+
     private void applyCodeFilter() {
         String keyword = codeSearchField == null || codeSearchField.getText() == null
                 ? ""
@@ -299,6 +327,16 @@ public class EppoAdminController {
                     || safeContains(buildCodeLatinName(item), keyword)
                     || safeContains(item.getStatus(), keyword);
         });
+        updateCodeSummary();
+    }
+
+    @FXML
+    private void clearRecordFilter() {
+        if (recordSearchField != null) {
+            recordSearchField.clear();
+        } else {
+            applyRecordFilter();
+        }
     }
 
     private void applyRecordFilter() {
@@ -321,6 +359,7 @@ public class EppoAdminController {
                     || safeContains(item.getCountry(), keyword)
                     || safeContains(item.getStatus(), keyword);
         });
+        updateRecordSummary();
     }
 
     private void rebuildRecordRows() {
@@ -400,6 +439,40 @@ public class EppoAdminController {
     }
 
 
+
+    private void updateCodeSummary() {
+        if (codeSummaryLabel == null || filteredCodeData == null) {
+            return;
+        }
+
+        long visibleCount = filteredCodeData.size();
+        long activeCount = filteredCodeData.stream()
+                .filter(item -> !isInactiveStatus(item.getStatus()))
+                .count();
+        long inactiveCount = filteredCodeData.stream()
+                .filter(item -> isInactiveStatus(item.getStatus()))
+                .count();
+
+        String keyword = codeSearchField == null || codeSearchField.getText() == null
+                ? ""
+                : codeSearchField.getText().trim();
+        String filterSuffix = keyword.isBlank() ? "" : " Fraza: \"" + keyword + "\".";
+
+        EppoCode selectedCode = codeTable == null ? null : codeTable.getSelectionModel().getSelectedItem();
+        String selectedSuffix = selectedCode == null
+                ? ""
+                : " Wybrany kod: " + firstNonBlank(normalizeDisplayValue(selectedCode.getCode()), "—") + ".";
+
+        codeSummaryLabel.setText(
+                "Widoczne kody EPPO: " + visibleCount
+                        + ". Aktywne: " + activeCount
+                        + ". Nieaktywne: " + inactiveCount
+                        + ". Kliknięcie w tabeli kodów nie filtruje Bazy rekordów."
+                        + selectedSuffix
+                        + filterSuffix
+        );
+    }
+
     private String buildCountryDisplay(EppoZone zone) {
         if (zone == null) {
             return "—";
@@ -424,37 +497,66 @@ public class EppoAdminController {
     }
 
     private void updateRecordSummary() {
-        if (recordSummaryLabel == null) {
+        if (recordSummaryLabel == null || filteredRecordData == null) {
             return;
         }
 
-        long codeCount = recordMasterData.stream()
+        long codeCount = filteredRecordData.stream()
                 .map(EppoRecordRow::getEppoCode)
                 .filter(this::notBlank)
                 .distinct()
                 .count();
-        long countryCount = recordMasterData.stream()
+        long countryCount = filteredRecordData.stream()
                 .map(EppoRecordRow::getCountry)
                 .filter(this::notBlank)
                 .filter(value -> !"—".equals(value))
                 .distinct()
                 .count();
-        long speciesCount = recordMasterData.stream()
+        long speciesCount = filteredRecordData.stream()
                 .map(EppoRecordRow::getSpeciesLatinName)
                 .filter(this::notBlank)
                 .filter(value -> !"—".equals(value))
                 .distinct()
                 .count();
 
+        String keyword = recordSearchField == null || recordSearchField.getText() == null
+                ? ""
+                : recordSearchField.getText().trim();
+        String filterSuffix = keyword.isBlank() ? "" : " Fraza: \"" + keyword + "\".";
+
         recordSummaryLabel.setText(
                 "Baza rekordów pokazuje wszystkie kombinacje kodów, gatunków i krajów / stref. "
                         + "Widoczne kody EPPO: " + codeCount
-                        + " | Widoczne gatunki: " + speciesCount
-                        + " | Widoczne kraje / strefy: " + countryCount
-                        + " | Wiersze po filtrze: " + recordTable.getItems().size()
+                        + ". Widoczne gatunki: " + speciesCount
+                        + ". Widoczne kraje / strefy: " + countryCount
+                        + ". Wiersze po filtrze: " + filteredRecordData.size()
+                        + ". Kliknięcie na tabelę Kodów EPPO nie filtruje tej sekcji."
+                        + filterSuffix
         );
+
+        updateRecordDetail(recordTable == null ? null : recordTable.getSelectionModel().getSelectedItem());
     }
 
+    private void updateRecordDetail(EppoRecordRow selectedRow) {
+        if (recordDetailLabel == null || filteredRecordData == null) {
+            return;
+        }
+
+        EppoRecordRow row = selectedRow != null ? selectedRow : filteredRecordData.stream().findFirst().orElse(null);
+        if (row == null) {
+            recordDetailLabel.setText("Brak rekordów EPPO spełniających bieżący filtr.");
+            return;
+        }
+
+        recordDetailLabel.setText(
+                "Podgląd rekordu: kod EPPO " + firstNonBlank(normalizeDisplayValue(row.getEppoCode()), "—")
+                        + ", nazwa EPPO " + firstNonBlank(normalizeDisplayValue(row.getEppoName()), "—")
+                        + ", gatunek " + firstNonBlank(normalizeDisplayValue(row.getSpeciesLatinName()), normalizeDisplayValue(row.getSpeciesName()), "—")
+                        + ", kraj / strefa " + firstNonBlank(normalizeDisplayValue(row.getCountry()), "—")
+                        + ", status " + firstNonBlank(normalizeDisplayValue(row.getStatus()), "—")
+                        + "."
+        );
+    }
 
     private void updateSelectedCodeHeader(EppoCode selectedCode) {
         if (selectedCodeLabel == null) {

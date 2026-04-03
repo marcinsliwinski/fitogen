@@ -53,8 +53,11 @@
                                promptText="Szukaj po kodzie EPPO, nazwie polskiej, nazwie łacińskiej lub statusie..."/>
                     <Button text="Dodaj kod" onAction="#addCode" styleClass="button-primary"/>
                     <Button text="Edytuj kod" onAction="#editSelectedCode" styleClass="button-secondary"/>
+                    <Button text="Wyczyść filtr" onAction="#clearCodeFilter" styleClass="button-secondary"/>
                     <Button text="Odśwież" onAction="#refreshCodes" styleClass="button-secondary"/>
                 </HBox>
+
+                <Label fx:id="codeSummaryLabel" wrapText="true"/>
 
                 <TableView fx:id="codeTable" prefHeight="320">
                     <columns>
@@ -75,11 +78,13 @@
                     <TextField fx:id="recordSearchField"
                                HBox.hgrow="ALWAYS"
                                promptText="Szukaj po kodzie EPPO, nazwie EPPO, gatunku, nazwie łacińskiej lub kraju..."/>
+                    <Button text="Wyczyść filtr" onAction="#clearRecordFilter" styleClass="button-secondary"/>
                     <Button text="Odśwież" onAction="#refreshCodes" styleClass="button-secondary"/>
                 </HBox>
 
                 <Label text="Tabela pokazuje wszystkie kombinacje kodów EPPO, przypisanych gatunków i krajów / stref. Kliknięcie na tabelę Kodów EPPO nie filtruje już tej sekcji — do zawężania wyników służy wyszukiwarka." wrapText="true"/>
                 <Label fx:id="recordSummaryLabel" wrapText="true"/>
+                <Label fx:id="recordDetailLabel" wrapText="true"/>
 
                 <TableView fx:id="recordTable" prefHeight="420">
                     <columns>
