@@ -16,6 +16,7 @@ import javafx.scene.Node;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
+import javafx.scene.control.TextArea;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
@@ -33,6 +34,15 @@ public class DocumentPreviewController {
     @FXML private Label createdByLabel;
     @FXML private Label contrahentNameLabel;
     @FXML private Label contrahentAddressLabel;
+    @FXML private Label previewSummaryLabel;
+    @FXML private Label issuerNameLabel;
+    @FXML private Label issuerAddressLabel;
+    @FXML private Label issuerPhytosanitaryNumberLabel;
+    @FXML private Label customerNameLabel;
+    @FXML private Label customerAddressLabel;
+    @FXML private Label customerPhytosanitaryNumberLabel;
+    @FXML private Label eppoInfoSummaryLabel;
+    @FXML private TextArea eppoInfoArea;
     @FXML private VBox commentsSection;
     @FXML private Label commentsLabel;
     @FXML private Label cancelledBadge;
@@ -55,6 +65,16 @@ public class DocumentPreviewController {
         colBatch.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getBatchNumber()));
         colQty.setCellValueFactory(cell -> new SimpleIntegerProperty(cell.getValue().getQty()));
         colPassport.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getPassportLabel()));
+
+        if (itemsTable != null) {
+            itemsTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+            itemsTable.setPlaceholder(new Label("Brak pozycji dokumentu do wyświetlenia."));
+        }
+        if (eppoInfoArea != null) {
+            eppoInfoArea.setEditable(false);
+            eppoInfoArea.setWrapText(true);
+            eppoInfoArea.setFocusTraversable(false);
+        }
 
         commentsSection.managedProperty().bind(commentsSection.visibleProperty());
         cancelledBadge.managedProperty().bind(cancelledBadge.visibleProperty());
@@ -85,6 +105,34 @@ public class DocumentPreviewController {
         commentsSection.setVisible(preview.getComments() != null && !preview.getComments().isBlank());
         cancelledBadge.setVisible(preview.isCancelled());
         itemsTable.setItems(FXCollections.observableArrayList(preview.getItems()));
+
+        if (previewSummaryLabel != null) {
+            previewSummaryLabel.setText(buildPreviewSummary(preview));
+        }
+        if (issuerNameLabel != null) {
+            issuerNameLabel.setText(valueOrDash(preview.getIssuerName()));
+        }
+        if (issuerAddressLabel != null) {
+            issuerAddressLabel.setText(joinPreviewLines(preview.getIssuerAddressLine1(), preview.getIssuerAddressLine2()));
+        }
+        if (issuerPhytosanitaryNumberLabel != null) {
+            issuerPhytosanitaryNumberLabel.setText(buildPhytosanitaryLabel(preview.getIssuerPhytosanitaryNumber()));
+        }
+        if (customerNameLabel != null) {
+            customerNameLabel.setText(valueOrDash(preview.getCustomerName()));
+        }
+        if (customerAddressLabel != null) {
+            customerAddressLabel.setText(joinPreviewLines(preview.getCustomerAddressLine1(), preview.getCustomerAddressLine2()));
+        }
+        if (customerPhytosanitaryNumberLabel != null) {
+            customerPhytosanitaryNumberLabel.setText(buildPhytosanitaryLabel(preview.getCustomerPhytosanitaryNumber()));
+        }
+        if (eppoInfoSummaryLabel != null) {
+            eppoInfoSummaryLabel.setText("Informacje EPPO i paszportowe");
+        }
+        if (eppoInfoArea != null) {
+            eppoInfoArea.setText(buildEppoInfoText(preview));
+        }
     }
 
     @FXML
@@ -156,6 +204,55 @@ public class DocumentPreviewController {
         }
     }
 
+
+    private String buildPreviewSummary(DocumentPreviewDTO preview) {
+        int itemsCount = preview.getItems() == null ? 0 : preview.getItems().size();
+        StringBuilder builder = new StringBuilder();
+        builder.append("Status: ").append(valueOrDash(preview.getStatusLabel()));
+        builder.append(" | Typ: ").append(valueOrDash(preview.getDocumentType()));
+        builder.append(" | Pozycje: ").append(itemsCount);
+        builder.append(" | Łączna ilość: ").append(preview.getTotalQty());
+        if (preview.isCancelled()) {
+            builder.append(" | Ostrzeżenie: dokument jest anulowany");
+        }
+        return builder.toString();
+    }
+
+    private String buildPhytosanitaryLabel(String value) {
+        String safeValue = safe(value);
+        if (safeValue.isBlank()) {
+            return "Nr fitosanitarny: —";
+        }
+        return "Nr fitosanitarny: " + safeValue;
+    }
+
+    private String joinPreviewLines(String line1, String line2) {
+        String safeLine1 = safe(line1);
+        String safeLine2 = safe(line2);
+        if (safeLine1.isBlank()) {
+            return valueOrDash(safeLine2);
+        }
+        if (safeLine2.isBlank()) {
+            return safeLine1;
+        }
+        return safeLine1 + "\n" + safeLine2;
+    }
+
+    private String buildEppoInfoText(DocumentPreviewDTO preview) {
+        StringBuilder builder = new StringBuilder();
+        builder.append("Ta sekcja ma charakter informacyjny i nie zmienia treści dokumentu.\n\n");
+        builder.append("Klient: ").append(valueOrDash(preview.getCustomerName())).append("\n");
+        builder.append("Typ dokumentu: ").append(valueOrDash(preview.getDocumentType())).append("\n");
+        builder.append("Status: ").append(valueOrDash(preview.getStatusLabel())).append("\n");
+        builder.append("Liczba pozycji: ").append(preview.getItems() == null ? 0 : preview.getItems().size()).append("\n");
+        builder.append("Łączna ilość: ").append(preview.getTotalQty()).append("\n\n");
+        if (preview.isCancelled()) {
+            builder.append("Ostrzeżenie: dokument został anulowany. Nie używaj go jako aktywnego dokumentu operacyjnego.\n\n");
+        }
+        builder.append("Uwaga: szczegółowe dopasowanie EPPO dla kraju klienta jest rozwijane w formularzu dokumentu i dalszych etapach modułu referencyjnego.");
+        return builder.toString();
+    }
+
     private String buildPdfFileName(DocumentPreviewDTO preview) {
         String number = valueOrDash(preview.getDocumentNumber()).replaceAll("[\\\\/:*?\"<>|]", "_");
         if (number.equals("—")) {
@@ -186,5 +283,9 @@ public class DocumentPreviewController {
 
     private String valueOrDash(String value) {
         return value == null || value.isBlank() ? "—" : value;
+    }
+
+    private String safe(String value) {
+        return value == null ? "" : value.trim();
     }
 }

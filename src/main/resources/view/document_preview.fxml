@@ -38,6 +38,7 @@
                     <VBox spacing="6">
                         <Label text="Fito Gen" styleClass="preview-title"/>
                         <Label text="Podgląd dokumentu" styleClass="page-subtitle"/>
+                        <Label fx:id="previewSummaryLabel" wrapText="true" styleClass="page-subtitle"/>
                     </VBox>
 
                     <GridPane hgap="16" vgap="10">
@@ -100,13 +101,17 @@
                     <VBox spacing="16">
                         <Separator/>
                         <HBox spacing="24">
-                            <VBox spacing="6" HBox.hgrow="ALWAYS">
-                                <Label text="Wystawił" styleClass="form-label"/>
-                                <Separator/>
+                            <VBox spacing="8" HBox.hgrow="ALWAYS">
+                                <Label text="Wystawca" styleClass="section-title"/>
+                                <Label fx:id="issuerNameLabel" styleClass="preview-subtitle"/>
+                                <Label fx:id="issuerAddressLabel" wrapText="true" styleClass="preview-value"/>
+                                <Label fx:id="issuerPhytosanitaryNumberLabel" wrapText="true" styleClass="preview-value"/>
                             </VBox>
-                            <VBox spacing="6" HBox.hgrow="ALWAYS">
-                                <Label text="Odbiorca" styleClass="form-label"/>
-                                <Separator/>
+                            <VBox spacing="8" HBox.hgrow="ALWAYS">
+                                <Label text="Odbiorca" styleClass="section-title"/>
+                                <Label fx:id="customerNameLabel" styleClass="preview-subtitle"/>
+                                <Label fx:id="customerAddressLabel" wrapText="true" styleClass="preview-value"/>
+                                <Label fx:id="customerPhytosanitaryNumberLabel" wrapText="true" styleClass="preview-value"/>
                             </VBox>
                         </HBox>
                     </VBox>
