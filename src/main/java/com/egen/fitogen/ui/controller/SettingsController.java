@@ -9,6 +9,7 @@ import com.egen.fitogen.model.DocumentType;
 import com.egen.fitogen.model.IssuerProfile;
 import com.egen.fitogen.service.AppSettingsService;
 import com.egen.fitogen.service.AppUserService;
+import com.egen.fitogen.service.AuditLogService;
 import com.egen.fitogen.service.BackupService;
 import com.egen.fitogen.service.ContrahentCsvExportService;
 import com.egen.fitogen.service.ContrahentCsvImportService;
@@ -20,6 +21,8 @@ import com.egen.fitogen.service.PlantCsvImportService;
 import com.egen.fitogen.ui.util.CountryDirectory;
 import com.egen.fitogen.ui.util.DialogUtil;
 import com.egen.fitogen.ui.util.ValidationUtil;
+import javafx.beans.property.SimpleObjectProperty;
+import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.scene.control.CheckBox;
@@ -28,6 +31,8 @@ import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
 import javafx.scene.control.TextArea;
+import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
@@ -95,11 +100,22 @@ public class SettingsController {
     @FXML private Label contrahentsCsvStatusLabel;
     @FXML private TextArea contrahentsCsvPreviewArea;
 
+    @FXML private Label auditLogStatusLabel;
+    @FXML private Label auditLogSummaryLabel;
+    @FXML private TableView<com.egen.fitogen.model.AuditLogEntry> auditLogTable;
+    @FXML private TableColumn<com.egen.fitogen.model.AuditLogEntry, String> colAuditChangedAt;
+    @FXML private TableColumn<com.egen.fitogen.model.AuditLogEntry, String> colAuditActor;
+    @FXML private TableColumn<com.egen.fitogen.model.AuditLogEntry, String> colAuditEntityType;
+    @FXML private TableColumn<com.egen.fitogen.model.AuditLogEntry, Integer> colAuditEntityId;
+    @FXML private TableColumn<com.egen.fitogen.model.AuditLogEntry, String> colAuditActionType;
+    @FXML private TableColumn<com.egen.fitogen.model.AuditLogEntry, String> colAuditDescription;
+
     private final NumberingConfigService numberingConfigService = AppContext.getNumberingConfigService();
     private final BackupService backupService = AppContext.getBackupService();
     private final DocumentTypeService documentTypeService = AppContext.getDocumentTypeService();
     private final AppUserService appUserService = AppContext.getAppUserService();
     private final AppSettingsService appSettingsService = AppContext.getAppSettingsService();
+    private final AuditLogService auditLogService = AppContext.getAuditLogService();
     private final CountryDirectoryService countryDirectoryService = AppContext.getCountryDirectoryService();
     private final PlantCsvImportService plantCsvImportService = new PlantCsvImportService(AppContext.getPlantService(), AppContext.getAppSettingsService());
     private final PlantCsvExportService plantCsvExportService = new PlantCsvExportService(AppContext.getPlantService());
@@ -136,6 +152,7 @@ public class SettingsController {
         loadPlantPassportMode();
         loadPlantCatalogMode();
         loadCsvOverview();
+        loadAuditLogOverview();
         refreshBackupStatus();
         loadConfig(NumberingType.DOCUMENT);
     }
@@ -942,6 +959,46 @@ public class SettingsController {
         }
     }
 
+
+
+    private void configureAuditLogTable() {
+        if (auditLogTable == null) {
+            return;
+        }
+
+        colAuditChangedAt.setCellValueFactory(cell -> new SimpleStringProperty(safe(cell.getValue().getChangedAt())));
+        colAuditActor.setCellValueFactory(cell -> new SimpleStringProperty(safe(cell.getValue().getActor())));
+        colAuditEntityType.setCellValueFactory(cell -> new SimpleStringProperty(safe(cell.getValue().getEntityType())));
+        colAuditEntityId.setCellValueFactory(cell -> new SimpleObjectProperty<>(cell.getValue().getEntityId()));
+        colAuditActionType.setCellValueFactory(cell -> new SimpleStringProperty(safe(cell.getValue().getActionType())));
+        colAuditDescription.setCellValueFactory(cell -> new SimpleStringProperty(safe(cell.getValue().getDescription())));
+    }
+
+    private void loadAuditLogOverview() {
+        if (auditLogTable == null) {
+            return;
+        }
+
+        configureAuditLogTable();
+        auditLogTable.setItems(FXCollections.observableArrayList(auditLogService.getRecentEntries(200)));
+
+        int totalEntries = auditLogService.getEntryCount();
+        auditLogStatusLabel.setText("Liczba wpisów audit log: " + totalEntries + ". Tabela pokazuje ostatnie 200 wpisów w trybie tylko do odczytu.");
+        auditLogSummaryLabel.setText(auditLogService.getLatestEntrySummary());
+    }
+
+    @FXML
+    private void refreshAuditLog() {
+        try {
+            loadAuditLogOverview();
+        } catch (Exception e) {
+            e.printStackTrace();
+            if (auditLogStatusLabel != null) {
+                auditLogStatusLabel.setText("Nie udało się odświeżyć Audit Log.");
+            }
+            DialogUtil.showError("Audit Log", "Nie udało się odczytać wpisów Audit Log.");
+        }
+    }
 
     private void loadCsvOverview() {
         if (plantsCsvColumnsLabel != null) {

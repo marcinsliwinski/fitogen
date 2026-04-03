@@ -241,6 +241,38 @@
                 </ScrollPane>
             </Tab>
 
+
+            <Tab text="Audit Log">
+                <ScrollPane fitToWidth="true" fitToHeight="true">
+                    <content>
+                        <VBox spacing="16" styleClass="content-card">
+                            <padding><Insets top="16" right="16" bottom="16" left="16"/></padding>
+
+                            <VBox spacing="12" styleClass="stat-card">
+                                <Label text="Audit Log" styleClass="stat-title"/>
+                                <Label text="Podgląd ostatnich wpisów audytowych zapisanych w bazie. Na tym etapie ekran jest tylko do odczytu i nie zmienia sposobu logowania zdarzeń." wrapText="true" styleClass="page-subtitle"/>
+                                <Label fx:id="auditLogStatusLabel" wrapText="true" styleClass="page-subtitle"/>
+                                <Label text="Najnowszy wpis" styleClass="stat-title"/>
+                                <Label fx:id="auditLogSummaryLabel" wrapText="true" styleClass="page-subtitle"/>
+                                <HBox spacing="10">
+                                    <Button text="Odśwież Audit Log" onAction="#refreshAuditLog" styleClass="button-secondary"/>
+                                </HBox>
+                                <TableView fx:id="auditLogTable" prefHeight="420">
+                                    <columns>
+                                        <TableColumn text="Data zmiany" fx:id="colAuditChangedAt" prefWidth="170"/>
+                                        <TableColumn text="Użytkownik" fx:id="colAuditActor" prefWidth="130"/>
+                                        <TableColumn text="Encja" fx:id="colAuditEntityType" prefWidth="120"/>
+                                        <TableColumn text="ID" fx:id="colAuditEntityId" prefWidth="70"/>
+                                        <TableColumn text="Akcja" fx:id="colAuditActionType" prefWidth="110"/>
+                                        <TableColumn text="Opis" fx:id="colAuditDescription" prefWidth="420"/>
+                                    </columns>
+                                </TableView>
+                            </VBox>
+                        </VBox>
+                    </content>
+                </ScrollPane>
+            </Tab>
+
             <Tab text="Backup i baza">
                 <ScrollPane fitToWidth="true" fitToHeight="true">
                     <content>
