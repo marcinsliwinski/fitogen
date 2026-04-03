@@ -362,6 +362,7 @@
                             <VBox spacing="8" styleClass="stat-card">
                                 <Label text="Stan profilu" styleClass="stat-title"/>
                                 <Label fx:id="issuerStatusLabel" wrapText="true" styleClass="page-subtitle"/>
+                                <Label fx:id="issuerSummaryLabel" wrapText="true" styleClass="page-subtitle"/>
                             </VBox>
 
                             <HBox spacing="10" alignment="CENTER_RIGHT">

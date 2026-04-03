@@ -94,6 +94,7 @@ public class SettingsController {
     @FXML private TextField issuerStreetField;
     @FXML private TextField issuerPhytosanitaryNumberField;
     @FXML private Label issuerStatusLabel;
+    @FXML private Label issuerSummaryLabel;
 
     @FXML private CheckBox plantPassportRequiredForAllCheckBox;
     @FXML private Label plantPassportModeStatusLabel;
@@ -891,6 +892,26 @@ public class SettingsController {
         section2SeparatorField.textProperty().addListener((obs, oldVal, newVal) -> updatePreview());
         section3SeparatorField.textProperty().addListener((obs, oldVal, newVal) -> updatePreview());
         currentCounterField.textProperty().addListener((obs, oldVal, newVal) -> updatePreview());
+
+        attachIssuerProfileListener(issuerNameField);
+        attachIssuerProfileListener(issuerPostalCodeField);
+        attachIssuerProfileListener(issuerCityField);
+        attachIssuerProfileListener(issuerStreetField);
+        attachIssuerProfileListener(issuerPhytosanitaryNumberField);
+
+        if (issuerCountryField != null) {
+            issuerCountryField.valueProperty().addListener((obs, oldVal, newVal) -> updateIssuerStatusLabel());
+            if (issuerCountryField.getEditor() != null) {
+                issuerCountryField.getEditor().textProperty().addListener((obs, oldVal, newVal) -> updateIssuerStatusLabel());
+            }
+        }
+
+        if (issuerCountryCodeField != null) {
+            issuerCountryCodeField.valueProperty().addListener((obs, oldVal, newVal) -> updateIssuerStatusLabel());
+            if (issuerCountryCodeField.getEditor() != null) {
+                issuerCountryCodeField.getEditor().textProperty().addListener((obs, oldVal, newVal) -> updateIssuerStatusLabel());
+            }
+        }
     }
 
     private void loadConfig(NumberingType type) {
@@ -973,9 +994,20 @@ public class SettingsController {
     @FXML
     private void saveIssuerProfile() {
         try {
-            appSettingsService.saveIssuerProfile(buildIssuerProfileFromForm());
+            IssuerProfile profile = buildIssuerProfileFromForm();
+            List<String> validationIssues = getIssuerProfileValidationIssues(profile);
+            appSettingsService.saveIssuerProfile(profile);
             loadIssuerProfile();
-            DialogUtil.showSuccess("Dane podmiotu zostały zapisane.");
+
+            if (validationIssues.isEmpty()) {
+                DialogUtil.showSuccess("Dane podmiotu zostały zapisane.");
+            } else {
+                DialogUtil.showWarning(
+                        "Dane zapisane z brakami",
+                        "Dane podmiotu zostały zapisane, ale profil nadal wymaga uzupełnienia:\n- "
+                                + String.join("\n- ", validationIssues)
+                );
+            }
         } catch (Exception e) {
             e.printStackTrace();
             DialogUtil.showError("Błąd zapisu", "Nie udało się zapisać danych podmiotu.");
@@ -992,6 +1024,7 @@ public class SettingsController {
         issuerStreetField.clear();
         issuerPhytosanitaryNumberField.clear();
         issuerStatusLabel.setText("Formularz wyczyszczony. Zapisz, aby usunąć dane z ustawień.");
+        updateIssuerStatusLabel();
     }
 
     private void loadIssuerProfile() {
@@ -1019,11 +1052,118 @@ public class SettingsController {
     }
 
     private void updateIssuerStatusLabel() {
-        issuerStatusLabel.setText(
-                appSettingsService.isIssuerProfileComplete()
-                        ? "Profil podmiotu jest kompletny i gotowy do użycia w kolejnych modułach."
-                        : "Profil podmiotu jest niekompletny. Dashboard będzie mógł to później sygnalizować."
-        );
+        IssuerProfile profile = buildIssuerProfileFromForm();
+        List<String> validationIssues = getIssuerProfileValidationIssues(profile);
+        boolean countryPairConsistent = isIssuerCountryPairConsistent(profile);
+
+        if (validationIssues.isEmpty() && countryPairConsistent) {
+            issuerStatusLabel.setText("Profil podmiotu jest kompletny i gotowy do użycia w dokumentach, dashboardzie i dalszych modułach.");
+        } else if (validationIssues.isEmpty()) {
+            issuerStatusLabel.setText("Profil podmiotu jest prawie kompletny, ale para kraj / kod kraju wymaga ujednolicenia według wspólnego słownika.");
+        } else {
+            issuerStatusLabel.setText(
+                    "Profil podmiotu wymaga uzupełnienia. Brakuje: " + String.join(", ", validationIssues)
+                            + (countryPairConsistent ? "." : ". Dodatkowo para kraj / kod kraju nie jest zgodna ze wspólnym słownikiem.")
+            );
+        }
+
+        if (issuerSummaryLabel != null) {
+            issuerSummaryLabel.setText(buildIssuerSummary(profile, validationIssues, countryPairConsistent));
+        }
+    }
+
+    private void attachIssuerProfileListener(TextField field) {
+        if (field != null) {
+            field.textProperty().addListener((obs, oldVal, newVal) -> updateIssuerStatusLabel());
+        }
+    }
+
+    private List<String> getIssuerProfileValidationIssues(IssuerProfile profile) {
+        List<String> missing = new ArrayList<>();
+        if (profile == null) {
+            missing.add("nazwa");
+            missing.add("kraj");
+            missing.add("kod pocztowy");
+            missing.add("miasto");
+            missing.add("ulica i numer");
+            missing.add("nr fitosanitarny");
+            return missing;
+        }
+
+        if (safe(profile.getNurseryName()).isBlank()) {
+            missing.add("nazwa");
+        }
+        if (safe(profile.getCountry()).isBlank()) {
+            missing.add("kraj");
+        }
+        if (safe(profile.getPostalCode()).isBlank()) {
+            missing.add("kod pocztowy");
+        }
+        if (safe(profile.getCity()).isBlank()) {
+            missing.add("miasto");
+        }
+        if (safe(profile.getStreet()).isBlank()) {
+            missing.add("ulica i numer");
+        }
+        if (safe(profile.getPhytosanitaryNumber()).isBlank()) {
+            missing.add("nr fitosanitarny");
+        }
+        return missing;
+    }
+
+    private boolean isIssuerCountryPairConsistent(IssuerProfile profile) {
+        if (profile == null) {
+            return true;
+        }
+
+        String country = safe(profile.getCountry());
+        String code = safe(profile.getCountryCode()).toUpperCase();
+
+        if (country.isBlank() || code.isBlank()) {
+            return true;
+        }
+
+        String detectedCode = safe(countryDirectoryService.findCodeByCountry(country)).toUpperCase();
+        String detectedCountry = safe(countryDirectoryService.findCountryByCode(code));
+
+        boolean countryMatches = detectedCountry.isBlank() || detectedCountry.equalsIgnoreCase(country);
+        boolean codeMatches = detectedCode.isBlank() || detectedCode.equalsIgnoreCase(code);
+        return countryMatches && codeMatches;
+    }
+
+    private String buildIssuerSummary(IssuerProfile profile, List<String> validationIssues, boolean countryPairConsistent) {
+        StringBuilder builder = new StringBuilder();
+        builder.append("Podsumowanie formularza: ");
+
+        if (safe(profile.getNurseryName()).isBlank()) {
+            builder.append("brak nazwy podmiotu");
+        } else {
+            builder.append(safe(profile.getNurseryName()));
+        }
+
+        if (!safe(profile.getCity()).isBlank()) {
+            builder.append(", ").append(safe(profile.getCity()));
+        }
+
+        if (!safe(profile.getCountry()).isBlank()) {
+            builder.append(", kraj: ").append(safe(profile.getCountry()));
+        }
+
+        if (!safe(profile.getCountryCode()).isBlank()) {
+            builder.append(" (").append(safe(profile.getCountryCode()).toUpperCase()).append(")");
+        }
+
+        builder.append(". ");
+
+        if (validationIssues.isEmpty() && countryPairConsistent) {
+            builder.append("Profil jest spójny ze wspólnym słownikiem krajów.");
+        } else if (!countryPairConsistent) {
+            builder.append("Ujednolić kraj i kod kraju zgodnie ze wspólnym słownikiem krajów.");
+        } else {
+            builder.append("Do uzupełnienia: ").append(String.join(", ", validationIssues)).append(".");
+        }
+
+        return builder.toString();
     }
 
     private void refreshBackupStatus() {
