@@ -70,6 +70,9 @@ public class SettingsController {
     @FXML private Label databasePathLabel;
     @FXML private Label backupStatusLabel;
     @FXML private ListView<DocumentType> documentTypesList;
+    @FXML private TextField documentTypeSearchField;
+    @FXML private Label documentTypeStatusLabel;
+    @FXML private Label documentTypeSummaryLabel;
     @FXML private TextField documentTypeNameField;
     @FXML private TextField documentTypeCodeField;
     @FXML private ListView<CountryDirectory.CountryEntry> customCountryEntriesList;
@@ -130,6 +133,8 @@ public class SettingsController {
     private boolean updatingIssuerCountryFields;
     private int currentConfigId;
     private DocumentType editingDocumentType;
+    private final ObservableList<DocumentType> documentTypeMasterData = FXCollections.observableArrayList();
+    private FilteredList<DocumentType> documentTypeFilteredData;
     private CountryDirectory.CountryEntry editingCustomCountryEntry;
     private AppUser editingUser;
     private final ObservableList<com.egen.fitogen.model.AuditLogEntry> auditLogMasterData = FXCollections.observableArrayList();
@@ -142,6 +147,7 @@ public class SettingsController {
         configureUserControls();
         configureCustomCountryControls();
         configureIssuerCountryControls();
+        configureDocumentTypeControls();
         configureAuditLogControls();
 
         numberingTypeBox.getItems().setAll(NumberingType.values());
@@ -233,6 +239,105 @@ public class SettingsController {
         issuerCountryCodeField.valueProperty().addListener((obs, oldVal, newVal) -> syncIssuerCountryFromCode());
     }
 
+    private void configureDocumentTypeControls() {
+        if (documentTypesList == null) {
+            return;
+        }
+
+        documentTypeFilteredData = new FilteredList<>(documentTypeMasterData, item -> true);
+        documentTypesList.setItems(documentTypeFilteredData);
+        documentTypesList.setPlaceholder(new Label("Brak typów dokumentów do wyświetlenia."));
+        documentTypesList.setCellFactory(list -> new ListCell<>() {
+            @Override
+            protected void updateItem(DocumentType item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(empty || item == null ? "" : buildDocumentTypeDisplay(item));
+            }
+        });
+
+        if (documentTypeSearchField != null) {
+            documentTypeSearchField.textProperty().addListener((obs, oldVal, newVal) -> applyDocumentTypeFilter(newVal));
+        }
+    }
+
+    private void applyDocumentTypeFilter(String rawFilter) {
+        if (documentTypeFilteredData == null) {
+            return;
+        }
+
+        String keyword = rawFilter == null ? "" : rawFilter.trim().toLowerCase();
+        documentTypeFilteredData.setPredicate(type -> {
+            if (keyword.isBlank()) {
+                return true;
+            }
+
+            return containsIgnoreCase(type.getName(), keyword)
+                    || containsIgnoreCase(type.getCode(), keyword)
+                    || containsIgnoreCase(buildDocumentTypeDisplay(type), keyword);
+        });
+
+        updateDocumentTypeVisibleSummary(keyword);
+    }
+
+    private void updateDocumentTypeVisibleSummary(String keyword) {
+        if (documentTypeStatusLabel == null || documentTypeSummaryLabel == null || documentTypeFilteredData == null) {
+            return;
+        }
+
+        int total = documentTypeMasterData.size();
+        int visible = documentTypeFilteredData.size();
+        String filterSuffix = keyword == null || keyword.isBlank()
+                ? ""
+                : " Filtr: \"" + keyword + "\".";
+
+        documentTypeStatusLabel.setText(
+                "Łącznie typów dokumentów: " + total
+                        + ". Widoczne po filtrze: " + visible
+                        + ". Słownik jest używany przez formularze i listy dokumentów."
+                        + filterSuffix
+        );
+
+        String summary = documentTypeFilteredData.stream()
+                .findFirst()
+                .map(this::buildDocumentTypeSummary)
+                .orElse("Brak typów dokumentów spełniających bieżący filtr.");
+        documentTypeSummaryLabel.setText(summary);
+    }
+
+    private String buildDocumentTypeSummary(DocumentType type) {
+        if (type == null) {
+            return "";
+        }
+
+        String code = safe(type.getCode());
+        if (code.isBlank()) {
+            return "Wybrany słownik nie ma jeszcze ustawionego skrótu kodowego. Nazwa: " + safe(type.getName()) + ".";
+        }
+        return "Pierwszy widoczny typ: " + safe(type.getName()) + " (kod: " + code + ").";
+    }
+
+    private String buildDocumentTypeDisplay(DocumentType type) {
+        if (type == null) {
+            return "";
+        }
+
+        String name = safe(type.getName());
+        String code = safe(type.getCode());
+        if (code.isBlank()) {
+            return name;
+        }
+        return name + " / " + code;
+    }
+
+    @FXML
+    private void clearDocumentTypeFilter() {
+        if (documentTypeSearchField != null) {
+            documentTypeSearchField.clear();
+        } else {
+            applyDocumentTypeFilter("");
+        }
+    }
+
     private void configureAuditLogControls() {
         if (auditLogTable == null) {
             return;
@@ -285,10 +390,14 @@ public class SettingsController {
             if (newVal == null) {
                 documentTypeNameField.clear();
                 documentTypeCodeField.clear();
+                updateDocumentTypeVisibleSummary(documentTypeSearchField == null ? "" : documentTypeSearchField.getText());
                 return;
             }
             documentTypeNameField.setText(newVal.getName());
             documentTypeCodeField.setText(newVal.getCode());
+            if (documentTypeSummaryLabel != null) {
+                documentTypeSummaryLabel.setText("Wybrany typ: " + buildDocumentTypeDisplay(newVal) + ".");
+            }
         });
 
         customCountryEntriesList.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
@@ -315,7 +424,20 @@ public class SettingsController {
     }
 
     private void refreshDocumentTypes() {
-        documentTypesList.setItems(FXCollections.observableArrayList(documentTypeService.getAll()));
+        DocumentType selected = documentTypesList != null ? documentTypesList.getSelectionModel().getSelectedItem() : null;
+        int selectedId = selected != null ? selected.getId() : -1;
+
+        documentTypeMasterData.setAll(documentTypeService.getAll());
+        applyDocumentTypeFilter(documentTypeSearchField == null ? "" : documentTypeSearchField.getText());
+
+        if (documentTypesList != null && selectedId > 0) {
+            for (DocumentType type : documentTypeFilteredData) {
+                if (type.getId() == selectedId) {
+                    documentTypesList.getSelectionModel().select(type);
+                    break;
+                }
+            }
+        }
     }
 
     private void refreshUsers() {
@@ -555,9 +677,12 @@ public class SettingsController {
     @FXML
     private void clearDocumentTypeForm() {
         editingDocumentType = null;
-        documentTypesList.getSelectionModel().clearSelection();
+        if (documentTypesList != null) {
+            documentTypesList.getSelectionModel().clearSelection();
+        }
         documentTypeNameField.clear();
         documentTypeCodeField.clear();
+        updateDocumentTypeVisibleSummary(documentTypeSearchField == null ? "" : documentTypeSearchField.getText());
     }
 
     @FXML

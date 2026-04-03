@@ -135,12 +135,17 @@
                             <VBox spacing="12" styleClass="stat-card">
                                 <Label text="Typy dokumentów" styleClass="stat-title"/>
                                 <Label text="Słownik typów dokumentów używanych w formularzach i na listach dokumentów. Na tym etapie pozostaje bez zmian w logice zapisu." wrapText="true" styleClass="page-subtitle"/>
+                                <TextField fx:id="documentTypeSearchField" promptText="Szukaj typu dokumentu po nazwie lub kodzie"/>
+                                <Label fx:id="documentTypeStatusLabel" wrapText="true" styleClass="page-subtitle"/>
+                                <Label fx:id="documentTypeSummaryLabel" wrapText="true" styleClass="page-subtitle"/>
                                 <HBox spacing="14">
                                     <ListView fx:id="documentTypesList" prefWidth="320" prefHeight="220"/>
                                     <VBox spacing="10" HBox.hgrow="ALWAYS">
                                         <TextField fx:id="documentTypeNameField" promptText="Nazwa typu dokumentu"/>
                                         <TextField fx:id="documentTypeCodeField" promptText="Kod, np. DD"/>
                                         <HBox spacing="10">
+                                            <Button text="Wyczyść filtr" onAction="#clearDocumentTypeFilter" styleClass="button-secondary"/>
+                                            <Region HBox.hgrow="ALWAYS"/>
                                             <Button text="Nowy" onAction="#clearDocumentTypeForm" styleClass="button-secondary"/>
                                             <Button text="Zapisz typ" onAction="#saveDocumentType"/>
                                             <Button text="Usuń typ" onAction="#deleteDocumentType" styleClass="button-danger"/>
