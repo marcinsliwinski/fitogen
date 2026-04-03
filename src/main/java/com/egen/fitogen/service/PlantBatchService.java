@@ -17,24 +17,34 @@ public class PlantBatchService {
     private final PlantBatchRepository repository;
     private final DocumentItemRepository documentItemRepository;
     private final NumberingService numberingService;
+    private final AuditLogService auditLogService;
 
     public PlantBatchService(PlantBatchRepository repository) {
-        this(repository, null, null);
+        this(repository, null, null, null);
     }
 
     public PlantBatchService(
             PlantBatchRepository repository,
             NumberingService numberingService) {
-        this(repository, numberingService, null);
+        this(repository, numberingService, null, null);
     }
 
     public PlantBatchService(
             PlantBatchRepository repository,
             NumberingService numberingService,
             DocumentItemRepository documentItemRepository) {
+        this(repository, numberingService, documentItemRepository, null);
+    }
+
+    public PlantBatchService(
+            PlantBatchRepository repository,
+            NumberingService numberingService,
+            DocumentItemRepository documentItemRepository,
+            AuditLogService auditLogService) {
         this.repository = repository;
         this.numberingService = numberingService;
         this.documentItemRepository = documentItemRepository;
+        this.auditLogService = auditLogService;
     }
 
     public List<PlantBatch> getAllBatches() {
@@ -75,9 +85,12 @@ public class PlantBatchService {
         }
 
         repository.save(batch);
+        logChange("PlantBatch", batch.getId(), "CREATE", "Dodano partię roślin: " + describeBatch(batch));
     }
 
     public void updateBatch(PlantBatch batch) {
+        PlantBatch beforeUpdate = batch == null ? null : repository.findById(batch.getId());
+
         if (batch == null) {
             throw new IllegalArgumentException("Plant batch cannot be null.");
         }
@@ -88,6 +101,9 @@ public class PlantBatchService {
 
         logger.info("Updating batch id {}", batch.getId());
         repository.update(batch);
+        logChange("PlantBatch", batch.getId(), "UPDATE",
+                "Zaktualizowano partię roślin: " + describeBatch(batch)
+                        + buildBeforeAfterSuffix(describeBatch(beforeUpdate), describeBatch(batch)));
     }
 
     public void deleteBatch(int id) {
@@ -98,7 +114,9 @@ public class PlantBatchService {
             throw new IllegalStateException(buildBatchUsedMessage(documentNumbers));
         }
 
+        PlantBatch batch = repository.findById(id);
         repository.deleteById(id);
+        logChange("PlantBatch", id, "DELETE", "Anulowano partię roślin: " + describeBatch(batch));
     }
 
     public boolean isBatchUsedInDocuments(int batchId) {
@@ -114,5 +132,45 @@ public class PlantBatchService {
 
     private String buildBatchUsedMessage(List<String> documentNumbers) {
         return "Partia została użyta w aktywnych dokumentach: " + String.join(", ", documentNumbers);
+    }
+
+    private void logChange(String entityType, Integer entityId, String actionType, String description) {
+        if (auditLogService != null) {
+            auditLogService.log(entityType, entityId, actionType, description);
+        }
+    }
+
+    private String describeBatch(PlantBatch batch) {
+        if (batch == null) {
+            return "[brak danych]";
+        }
+
+        String number = safe(batch.getInteriorBatchNo());
+        if (number.isBlank()) {
+            number = safe(batch.getExteriorBatchNo());
+        }
+        if (number.isBlank()) {
+            number = "ID=" + batch.getId();
+        }
+
+        StringBuilder sb = new StringBuilder(number);
+        if (batch.getCreationDate() != null) {
+            sb.append(" [data: ").append(batch.getCreationDate()).append("]");
+        }
+        if (batch.getStatus() != null) {
+            sb.append(" [status: ").append(batch.getStatus().name()).append("]");
+        }
+        return sb.toString();
+    }
+
+    private String buildBeforeAfterSuffix(String before, String after) {
+        if (before == null || before.isBlank() || before.equals(after)) {
+            return "";
+        }
+        return " (wcześniej: " + before + ")";
+    }
+
+    private String safe(String value) {
+        return value == null ? "" : value.trim();
     }
 }

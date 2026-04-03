@@ -131,13 +131,14 @@ public class AppContext {
         );
         eppoAdvisoryService = new EppoAdvisoryService(eppoCodePlantLinkService, eppoCodeZoneLinkService);
 
-        plantService = new PlantService(plantRepository, appSettingsService);
+        plantService = new PlantService(plantRepository, appSettingsService, auditLogService);
         plantBatchService = new PlantBatchService(
                 plantBatchRepository,
                 numberingService,
-                documentItemRepository
+                documentItemRepository,
+                auditLogService
         );
-        contrahentService = new ContrahentService(contrahentRepository);
+        contrahentService = new ContrahentService(contrahentRepository, auditLogService);
         countryDirectoryService = new CountryDirectoryService(contrahentService, appSettingsService);
         documentService = new DocumentService(
                 documentRepository,

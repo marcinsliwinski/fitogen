@@ -9,10 +9,16 @@ public class PlantService {
 
     private final PlantRepository repository;
     private final AppSettingsService appSettingsService;
+    private final AuditLogService auditLogService;
 
     public PlantService(PlantRepository repository, AppSettingsService appSettingsService) {
+        this(repository, appSettingsService, null);
+    }
+
+    public PlantService(PlantRepository repository, AppSettingsService appSettingsService, AuditLogService auditLogService) {
         this.repository = repository;
         this.appSettingsService = appSettingsService;
+        this.auditLogService = auditLogService;
     }
 
     public List<Plant> getAllPlants() {
@@ -22,15 +28,22 @@ public class PlantService {
     public void addPlant(Plant plant) {
         validate(plant);
         repository.save(plant);
+        logChange("Plant", plant.getId(), "CREATE", "Dodano roślinę: " + describePlant(plant));
     }
 
     public void updatePlant(Plant plant) {
+        Plant beforeUpdate = repository.findById(plant.getId());
         validate(plant);
         repository.update(plant);
+        logChange("Plant", plant.getId(), "UPDATE",
+                "Zaktualizowano roślinę: " + describePlant(plant)
+                        + buildBeforeAfterSuffix(describePlant(beforeUpdate), describePlant(plant)));
     }
 
     public void deletePlant(int id) {
+        Plant plant = repository.findById(id);
         repository.delete(id);
+        logChange("Plant", id, "DELETE", "Usunięto roślinę: " + describePlant(plant));
     }
 
     public List<String> getSpeciesSuggestions() {
@@ -127,5 +140,35 @@ public class PlantService {
 
     private boolean notBlank(String value) {
         return value != null && !value.trim().isBlank();
+    }
+
+    private void logChange(String entityType, Integer entityId, String actionType, String description) {
+        if (auditLogService != null) {
+            auditLogService.log(entityType, entityId, actionType, description);
+        }
+    }
+
+    private String describePlant(Plant plant) {
+        if (plant == null) {
+            return "[brak danych]";
+        }
+
+        String label = plant.toString();
+        if (label == null || label.isBlank()) {
+            label = "ID=" + plant.getId();
+        }
+
+        String visibility = normalizeText(plant.getVisibilityStatus());
+        if (visibility == null || visibility.isBlank()) {
+            return label;
+        }
+        return label + " [status widoczności: " + visibility + "]";
+    }
+
+    private String buildBeforeAfterSuffix(String before, String after) {
+        if (before == null || before.isBlank() || before.equals(after)) {
+            return "";
+        }
+        return " (wcześniej: " + before + ")";
     }
 }
