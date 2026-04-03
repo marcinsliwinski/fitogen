@@ -20,7 +20,11 @@
         <TextField fx:id="searchField"
                    promptText="Szukaj po nazwie, kraju, mieście lub numerze fitosanitarnym..."
                    HBox.hgrow="ALWAYS"/>
+            <Button text="Wyczyść filtr" onAction="#clearFilters" styleClass="button-secondary"/>
     </HBox>
+
+    <Label fx:id="filterStatusLabel" wrapText="true" styleClass="page-subtitle"/>
+    <Label fx:id="filterSummaryLabel" wrapText="true" styleClass="page-subtitle"/>
 
     <TableView fx:id="table" VBox.vgrow="ALWAYS">
         <columns>
