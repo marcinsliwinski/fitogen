@@ -18,6 +18,7 @@ import javafx.scene.control.TableView;
 import javafx.scene.control.TableRow;
 import javafx.scene.control.TextField;
 import javafx.scene.control.cell.PropertyValueFactory;
+import com.egen.fitogen.ui.util.UiTextUtil;
 
 public class PlantsController {
 
@@ -158,7 +159,7 @@ public class PlantsController {
                 .append(". Wymagają paszportu: ").append(passportRequiredCount)
                 .append(". Tryb pełnej bazy: ").append(fullCatalogEnabled ? "włączony" : "wyłączony").append('.');
         if (!keyword.isBlank()) {
-            statusBuilder.append(" Fraza: \"").append(keyword).append("\".");
+            statusBuilder.append(UiTextUtil.buildQuotedFilterSuffix("Fraza", keyword));
         }
         filterStatusLabel.setText(statusBuilder.toString());
 

@@ -28,6 +28,7 @@ import javafx.scene.control.cell.PropertyValueFactory;
 
 import java.util.ArrayList;
 import java.util.List;
+import com.egen.fitogen.ui.util.UiTextUtil;
 
 public class EppoAdminController {
 
@@ -456,7 +457,7 @@ public class EppoAdminController {
         String keyword = codeSearchField == null || codeSearchField.getText() == null
                 ? ""
                 : codeSearchField.getText().trim();
-        String filterSuffix = keyword.isBlank() ? "" : " Fraza: \"" + keyword + "\".";
+        String filterSuffix = UiTextUtil.buildQuotedFilterSuffix("Fraza", keyword);
 
         EppoCode selectedCode = codeTable == null ? null : codeTable.getSelectionModel().getSelectedItem();
         String selectedSuffix = selectedCode == null
@@ -522,7 +523,7 @@ public class EppoAdminController {
         String keyword = recordSearchField == null || recordSearchField.getText() == null
                 ? ""
                 : recordSearchField.getText().trim();
-        String filterSuffix = keyword.isBlank() ? "" : " Fraza: \"" + keyword + "\".";
+        String filterSuffix = UiTextUtil.buildQuotedFilterSuffix("Fraza", keyword);
 
         recordSummaryLabel.setText(
                 "Baza rekordów pokazuje wszystkie kombinacje kodów, gatunków i krajów / stref. "

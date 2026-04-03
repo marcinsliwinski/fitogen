@@ -48,6 +48,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
+import com.egen.fitogen.ui.util.UiTextUtil;
 
 public class SettingsController {
 
@@ -300,7 +301,7 @@ public class SettingsController {
         int visible = documentTypeFilteredData.size();
         String filterSuffix = keyword == null || keyword.isBlank()
                 ? ""
-                : " Filtr: \"" + keyword + "\".";
+                : UiTextUtil.buildQuotedFilterSuffix("Filtr", keyword);
 
         documentTypeStatusLabel.setText(
                 "Łącznie typów dokumentów: " + total
@@ -586,7 +587,7 @@ public class SettingsController {
         int totalCount = countryDirectoryService.getEntries().size();
         int visibleCount = customCountryFilteredData == null ? customCount : customCountryFilteredData.size();
         String filter = customCountrySearchField == null ? "" : safe(customCountrySearchField.getText());
-        String filterSuffix = filter.isBlank() ? "" : " Filtr: \"" + filter + "\".";
+        String filterSuffix = UiTextUtil.buildQuotedFilterSuffix("Filtr", filter);
         countryDictionaryStatusLabel.setText(
                 "Wspólny słownik zawiera " + totalCount + " pozycji, w tym " + customCount
                         + " wpisów własnych. Widoczne po filtrze: " + visibleCount
@@ -1391,7 +1392,7 @@ public class SettingsController {
         int visibleEntries = auditLogFilteredData.size();
         String filterSuffix = keyword == null || keyword.isBlank()
                 ? ""
-                : " Filtr: \"" + keyword + "\".";
+                : UiTextUtil.buildQuotedFilterSuffix("Filtr", keyword);
 
         auditLogStatusLabel.setText(
                 "Liczba wpisów audit log: " + totalEntries

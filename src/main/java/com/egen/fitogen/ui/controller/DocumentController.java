@@ -28,6 +28,7 @@ import javafx.scene.control.cell.PropertyValueFactory;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import com.egen.fitogen.ui.util.UiTextUtil;
 
 public class DocumentController {
 
@@ -226,7 +227,7 @@ public class DocumentController {
                 .append(". Anulowane: ").append(cancelledCount)
                 .append(". Status listy: ").append(selectedStatus).append('.');
         if (!keyword.isBlank()) {
-            statusBuilder.append(" Fraza: ").append(keyword).append(".");
+            statusBuilder.append(UiTextUtil.buildQuotedFilterSuffix("Fraza", keyword));
         }
         filterStatusLabel.setText(statusBuilder.toString());
 

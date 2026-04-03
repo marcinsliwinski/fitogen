@@ -16,6 +16,7 @@ import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.control.cell.PropertyValueFactory;
+import com.egen.fitogen.ui.util.UiTextUtil;
 
 public class ContrahentController {
 
@@ -120,7 +121,7 @@ public class ContrahentController {
                 .append(". Dostawcy: ").append(supplierCount)
                 .append(". Odbiorcy: ").append(clientCount).append('.');
         if (!keyword.isBlank()) {
-            statusBuilder.append(" Fraza: \"").append(keyword).append("\".");
+            statusBuilder.append(UiTextUtil.buildQuotedFilterSuffix("Fraza", keyword));
         }
         filterStatusLabel.setText(statusBuilder.toString());
 

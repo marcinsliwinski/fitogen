@@ -29,6 +29,7 @@ import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import com.egen.fitogen.ui.util.UiTextUtil;
 
 public class PlantBatchController {
 
@@ -182,7 +183,7 @@ public class PlantBatchController {
                 .append(". Aktywne: ").append(activeCount)
                 .append(". Anulowane: ").append(cancelledCount).append('.');
         if (!keyword.isBlank()) {
-            statusBuilder.append(" Fraza: \"").append(keyword).append("\".");
+            statusBuilder.append(UiTextUtil.buildQuotedFilterSuffix("Fraza", keyword));
         }
         filterStatusLabel.setText(statusBuilder.toString());
 
