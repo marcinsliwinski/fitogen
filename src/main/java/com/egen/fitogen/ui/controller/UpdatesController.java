@@ -10,7 +10,10 @@ import javafx.fxml.FXML;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
 
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 
 public class UpdatesController {
 
@@ -50,17 +53,8 @@ public class UpdatesController {
                 "Server Update dla wspólnego słownika krajów nie jest jeszcze aktywny. Docelowo tutaj będą obsługiwane import i aktualizacja słownika krajów z serwera."
         );
 
-        String lastBackupAt = appSettingsService.getLastBackupAt();
-        if (lastBackupAt == null || lastBackupAt.isBlank()) {
-            lastBackupInfoLabel.setText("Brak informacji o wykonanym backupie.");
-        } else {
-            lastBackupInfoLabel.setText("Ostatni zapisany backup: " + lastBackupAt);
-        }
-
-        readinessSummaryLabel.setText(
-                "Ten ekran jest zarezerwowany wyłącznie dla aktualizacji aplikacji i przyszłych synchronizacji Server Update. Lokalne importy i eksporty CSV pozostają poza tym modułem."
-        );
-
+        refreshBackupInfo();
+        refreshReadinessSummary();
         initializeDryRunPreviewState();
     }
 
@@ -77,82 +71,116 @@ public class UpdatesController {
     private void previewPlantsDryRun() {
         List<com.egen.fitogen.model.Plant> plants = plantService.getAllPlants();
         long passportRequiredCount = plants.stream().filter(com.egen.fitogen.model.Plant::isPassportRequired).count();
-        long withEppoCount = plants.stream().filter(plant -> plant.getEppoCode() != null && !plant.getEppoCode().isBlank()).count();
+        long withEppoCount = plants.stream().filter(plant -> !isBlank(plant.getEppoCode())).count();
+        long missingSpeciesCount = plants.stream().filter(plant -> isBlank(plant.getSpecies())).count();
+        long missingVisibilityCount = plants.stream().filter(plant -> isBlank(plant.getVisibilityStatus())).count();
+        long unusedCount = plants.stream()
+                .filter(plant -> "Nieużywany".equalsIgnoreCase(safe(plant.getVisibilityStatus())))
+                .count();
 
         StringBuilder builder = new StringBuilder();
         builder.append("Lokalna baza Plants: ").append(plants.size()).append(" rekordów\n");
         builder.append("Rośliny z wymaganym paszportem: ").append(passportRequiredCount).append("\n");
-        builder.append("Rośliny z informacyjnym kodem EPPO: ").append(withEppoCount).append("\n\n");
+        builder.append("Rośliny z informacyjnym kodem EPPO: ").append(withEppoCount).append("\n");
+        builder.append("Rośliny bez nazwy gatunku: ").append(missingSpeciesCount).append("\n");
+        builder.append("Rośliny bez visibilityStatus: ").append(missingVisibilityCount).append("\n");
+        builder.append("Rośliny oznaczone jako Nieużywany: ").append(unusedCount).append("\n\n");
+        builder.append("Ocena gotowości: ")
+                .append(buildPlantsReadinessStatus(plants.size(), missingSpeciesCount, missingVisibilityCount))
+                .append("\n\n");
         builder.append("Próbka pierwszych rekordów:\n");
 
         int limit = Math.min(plants.size(), 8);
         for (int i = 0; i < limit; i++) {
             com.egen.fitogen.model.Plant plant = plants.get(i);
             builder.append("- ")
-                    .append(safe(plant.getSpecies()));
-            if (plant.getVariety() != null && !plant.getVariety().isBlank()) {
-                builder.append(" | odmiana=").append(plant.getVariety());
-            }
-            if (plant.getRootstock() != null && !plant.getRootstock().isBlank()) {
-                builder.append(" | podkładka=").append(plant.getRootstock());
-            }
-            if (plant.getEppoCode() != null && !plant.getEppoCode().isBlank()) {
-                builder.append(" | EPPO=").append(plant.getEppoCode());
-            }
-            builder.append("\n");
+                    .append(buildPlantDisplay(plant))
+                    .append(" | status=").append(valueOrDash(plant.getVisibilityStatus()))
+                    .append(" | paszport=").append(plant.isPassportRequired() ? "TAK" : "NIE")
+                    .append(" | EPPO=").append(valueOrDash(plant.getEppoCode()))
+                    .append("\n");
         }
 
         builder.append("\nTo jest tylko lokalny preview gotowości pod przyszły Server Update Plants.");
         plantsDryRunPreviewArea.setText(builder.toString());
         dryRunStatusLabel.setText("Wygenerowano preview Plants Server Update bez pobierania danych z serwera.");
+        refreshReadinessSummary();
     }
 
     @FXML
     private void previewEppoDryRun() {
         List<com.egen.fitogen.model.EppoCode> codes = eppoCodeService.getAll();
-        long activeCount = codes.stream().filter(code -> code.getStatus() == null || code.getStatus().isBlank() || "ACTIVE".equalsIgnoreCase(code.getStatus())).count();
+        long activeCount = codes.stream().filter(this::isEppoActive).count();
+        long missingCodeCount = codes.stream().filter(code -> isBlank(code.getCode())).count();
+        long missingDisplayNameCount = codes.stream()
+                .filter(code -> isBlank(code.getDisplaySpeciesName()) && isBlank(code.getDisplayLatinSpeciesName()))
+                .count();
+        long missingStatusCount = codes.stream().filter(code -> isBlank(code.getStatus())).count();
 
         StringBuilder builder = new StringBuilder();
         builder.append("Lokalna baza EPPO: ").append(codes.size()).append(" rekordów\n");
-        builder.append("Rekordy aktywne: ").append(activeCount).append("\n\n");
+        builder.append("Rekordy aktywne: ").append(activeCount).append("\n");
+        builder.append("Rekordy bez kodu: ").append(missingCodeCount).append("\n");
+        builder.append("Rekordy bez nazwy referencyjnej: ").append(missingDisplayNameCount).append("\n");
+        builder.append("Rekordy bez statusu: ").append(missingStatusCount).append("\n\n");
+        builder.append("Ocena gotowości: ")
+                .append(buildEppoReadinessStatus(codes.size(), missingCodeCount, missingDisplayNameCount))
+                .append("\n\n");
         builder.append("Próbka pierwszych rekordów:\n");
 
         int limit = Math.min(codes.size(), 8);
         for (int i = 0; i < limit; i++) {
             com.egen.fitogen.model.EppoCode code = codes.get(i);
             builder.append("- ")
-                    .append(safe(code.getCode()))
-                    .append(" | nazwa=").append(safe(code.getSpeciesName()))
-                    .append(" | status=").append(safe(code.getStatus()))
+                    .append(valueOrDash(code.getCode()))
+                    .append(" | nazwa=").append(valueOrDash(code.getDisplaySpeciesName()))
+                    .append(" | łacina=").append(valueOrDash(code.getDisplayLatinSpeciesName()))
+                    .append(" | status=").append(valueOrDash(code.getStatus()))
                     .append("\n");
         }
 
         builder.append("\nTo jest tylko lokalny preview gotowości pod przyszły Server Update EPPO.");
         eppoDryRunPreviewArea.setText(builder.toString());
         dryRunStatusLabel.setText("Wygenerowano preview EPPO Server Update bez pobierania danych z serwera.");
+        refreshReadinessSummary();
     }
 
     @FXML
     private void previewCountriesDryRun() {
         List<CountryDirectory.CountryEntry> entries = countryDirectoryService.getEntries();
         List<CountryDirectory.CountryEntry> customEntries = countryDirectoryService.getCustomEntries();
+        long missingCountryCount = entries.stream().filter(entry -> isBlank(entry.country())).count();
+        long missingCodeCount = entries.stream().filter(entry -> isBlank(entry.countryCode())).count();
+        long duplicateCodeCount = countDuplicateCountryCodes(entries);
 
         StringBuilder builder = new StringBuilder();
         builder.append("Wspólny słownik krajów: ").append(entries.size()).append(" rekordów łącznie\n");
-        builder.append("Wpisy własne użytkownika: ").append(customEntries.size()).append("\n\n");
+        builder.append("Wpisy własne użytkownika: ").append(customEntries.size()).append("\n");
+        builder.append("Rekordy bez nazwy kraju: ").append(missingCountryCount).append("\n");
+        builder.append("Rekordy bez kodu kraju: ").append(missingCodeCount).append("\n");
+        builder.append("Powtarzające się kody kraju: ").append(duplicateCodeCount).append("\n\n");
+        builder.append("Ocena gotowości: ")
+                .append(buildCountriesReadinessStatus(entries.size(), missingCountryCount, missingCodeCount, duplicateCodeCount))
+                .append("\n\n");
         builder.append("Próbka pierwszych rekordów:\n");
 
         int limit = Math.min(entries.size(), 10);
         for (int i = 0; i < limit; i++) {
             CountryDirectory.CountryEntry entry = entries.get(i);
-            builder.append("- ").append(safe(entry.country())).append(" (").append(safe(entry.countryCode())).append(")\n");
+            builder.append("- ")
+                    .append(valueOrDash(entry.country()))
+                    .append(" (").append(valueOrDash(entry.countryCode())).append(")");
+            if (containsCustomEntry(customEntries, entry)) {
+                builder.append(" | wpis własny");
+            }
+            builder.append("\n");
         }
 
         builder.append("\nTo jest tylko lokalny preview gotowości pod przyszły Server Update wspólnego słownika krajów.");
         countriesDryRunPreviewArea.setText(builder.toString());
         dryRunStatusLabel.setText("Wygenerowano preview wspólnego słownika krajów bez pobierania danych z serwera.");
+        refreshReadinessSummary();
     }
-
 
     @FXML
     private void clearPlantsDryRunPreview() {
@@ -188,6 +216,177 @@ public class UpdatesController {
         if (countriesDryRunPreviewArea != null) {
             countriesDryRunPreviewArea.setText("Brak preview wspólnego słownika krajów.");
         }
+    }
+
+    private void refreshBackupInfo() {
+        String lastBackupAt = appSettingsService.getLastBackupAt();
+        if (lastBackupAt == null || lastBackupAt.isBlank()) {
+            lastBackupInfoLabel.setText("Brak informacji o wykonanym backupie.");
+        } else {
+            lastBackupInfoLabel.setText("Ostatni zapisany backup: " + lastBackupAt);
+        }
+    }
+
+    private void refreshReadinessSummary() {
+        List<com.egen.fitogen.model.Plant> plants = plantService.getAllPlants();
+        List<com.egen.fitogen.model.EppoCode> eppoCodes = eppoCodeService.getAll();
+        List<CountryDirectory.CountryEntry> countryEntries = countryDirectoryService.getEntries();
+
+        long plantsMissingSpecies = plants.stream().filter(plant -> isBlank(plant.getSpecies())).count();
+        long plantsMissingVisibility = plants.stream().filter(plant -> isBlank(plant.getVisibilityStatus())).count();
+        long eppoMissingCode = eppoCodes.stream().filter(code -> isBlank(code.getCode())).count();
+        long eppoMissingDisplayName = eppoCodes.stream()
+                .filter(code -> isBlank(code.getDisplaySpeciesName()) && isBlank(code.getDisplayLatinSpeciesName()))
+                .count();
+        long countriesMissingCountry = countryEntries.stream().filter(entry -> isBlank(entry.country())).count();
+        long countriesMissingCode = countryEntries.stream().filter(entry -> isBlank(entry.countryCode())).count();
+        long duplicateCountryCodes = countDuplicateCountryCodes(countryEntries);
+
+        String plantsStatus = buildPlantsReadinessStatus(plants.size(), plantsMissingSpecies, plantsMissingVisibility);
+        String eppoStatus = buildEppoReadinessStatus(eppoCodes.size(), eppoMissingCode, eppoMissingDisplayName);
+        String countriesStatus = buildCountriesReadinessStatus(
+                countryEntries.size(),
+                countriesMissingCountry,
+                countriesMissingCode,
+                duplicateCountryCodes
+        );
+
+        StringBuilder builder = new StringBuilder();
+        builder.append("Ten ekran jest zarezerwowany wyłącznie dla aktualizacji aplikacji i przyszłych synchronizacji Server Update. Lokalne importy i eksporty CSV pozostają poza tym modułem.\n\n");
+        builder.append("Plants: ").append(plantsStatus)
+                .append(" (rekordy: ").append(plants.size())
+                .append(", braki gatunku: ").append(plantsMissingSpecies)
+                .append(", braki visibilityStatus: ").append(plantsMissingVisibility)
+                .append(")\n");
+        builder.append("EPPO: ").append(eppoStatus)
+                .append(" (rekordy: ").append(eppoCodes.size())
+                .append(", braki kodu: ").append(eppoMissingCode)
+                .append(", braki nazwy: ").append(eppoMissingDisplayName)
+                .append(")\n");
+        builder.append("Kraje: ").append(countriesStatus)
+                .append(" (rekordy: ").append(countryEntries.size())
+                .append(", braki nazwy: ").append(countriesMissingCountry)
+                .append(", braki kodu: ").append(countriesMissingCode)
+                .append(", duplikaty kodów: ").append(duplicateCountryCodes)
+                .append(")");
+
+        readinessSummaryLabel.setText(builder.toString());
+    }
+
+    private String buildPlantsReadinessStatus(long totalCount, long missingSpeciesCount, long missingVisibilityCount) {
+        if (totalCount == 0) {
+            return "brak danych lokalnych do oceny";
+        }
+        if (missingSpeciesCount > 0) {
+            return "wymaga porządkowania danych przed pełnym Server Update";
+        }
+        if (missingVisibilityCount > 0) {
+            return "częściowo gotowe — warto uzupełnić visibilityStatus";
+        }
+        return "gotowe do bezpiecznego dry-run po stronie lokalnej";
+    }
+
+    private String buildEppoReadinessStatus(long totalCount, long missingCodeCount, long missingDisplayNameCount) {
+        if (totalCount == 0) {
+            return "brak danych lokalnych do oceny";
+        }
+        if (missingCodeCount > 0 || missingDisplayNameCount > 0) {
+            return "wymaga porządkowania rekordów referencyjnych";
+        }
+        return "gotowe do bezpiecznego dry-run po stronie lokalnej";
+    }
+
+    private String buildCountriesReadinessStatus(long totalCount,
+                                                 long missingCountryCount,
+                                                 long missingCodeCount,
+                                                 long duplicateCodeCount) {
+        if (totalCount == 0) {
+            return "brak danych lokalnych do oceny";
+        }
+        if (missingCountryCount > 0 || missingCodeCount > 0) {
+            return "wymaga uzupełnienia wspólnego słownika krajów";
+        }
+        if (duplicateCodeCount > 0) {
+            return "częściowo gotowe — sprawdź duplikaty kodów kraju";
+        }
+        return "gotowe do bezpiecznego dry-run po stronie lokalnej";
+    }
+
+    private long countDuplicateCountryCodes(List<CountryDirectory.CountryEntry> entries) {
+        Set<String> uniqueCodes = new LinkedHashSet<>();
+        long duplicates = 0;
+        for (CountryDirectory.CountryEntry entry : entries) {
+            String normalizedCode = normalizeCountryCode(entry.countryCode());
+            if (normalizedCode == null) {
+                continue;
+            }
+            if (!uniqueCodes.add(normalizedCode)) {
+                duplicates++;
+            }
+        }
+        return duplicates;
+    }
+
+    private boolean containsCustomEntry(List<CountryDirectory.CountryEntry> customEntries,
+                                        CountryDirectory.CountryEntry candidate) {
+        String candidateCountry = normalizeCountry(candidate.country());
+        String candidateCode = normalizeCountryCode(candidate.countryCode());
+        for (CountryDirectory.CountryEntry entry : customEntries) {
+            if (equalsNormalized(candidateCountry, normalizeCountry(entry.country()))
+                    && equalsNormalized(candidateCode, normalizeCountryCode(entry.countryCode()))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean isEppoActive(com.egen.fitogen.model.EppoCode code) {
+        return isBlank(code.getStatus()) || "ACTIVE".equalsIgnoreCase(safe(code.getStatus()));
+    }
+
+    private String buildPlantDisplay(com.egen.fitogen.model.Plant plant) {
+        StringBuilder builder = new StringBuilder();
+        appendDisplayPart(builder, plant.getSpecies());
+        appendDisplayPart(builder, plant.getRootstock());
+        appendDisplayPart(builder, plant.getVariety());
+        return builder.isEmpty() ? "—" : builder.toString();
+    }
+
+    private void appendDisplayPart(StringBuilder builder, String value) {
+        String normalized = safe(value);
+        if (normalized.isBlank()) {
+            return;
+        }
+        if (!builder.isEmpty()) {
+            builder.append(' ');
+        }
+        builder.append(normalized);
+    }
+
+    private String valueOrDash(String value) {
+        String normalized = safe(value);
+        return normalized.isBlank() ? "—" : normalized;
+    }
+
+    private boolean isBlank(String value) {
+        return safe(value).isBlank();
+    }
+
+    private String normalizeCountry(String value) {
+        String normalized = safe(value);
+        return normalized.isBlank() ? null : normalized.toLowerCase(Locale.ROOT);
+    }
+
+    private String normalizeCountryCode(String value) {
+        String normalized = safe(value);
+        return normalized.isBlank() ? null : normalized.toUpperCase(Locale.ROOT);
+    }
+
+    private boolean equalsNormalized(String left, String right) {
+        if (left == null) {
+            return right == null;
+        }
+        return left.equals(right);
     }
 
     private String safe(String value) {
