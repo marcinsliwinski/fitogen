@@ -1147,7 +1147,7 @@ public class SettingsController {
 
         try {
             Path exported = plantCsvExportService.export(selectedPath);
-            plantsCsvStatusLabel.setText("Eksport Plants zakończony powodzeniem: " + exported);
+            plantsCsvStatusLabel.setText("Eksport Plants zakończony powodzeniem: " + exported + ". Format pozostaje lokalnym standardem Settings -> Import / Eksport CSV.");
             DialogUtil.showSuccess("Plants zostały wyeksportowane do pliku:\n" + exported);
         } catch (Exception e) {
             e.printStackTrace();
@@ -1183,7 +1183,7 @@ public class SettingsController {
 
         try {
             Path exported = contrahentCsvExportService.export(selectedPath);
-            contrahentsCsvStatusLabel.setText("Eksport Contrahents zakończony powodzeniem: " + exported);
+            contrahentsCsvStatusLabel.setText("Eksport Contrahents zakończony powodzeniem: " + exported + ". Format pozostaje lokalnym standardem Settings -> Import / Eksport CSV.");
             DialogUtil.showSuccess("Contrahents zostali wyeksportowani do pliku:\n" + exported);
         } catch (Exception e) {
             e.printStackTrace();
@@ -1239,7 +1239,8 @@ public class SettingsController {
                 + ", nowych: " + result.getNewRowsCount()
                 + ", istniejących: " + result.getMatchingExistingCount()
                 + ", duplikatów w pliku: " + result.getDuplicateInFileCount()
-                + ", błędnych: " + result.getInvalidRowsCount();
+                + ", błędnych: " + result.getInvalidRowsCount()
+                + ". Ocena: " + buildPlantsImportReadiness(result);
     }
 
     private String buildContrahentsPreviewStatus(com.egen.fitogen.dto.ContrahentImportPreviewResult result) {
@@ -1247,7 +1248,8 @@ public class SettingsController {
                 + ", nowych: " + result.getNewRowsCount()
                 + ", istniejących: " + result.getMatchingExistingCount()
                 + ", duplikatów w pliku: " + result.getDuplicateInFileCount()
-                + ", błędnych: " + result.getInvalidRowsCount();
+                + ", błędnych: " + result.getInvalidRowsCount()
+                + ". Ocena: " + buildContrahentsImportReadiness(result);
     }
 
     private void resetPlantsCsvPreview() {
@@ -1274,6 +1276,7 @@ public class SettingsController {
         builder.append("- Duplikaty w pliku: ").append(result.getDuplicateInFileCount()).append("\n");
         builder.append("- Błędne wiersze: ").append(result.getInvalidRowsCount()).append("\n\n");
 
+        appendPlantsValidationSection(builder, result);
         builder.append("PRÓBKA WIERSZY\n");
         int previewLimit = Math.min(result.getRows().size(), 10);
         for (int i = 0; i < previewLimit; i++) {
@@ -1314,6 +1317,7 @@ public class SettingsController {
         builder.append("- Duplikaty w pliku: ").append(result.getDuplicateInFileCount()).append("\n");
         builder.append("- Błędne wiersze: ").append(result.getInvalidRowsCount()).append("\n\n");
 
+        appendContrahentsValidationSection(builder, result);
         builder.append("PRÓBKA WIERSZY\n");
         int previewLimit = Math.min(result.getRows().size(), 10);
         for (int i = 0; i < previewLimit; i++) {
@@ -1340,6 +1344,17 @@ public class SettingsController {
 
         appendContrahentIssuesSection(builder, result);
         return builder.toString();
+    }
+    private void appendPlantsValidationSection(StringBuilder builder, com.egen.fitogen.dto.PlantImportPreviewResult result) {
+        builder.append("OCENA WALIDACJI\n");
+        builder.append("- Gotowość importu: ").append(buildPlantsImportReadiness(result)).append("\n");
+        builder.append("- Rekomendacja: ").append(buildPlantsImportRecommendation(result)).append("\n\n");
+    }
+
+    private void appendContrahentsValidationSection(StringBuilder builder, com.egen.fitogen.dto.ContrahentImportPreviewResult result) {
+        builder.append("OCENA WALIDACJI\n");
+        builder.append("- Gotowość importu: ").append(buildContrahentsImportReadiness(result)).append("\n");
+        builder.append("- Rekomendacja: ").append(buildContrahentsImportRecommendation(result)).append("\n\n");
     }
 
     private void appendPlantIssuesSection(StringBuilder builder, com.egen.fitogen.dto.PlantImportPreviewResult result) {
@@ -1378,6 +1393,71 @@ public class SettingsController {
                 builder.append("- ").append(problem).append("\n");
             }
         }
+    }
+
+
+    private String buildPlantsImportReadiness(com.egen.fitogen.dto.PlantImportPreviewResult result) {
+        if (result.getTotalRowsCount() == 0) {
+            return "plik nie zawiera danych do analizy";
+        }
+        if (result.getInvalidRowsCount() > 0) {
+            return "wymaga korekty przed importem";
+        }
+        if (result.getDuplicateInFileCount() > 0) {
+            return "wymaga usunięcia duplikatów z pliku";
+        }
+        if (result.getNewRowsCount() == 0) {
+            return "brak nowych rekordów do importu";
+        }
+        return "gotowy do bezpiecznego importu preview";
+    }
+
+    private String buildContrahentsImportReadiness(com.egen.fitogen.dto.ContrahentImportPreviewResult result) {
+        if (result.getTotalRowsCount() == 0) {
+            return "plik nie zawiera danych do analizy";
+        }
+        if (result.getInvalidRowsCount() > 0) {
+            return "wymaga korekty przed importem";
+        }
+        if (result.getDuplicateInFileCount() > 0) {
+            return "wymaga usunięcia duplikatów z pliku";
+        }
+        if (result.getNewRowsCount() == 0) {
+            return "brak nowych rekordów do importu";
+        }
+        return "gotowy do bezpiecznego importu preview";
+    }
+
+    private String buildPlantsImportRecommendation(com.egen.fitogen.dto.PlantImportPreviewResult result) {
+        if (result.getTotalRowsCount() == 0) {
+            return "Sprawdź, czy plik zawiera nagłówek i co najmniej jeden wiersz danych.";
+        }
+        if (result.getInvalidRowsCount() > 0) {
+            return "Najpierw popraw wiersze błędne, szczególnie brak gatunku i nieprawidłowy visibilityStatus.";
+        }
+        if (result.getDuplicateInFileCount() > 0) {
+            return "Usuń duplikaty w samym pliku CSV, aby import był przewidywalny.";
+        }
+        if (result.getNewRowsCount() == 0) {
+            return "Plik nie wniesie nowych roślin. Zweryfikuj, czy to właściwy eksport lub zestaw danych.";
+        }
+        return "Preview wygląda spójnie. Zachowaj ten sam standard kolumn w kolejnych plikach lokalnych CSV.";
+    }
+
+    private String buildContrahentsImportRecommendation(com.egen.fitogen.dto.ContrahentImportPreviewResult result) {
+        if (result.getTotalRowsCount() == 0) {
+            return "Sprawdź, czy plik zawiera nagłówek i co najmniej jeden wiersz danych.";
+        }
+        if (result.getInvalidRowsCount() > 0) {
+            return "Najpierw popraw wiersze błędne, szczególnie brak nazwy oraz niespójne pary kraj i kod kraju.";
+        }
+        if (result.getDuplicateInFileCount() > 0) {
+            return "Usuń duplikaty w samym pliku CSV, aby import był przewidywalny.";
+        }
+        if (result.getNewRowsCount() == 0) {
+            return "Plik nie wniesie nowych kontrahentów. Zweryfikuj, czy to właściwy zestaw danych.";
+        }
+        return "Preview wygląda spójnie. Zachowaj ten sam standard kolumn w kolejnych plikach lokalnych CSV.";
     }
 
     private String printableDelimiter(char delimiter) {
