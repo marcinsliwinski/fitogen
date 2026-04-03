@@ -107,9 +107,6 @@
             <columns>
                 <TableColumn fx:id="colSpeciesDisplay" text="Gatunek / Nazwa łacińska" prefWidth="980"/>
             </columns>
-            <columnResizePolicy>
-                <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
-            </columnResizePolicy>
         </TableView>
     </VBox>
 
@@ -155,9 +152,6 @@
                 <TableColumn fx:id="colZoneDisplay" text="Skrót / Kraj" prefWidth="520"/>
                 <TableColumn fx:id="colZoneStatus" text="Status" prefWidth="120"/>
             </columns>
-            <columnResizePolicy>
-                <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
-            </columnResizePolicy>
         </TableView>
     </VBox>
 

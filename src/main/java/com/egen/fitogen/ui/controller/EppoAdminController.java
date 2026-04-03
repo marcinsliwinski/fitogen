@@ -148,6 +148,10 @@ public class EppoAdminController {
         colRecordSpeciesLatinName.setCellValueFactory(new PropertyValueFactory<>("speciesLatinName"));
         colRecordCountry.setCellValueFactory(new PropertyValueFactory<>("country"));
         colRecordStatus.setCellValueFactory(new PropertyValueFactory<>("status"));
+
+        if (recordTable != null) {
+            recordTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        }
     }
 
     private void configureRowFactories() {
