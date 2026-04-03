@@ -72,6 +72,7 @@
                     </HBox>
                     <HBox spacing="10">
                         <Button text="Generuj preview Plants" onAction="#previewPlantsDryRun"/>
+                        <Button text="Wyczyść preview" onAction="#clearPlantsDryRunPreview" styleClass="button-secondary"/>
                     </HBox>
                     <TextArea fx:id="plantsDryRunPreviewArea" editable="false" wrapText="true" prefRowCount="8"/>
                 </VBox>
@@ -86,6 +87,7 @@
                     </HBox>
                     <HBox spacing="10">
                         <Button text="Generuj preview EPPO" onAction="#previewEppoDryRun"/>
+                        <Button text="Wyczyść preview" onAction="#clearEppoDryRunPreview" styleClass="button-secondary"/>
                     </HBox>
                     <TextArea fx:id="eppoDryRunPreviewArea" editable="false" wrapText="true" prefRowCount="8"/>
                 </VBox>
@@ -100,6 +102,7 @@
                     </HBox>
                     <HBox spacing="10">
                         <Button text="Generuj preview słownika krajów" onAction="#previewCountriesDryRun"/>
+                        <Button text="Wyczyść preview" onAction="#clearCountriesDryRunPreview" styleClass="button-secondary"/>
                     </HBox>
                     <TextArea fx:id="countriesDryRunPreviewArea" editable="false" wrapText="true" prefRowCount="8"/>
                 </VBox>

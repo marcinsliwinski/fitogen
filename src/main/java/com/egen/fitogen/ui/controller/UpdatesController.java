@@ -68,15 +68,9 @@ public class UpdatesController {
         if (dryRunStatusLabel != null) {
             dryRunStatusLabel.setText("Preview / dry-run pokazuje tylko lokalne podsumowanie gotowości. Nie pobiera danych z serwera i nie zapisuje zmian.");
         }
-        if (plantsDryRunPreviewArea != null) {
-            plantsDryRunPreviewArea.setText("Brak preview Plants Server Update.");
-        }
-        if (eppoDryRunPreviewArea != null) {
-            eppoDryRunPreviewArea.setText("Brak preview EPPO Server Update.");
-        }
-        if (countriesDryRunPreviewArea != null) {
-            countriesDryRunPreviewArea.setText("Brak preview wspólnego słownika krajów.");
-        }
+        resetPlantsDryRunPreview();
+        resetEppoDryRunPreview();
+        resetCountriesDryRunPreview();
     }
 
     @FXML
@@ -157,6 +151,43 @@ public class UpdatesController {
         builder.append("\nTo jest tylko lokalny preview gotowości pod przyszły Server Update wspólnego słownika krajów.");
         countriesDryRunPreviewArea.setText(builder.toString());
         dryRunStatusLabel.setText("Wygenerowano preview wspólnego słownika krajów bez pobierania danych z serwera.");
+    }
+
+
+    @FXML
+    private void clearPlantsDryRunPreview() {
+        resetPlantsDryRunPreview();
+        dryRunStatusLabel.setText("Wyczyszczono preview Plants Server Update.");
+    }
+
+    @FXML
+    private void clearEppoDryRunPreview() {
+        resetEppoDryRunPreview();
+        dryRunStatusLabel.setText("Wyczyszczono preview EPPO Server Update.");
+    }
+
+    @FXML
+    private void clearCountriesDryRunPreview() {
+        resetCountriesDryRunPreview();
+        dryRunStatusLabel.setText("Wyczyszczono preview wspólnego słownika krajów.");
+    }
+
+    private void resetPlantsDryRunPreview() {
+        if (plantsDryRunPreviewArea != null) {
+            plantsDryRunPreviewArea.setText("Brak preview Plants Server Update.");
+        }
+    }
+
+    private void resetEppoDryRunPreview() {
+        if (eppoDryRunPreviewArea != null) {
+            eppoDryRunPreviewArea.setText("Brak preview EPPO Server Update.");
+        }
+    }
+
+    private void resetCountriesDryRunPreview() {
+        if (countriesDryRunPreviewArea != null) {
+            countriesDryRunPreviewArea.setText("Brak preview wspólnego słownika krajów.");
+        }
     }
 
     private String safe(String value) {
