@@ -77,6 +77,8 @@ public class EppoCodeFormController {
     private final Set<String> persistedZoneSignatures = new LinkedHashSet<>();
     private final ObservableList<EppoCodeSpeciesLink> assignedSpeciesData = FXCollections.observableArrayList();
     private final ObservableList<EppoZone> assignedZoneData = FXCollections.observableArrayList();
+    private Map<String, String> originalSpeciesAuditSnapshot = new LinkedHashMap<>();
+    private Map<String, String> originalZoneAuditSnapshot = new LinkedHashMap<>();
 
     private EppoCode eppoCode;
 
@@ -99,6 +101,8 @@ public class EppoCodeFormController {
         this.eppoCode = eppoCode;
 
         if (eppoCode == null) {
+            originalSpeciesAuditSnapshot = new LinkedHashMap<>();
+            originalZoneAuditSnapshot = new LinkedHashMap<>();
             updateSpeciesActionState();
             updateZoneActionState();
             return;
@@ -121,6 +125,9 @@ public class EppoCodeFormController {
         assignedZoneData.setAll(eppoCodeZoneLinkService.getZonesForCode(eppoCode.getId()).stream()
                 .filter(this::isMeaningfulZone)
                 .collect(Collectors.toList()));
+
+        originalSpeciesAuditSnapshot = snapshotSpeciesLinks(assignedSpeciesData);
+        originalZoneAuditSnapshot = snapshotZones(assignedZoneData);
 
         updateSpeciesSummary();
         updateZoneSummary();
@@ -265,6 +272,13 @@ public class EppoCodeFormController {
                     .toList();
             eppoCodeZoneLinkService.replaceZonesForCode(persisted.getId(), selectedZoneIds);
             logAutoCreatedZonesFromSharedDictionary(persisted, persistedZoneResults);
+            logAssignmentChanges(
+                    persisted,
+                    originalSpeciesAuditSnapshot,
+                    snapshotSpeciesLinks(normalizedSpeciesLinks),
+                    originalZoneAuditSnapshot,
+                    snapshotZones(persistedZones)
+            );
 
             if (eppoCode == null) {
                 DialogUtil.showSuccess("Kod EPPO został dodany razem z przypisanymi gatunkami i krajami.");
@@ -649,6 +663,140 @@ public class EppoCodeFormController {
         }
         boolean createdFromSharedDirectory = requestedSignature != null && !persistedZoneSignatures.contains(requestedSignature);
         return new PersistedZoneResult(persisted, createdFromSharedDirectory, zone);
+    }
+
+    private Map<String, String> snapshotSpeciesLinks(List<EppoCodeSpeciesLink> links) {
+        Map<String, String> snapshot = new LinkedHashMap<>();
+        if (links == null) {
+            return snapshot;
+        }
+
+        for (EppoCodeSpeciesLink link : links) {
+            if (link == null) {
+                continue;
+            }
+
+            String speciesName = normalizeDisplay(link.getSpeciesName());
+            String latinSpeciesName = normalizeDisplay(link.getLatinSpeciesName());
+            if (!notBlank(speciesName) && !notBlank(latinSpeciesName)) {
+                continue;
+            }
+
+            String signature = normalizeKey(speciesName) + "||" + normalizeKey(latinSpeciesName);
+            snapshot.putIfAbsent(signature, buildSpeciesDisplay(speciesName, latinSpeciesName));
+        }
+
+        return snapshot;
+    }
+
+    private Map<String, String> snapshotZones(List<EppoZone> zones) {
+        Map<String, String> snapshot = new LinkedHashMap<>();
+        if (zones == null) {
+            return snapshot;
+        }
+
+        for (EppoZone zone : zones) {
+            if (!isMeaningfulZone(zone)) {
+                continue;
+            }
+
+            String signature = buildZoneSignature(zone);
+            if (signature == null) {
+                continue;
+            }
+
+            snapshot.putIfAbsent(signature, buildZoneDisplay(zone));
+        }
+
+        return snapshot;
+    }
+
+    private void logAssignmentChanges(
+            EppoCode persistedCode,
+            Map<String, String> originalSpeciesSnapshot,
+            Map<String, String> currentSpeciesSnapshot,
+            Map<String, String> originalZoneSnapshot,
+            Map<String, String> currentZoneSnapshot
+    ) {
+        if (auditLogService == null || persistedCode == null || eppoCode == null || eppoCode.getId() <= 0) {
+            return;
+        }
+
+        logSnapshotDelta(
+                persistedCode,
+                "gatunków",
+                originalSpeciesSnapshot,
+                currentSpeciesSnapshot,
+                "Zmieniono przypisania gatunków dla kodu EPPO "
+        );
+        logSnapshotDelta(
+                persistedCode,
+                "krajów / stref EPPO",
+                originalZoneSnapshot,
+                currentZoneSnapshot,
+                "Zmieniono przypisania krajów / stref EPPO dla kodu EPPO "
+        );
+    }
+
+    private void logSnapshotDelta(
+            EppoCode persistedCode,
+            String scopeLabel,
+            Map<String, String> originalSnapshot,
+            Map<String, String> currentSnapshot,
+            String descriptionPrefix
+    ) {
+        Map<String, String> original = originalSnapshot == null ? Map.of() : originalSnapshot;
+        Map<String, String> current = currentSnapshot == null ? Map.of() : currentSnapshot;
+
+        List<String> added = current.entrySet().stream()
+                .filter(entry -> !original.containsKey(entry.getKey()))
+                .map(Map.Entry::getValue)
+                .filter(this::notBlank)
+                .toList();
+        List<String> removed = original.entrySet().stream()
+                .filter(entry -> !current.containsKey(entry.getKey()))
+                .map(Map.Entry::getValue)
+                .filter(this::notBlank)
+                .toList();
+
+        if (added.isEmpty() && removed.isEmpty()) {
+            return;
+        }
+
+        StringBuilder description = new StringBuilder();
+        description.append(descriptionPrefix)
+                .append(firstNonBlank(normalizeDisplay(persistedCode.getCode()), "—"))
+                .append(". Zakres: ")
+                .append(scopeLabel)
+                .append(".");
+
+        if (!added.isEmpty()) {
+            description.append(" Dodano: ")
+                    .append(joinAuditValues(added))
+                    .append(".");
+        }
+        if (!removed.isEmpty()) {
+            description.append(" Usunięto: ")
+                    .append(joinAuditValues(removed))
+                    .append(".");
+        }
+
+        auditLogService.log(
+                "EPPO_CODE",
+                persistedCode.getId(),
+                "UPDATE",
+                description.toString()
+        );
+    }
+
+    private String joinAuditValues(List<String> values) {
+        if (values == null || values.isEmpty()) {
+            return "—";
+        }
+        return values.stream()
+                .map(this::normalizeDisplay)
+                .filter(this::notBlank)
+                .collect(Collectors.joining(", "));
     }
 
     private void logAutoCreatedZonesFromSharedDictionary(EppoCode persistedCode, List<PersistedZoneResult> persistedZoneResults) {

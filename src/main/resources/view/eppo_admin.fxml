@@ -59,7 +59,7 @@
 
                 <Label fx:id="codeSummaryLabel" wrapText="true"/>
 
-                <TableView fx:id="codeTable" prefHeight="320">
+                <TableView fx:id="codeTable" prefHeight="220">
                     <columns>
                         <TableColumn fx:id="colCodeId" text="ID" prefWidth="70"/>
                         <TableColumn fx:id="colCodeValue" text="Kod EPPO" prefWidth="140"/>
