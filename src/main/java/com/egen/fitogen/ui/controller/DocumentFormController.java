@@ -652,10 +652,10 @@ public class DocumentFormController {
             UiTextUtil.appendSectionHeader(message, "SZCZEGÓŁY");
             int limit = Math.min(details.size(), 8);
             for (int i = 0; i < limit; i++) {
-                message.append("- ").append(details.get(i)).append(UiTextUtil.NL);
+                UiTextUtil.appendBulletLine(message, details.get(i));
             }
             if (details.size() > limit) {
-                message.append("- ... oraz ").append(details.size() - limit).append(" kolejnych uwag").append(UiTextUtil.NL);
+                UiTextUtil.appendBulletLine(message, "... oraz " + (details.size() - limit) + " kolejnych uwag");
             }
         }
 

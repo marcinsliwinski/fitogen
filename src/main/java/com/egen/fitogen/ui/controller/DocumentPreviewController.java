@@ -263,24 +263,22 @@ public class DocumentPreviewController {
 
         StringBuilder builder = new StringBuilder();
         if (preview.isCancelled()) {
-            builder.append("Dokument został anulowany. Traktuj go wyłącznie jako zapis historyczny i nie używaj go do bieżącej obsługi operacyjnej.")
-                    .append(UiTextUtil.DOUBLE_NL);
+            UiTextUtil.appendParagraph(builder, "Dokument został anulowany. Traktuj go wyłącznie jako zapis historyczny i nie używaj go do bieżącej obsługi operacyjnej.");
         } else {
-            builder.append("Dokument ma status aktywny.").append(UiTextUtil.DOUBLE_NL);
+            UiTextUtil.appendParagraph(builder, "Dokument ma status aktywny.");
         }
 
-        builder.append("Pozycje dokumentu: ").append(itemsCount).append(UiTextUtil.NL);
-        builder.append("Pozycje z wymaganiem paszportu: ").append(passportRequiredCount).append(UiTextUtil.NL);
-        builder.append("Łączna ilość: ").append(preview.getTotalQty()).append(UiTextUtil.DOUBLE_NL);
+        UiTextUtil.appendLabelValue(builder, "Pozycje dokumentu", itemsCount);
+        UiTextUtil.appendLabelValue(builder, "Pozycje z wymaganiem paszportu", passportRequiredCount);
+        UiTextUtil.appendLabelValue(builder, "Łączna ilość", preview.getTotalQty());
+        UiTextUtil.appendEmptyLine(builder);
 
         if (passportRequiredCount > 0) {
-            builder.append("Uwaga: co najmniej jedna pozycja wymaga paszportu. Zweryfikuj finalne oznaczenia i komplet danych przed wydrukiem lub eksportem PDF.")
-                    .append(UiTextUtil.DOUBLE_NL);
+            UiTextUtil.appendParagraph(builder, "Uwaga: co najmniej jedna pozycja wymaga paszportu. Zweryfikuj finalne oznaczenia i komplet danych przed wydrukiem lub eksportem PDF.");
         }
 
         if (safe(preview.getCustomerPhytosanitaryNumber()).isBlank()) {
-            builder.append("Odbiorca nie ma wpisanego numeru fitosanitarnego. Jeśli dokument lub kierunek wysyłki tego wymaga, uzupełnij dane kontrahenta.")
-                    .append(UiTextUtil.DOUBLE_NL);
+            UiTextUtil.appendParagraph(builder, "Odbiorca nie ma wpisanego numeru fitosanitarnego. Jeśli dokument lub kierunek wysyłki tego wymaga, uzupełnij dane kontrahenta.");
         }
 
         if (itemsCount == 0) {
@@ -293,14 +291,15 @@ public class DocumentPreviewController {
 
     private String buildEppoInfoText(DocumentPreviewDTO preview) {
         StringBuilder builder = new StringBuilder();
-        builder.append("Ta sekcja ma charakter informacyjny i nie zmienia treści dokumentu.").append(UiTextUtil.DOUBLE_NL);
-        builder.append("Klient: ").append(valueOrDash(preview.getCustomerName())).append(UiTextUtil.NL);
-        builder.append("Typ dokumentu: ").append(valueOrDash(preview.getDocumentType())).append(UiTextUtil.NL);
-        builder.append("Status: ").append(valueOrDash(preview.getStatusLabel())).append(UiTextUtil.NL);
-        builder.append("Liczba pozycji: ").append(preview.getItems() == null ? 0 : preview.getItems().size()).append(UiTextUtil.NL);
-        builder.append("Łączna ilość: ").append(preview.getTotalQty()).append(UiTextUtil.DOUBLE_NL);
+        UiTextUtil.appendParagraph(builder, "Ta sekcja ma charakter informacyjny i nie zmienia treści dokumentu.");
+        UiTextUtil.appendLabelValue(builder, "Klient", valueOrDash(preview.getCustomerName()));
+        UiTextUtil.appendLabelValue(builder, "Typ dokumentu", valueOrDash(preview.getDocumentType()));
+        UiTextUtil.appendLabelValue(builder, "Status", valueOrDash(preview.getStatusLabel()));
+        UiTextUtil.appendLabelValue(builder, "Liczba pozycji", preview.getItems() == null ? 0 : preview.getItems().size());
+        UiTextUtil.appendLabelValue(builder, "Łączna ilość", preview.getTotalQty());
+        UiTextUtil.appendEmptyLine(builder);
         if (preview.isCancelled()) {
-            builder.append("Ostrzeżenie: dokument został anulowany. Nie używaj go jako aktywnego dokumentu operacyjnego.").append(UiTextUtil.DOUBLE_NL);
+            UiTextUtil.appendParagraph(builder, "Ostrzeżenie: dokument został anulowany. Nie używaj go jako aktywnego dokumentu operacyjnego.");
         }
         builder.append("Uwaga: szczegółowe dopasowanie EPPO dla kraju klienta jest rozwijane w formularzu dokumentu i dalszych etapach modułu referencyjnego.");
         return builder.toString();

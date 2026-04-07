@@ -39,6 +39,14 @@ public final class UiTextUtil {
         builder.append(NL);
     }
 
+    public static void appendBulletLine(StringBuilder builder, String value) {
+        builder.append("- ").append(value).append(NL);
+    }
+
+    public static void appendParagraph(StringBuilder builder, String value) {
+        builder.append(value).append(DOUBLE_NL);
+    }
+
     public static void appendIssuesSection(StringBuilder builder, String header, List<String> issues) {
         if (issues == null || issues.isEmpty()) {
             return;
