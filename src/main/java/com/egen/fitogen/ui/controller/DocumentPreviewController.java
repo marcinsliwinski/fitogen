@@ -42,6 +42,8 @@ public class DocumentPreviewController {
     @FXML private Label customerNameLabel;
     @FXML private Label customerAddressLabel;
     @FXML private Label customerPhytosanitaryNumberLabel;
+    @FXML private Label warningSummaryLabel;
+    @FXML private TextArea warningArea;
     @FXML private Label eppoInfoSummaryLabel;
     @FXML private TextArea eppoInfoArea;
     @FXML private VBox commentsSection;
@@ -70,6 +72,11 @@ public class DocumentPreviewController {
         if (itemsTable != null) {
             itemsTable.setColumnResizePolicy(TableView.UNCONSTRAINED_RESIZE_POLICY);
             itemsTable.setPlaceholder(new Label("Brak pozycji dokumentu do wyświetlenia."));
+        }
+        if (warningArea != null) {
+            warningArea.setEditable(false);
+            warningArea.setWrapText(true);
+            warningArea.setFocusTraversable(false);
         }
         if (eppoInfoArea != null) {
             eppoInfoArea.setEditable(false);
@@ -127,6 +134,12 @@ public class DocumentPreviewController {
         }
         if (customerPhytosanitaryNumberLabel != null) {
             customerPhytosanitaryNumberLabel.setText(buildPhytosanitaryLabel(preview.getCustomerPhytosanitaryNumber()));
+        }
+        if (warningSummaryLabel != null) {
+            warningSummaryLabel.setText("Ostrzeżenia i uwagi operacyjne");
+        }
+        if (warningArea != null) {
+            warningArea.setText(buildOperationalWarningsText(preview));
         }
         if (eppoInfoSummaryLabel != null) {
             eppoInfoSummaryLabel.setText("Informacje EPPO i paszportowe");
@@ -237,6 +250,45 @@ public class DocumentPreviewController {
             return safeLine1;
         }
         return safeLine1 + UiTextUtil.NL + safeLine2;
+    }
+
+
+    private String buildOperationalWarningsText(DocumentPreviewDTO preview) {
+        int itemsCount = preview.getItems() == null ? 0 : preview.getItems().size();
+        long passportRequiredCount = preview.getItems() == null
+                ? 0
+                : preview.getItems().stream()
+                .filter(item -> "Tak".equalsIgnoreCase(safe(item.getPassportLabel())))
+                .count();
+
+        StringBuilder builder = new StringBuilder();
+        if (preview.isCancelled()) {
+            builder.append("Dokument został anulowany. Traktuj go wyłącznie jako zapis historyczny i nie używaj go do bieżącej obsługi operacyjnej.")
+                    .append(UiTextUtil.DOUBLE_NL);
+        } else {
+            builder.append("Dokument ma status aktywny.").append(UiTextUtil.DOUBLE_NL);
+        }
+
+        builder.append("Pozycje dokumentu: ").append(itemsCount).append(UiTextUtil.NL);
+        builder.append("Pozycje z wymaganiem paszportu: ").append(passportRequiredCount).append(UiTextUtil.NL);
+        builder.append("Łączna ilość: ").append(preview.getTotalQty()).append(UiTextUtil.DOUBLE_NL);
+
+        if (passportRequiredCount > 0) {
+            builder.append("Uwaga: co najmniej jedna pozycja wymaga paszportu. Zweryfikuj finalne oznaczenia i komplet danych przed wydrukiem lub eksportem PDF.")
+                    .append(UiTextUtil.DOUBLE_NL);
+        }
+
+        if (safe(preview.getCustomerPhytosanitaryNumber()).isBlank()) {
+            builder.append("Odbiorca nie ma wpisanego numeru fitosanitarnego. Jeśli dokument lub kierunek wysyłki tego wymaga, uzupełnij dane kontrahenta.")
+                    .append(UiTextUtil.DOUBLE_NL);
+        }
+
+        if (itemsCount == 0) {
+            builder.append("Dokument nie zawiera pozycji. Taki podgląd traktuj jako niekompletny.");
+        } else {
+            builder.append("Podgląd ma charakter informacyjny. Ostateczną walidację pozycji wykonuj w formularzu dokumentu przed zatwierdzeniem operacji.");
+        }
+        return builder.toString();
     }
 
     private String buildEppoInfoText(DocumentPreviewDTO preview) {

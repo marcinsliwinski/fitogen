@@ -85,6 +85,15 @@
                     </VBox>
 
                     <VBox spacing="8">
+                        <Label fx:id="warningSummaryLabel" text="Ostrzeżenia i uwagi operacyjne" styleClass="section-title"/>
+                        <TextArea fx:id="warningArea"
+                                  prefRowCount="5"
+                                  wrapText="true"
+                                  editable="false"
+                                  focusTraversable="false"/>
+                    </VBox>
+
+                    <VBox spacing="8">
                         <Label fx:id="eppoInfoSummaryLabel" text="Informacje EPPO dla klienta" styleClass="section-title"/>
                         <TextArea fx:id="eppoInfoArea"
                                   prefRowCount="6"
