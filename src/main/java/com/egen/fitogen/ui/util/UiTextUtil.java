@@ -31,6 +31,10 @@ public final class UiTextUtil {
         builder.append("- ").append(label).append(": ").append(value).append(NL);
     }
 
+    public static void appendLabelValue(StringBuilder builder, String label, Object value) {
+        builder.append(label).append(": ").append(value).append(NL);
+    }
+
     public static void appendEmptyLine(StringBuilder builder) {
         builder.append(NL);
     }

@@ -1770,18 +1770,20 @@ public class SettingsController {
 
     private String buildPlantsPreviewText(com.egen.fitogen.dto.PlantImportPreviewResult result) {
         StringBuilder builder = new StringBuilder();
-        builder.append("PODSUMOWANIE PLIKU\n");
-        builder.append("- Źródło: ").append(result.getSourceName()).append("\n");
-        builder.append("- Separator: ").append(printableDelimiter(result.getDelimiter())).append("\n");
-        builder.append("- Nagłówki: ").append(String.join(", ", result.getResolvedHeaders())).append("\n");
-        builder.append("- Łącznie wierszy: ").append(result.getTotalRowsCount()).append("\n");
-        builder.append("- Nowe rekordy: ").append(result.getNewRowsCount()).append("\n");
-        builder.append("- Istniejące rekordy: ").append(result.getMatchingExistingCount()).append("\n");
-        builder.append("- Duplikaty w pliku: ").append(result.getDuplicateInFileCount()).append("\n");
-        builder.append("- Błędne wiersze: ").append(result.getInvalidRowsCount()).append("\n\n");
+        appendPreviewFileSummary(builder,
+                result.getSourceName(),
+                result.getDelimiter(),
+                result.getResolvedHeaders(),
+                List.of(
+                        new PreviewSummaryRow("Łącznie wierszy", result.getTotalRowsCount()),
+                        new PreviewSummaryRow("Nowe rekordy", result.getNewRowsCount()),
+                        new PreviewSummaryRow("Istniejące rekordy", result.getMatchingExistingCount()),
+                        new PreviewSummaryRow("Duplikaty w pliku", result.getDuplicateInFileCount()),
+                        new PreviewSummaryRow("Błędne wiersze", result.getInvalidRowsCount())
+                ));
 
         appendPlantsValidationSection(builder, result);
-        builder.append("PRÓBKA WIERSZY\n");
+        UiTextUtil.appendSectionHeader(builder, "PRÓBKA WIERSZY");
         int previewLimit = Math.min(result.getRows().size(), 10);
         for (int i = 0; i < previewLimit; i++) {
             var row = result.getRows().get(i);
@@ -1802,7 +1804,7 @@ public class SettingsController {
             if (row.getMessage() != null && !row.getMessage().isBlank()) {
                 builder.append(" | uwaga: ").append(row.getMessage());
             }
-            builder.append("\n");
+            builder.append(UiTextUtil.NL);
         }
 
         appendPlantIssuesSection(builder, result);
@@ -1811,18 +1813,20 @@ public class SettingsController {
 
     private String buildContrahentsPreviewText(com.egen.fitogen.dto.ContrahentImportPreviewResult result) {
         StringBuilder builder = new StringBuilder();
-        builder.append("PODSUMOWANIE PLIKU\n");
-        builder.append("- Źródło: ").append(result.getSourceName()).append("\n");
-        builder.append("- Separator: ").append(printableDelimiter(result.getDelimiter())).append("\n");
-        builder.append("- Nagłówki: ").append(String.join(", ", result.getResolvedHeaders())).append("\n");
-        builder.append("- Łącznie wierszy: ").append(result.getTotalRowsCount()).append("\n");
-        builder.append("- Nowe rekordy: ").append(result.getNewRowsCount()).append("\n");
-        builder.append("- Istniejące rekordy: ").append(result.getMatchingExistingCount()).append("\n");
-        builder.append("- Duplikaty w pliku: ").append(result.getDuplicateInFileCount()).append("\n");
-        builder.append("- Błędne wiersze: ").append(result.getInvalidRowsCount()).append("\n\n");
+        appendPreviewFileSummary(builder,
+                result.getSourceName(),
+                result.getDelimiter(),
+                result.getResolvedHeaders(),
+                List.of(
+                        new PreviewSummaryRow("Łącznie wierszy", result.getTotalRowsCount()),
+                        new PreviewSummaryRow("Nowe rekordy", result.getNewRowsCount()),
+                        new PreviewSummaryRow("Istniejące rekordy", result.getMatchingExistingCount()),
+                        new PreviewSummaryRow("Duplikaty w pliku", result.getDuplicateInFileCount()),
+                        new PreviewSummaryRow("Błędne wiersze", result.getInvalidRowsCount())
+                ));
 
         appendContrahentsValidationSection(builder, result);
-        builder.append("PRÓBKA WIERSZY\n");
+        UiTextUtil.appendSectionHeader(builder, "PRÓBKA WIERSZY");
         int previewLimit = Math.min(result.getRows().size(), 10);
         for (int i = 0; i < previewLimit; i++) {
             var row = result.getRows().get(i);
@@ -1843,22 +1847,25 @@ public class SettingsController {
             if (row.getMessage() != null && !row.getMessage().isBlank()) {
                 builder.append(" | uwaga: ").append(row.getMessage());
             }
-            builder.append("\n");
+            builder.append(UiTextUtil.NL);
         }
 
         appendContrahentIssuesSection(builder, result);
         return builder.toString();
     }
+
     private void appendPlantsValidationSection(StringBuilder builder, com.egen.fitogen.dto.PlantImportPreviewResult result) {
-        builder.append("OCENA WALIDACJI\n");
-        builder.append("- Gotowość importu: ").append(buildPlantsImportReadiness(result)).append("\n");
-        builder.append("- Rekomendacja: ").append(buildPlantsImportRecommendation(result)).append("\n\n");
+        UiTextUtil.appendSectionHeader(builder, "OCENA WALIDACJI");
+        UiTextUtil.appendSummaryLine(builder, "Gotowość importu", buildPlantsImportReadiness(result));
+        UiTextUtil.appendSummaryLine(builder, "Rekomendacja", buildPlantsImportRecommendation(result));
+        UiTextUtil.appendEmptyLine(builder);
     }
 
     private void appendContrahentsValidationSection(StringBuilder builder, com.egen.fitogen.dto.ContrahentImportPreviewResult result) {
-        builder.append("OCENA WALIDACJI\n");
-        builder.append("- Gotowość importu: ").append(buildContrahentsImportReadiness(result)).append("\n");
-        builder.append("- Rekomendacja: ").append(buildContrahentsImportRecommendation(result)).append("\n\n");
+        UiTextUtil.appendSectionHeader(builder, "OCENA WALIDACJI");
+        UiTextUtil.appendSummaryLine(builder, "Gotowość importu", buildContrahentsImportReadiness(result));
+        UiTextUtil.appendSummaryLine(builder, "Rekomendacja", buildContrahentsImportRecommendation(result));
+        UiTextUtil.appendEmptyLine(builder);
     }
 
     private void appendContrahentIssuesSection(StringBuilder builder, com.egen.fitogen.dto.ContrahentImportPreviewResult result) {
@@ -1889,21 +1896,41 @@ public class SettingsController {
         UiTextUtil.appendIssuesSection(builder, "NAJWAŻNIEJSZE UWAGI", problemRows);
     }
 
+    private void appendPreviewFileSummary(StringBuilder builder,
+                                          String sourceName,
+                                          char delimiter,
+                                          List<String> resolvedHeaders,
+                                          List<PreviewSummaryRow> summaryRows) {
+        UiTextUtil.appendSectionHeader(builder, "PODSUMOWANIE PLIKU");
+        UiTextUtil.appendSummaryLine(builder, "Źródło", sourceName);
+        UiTextUtil.appendSummaryLine(builder, "Separator", printableDelimiter(delimiter));
+        UiTextUtil.appendSummaryLine(builder, "Nagłówki", String.join(", ", resolvedHeaders));
+        for (PreviewSummaryRow summaryRow : summaryRows) {
+            UiTextUtil.appendSummaryLine(builder, summaryRow.label(), summaryRow.value());
+        }
+        UiTextUtil.appendEmptyLine(builder);
+    }
+
+    private record PreviewSummaryRow(String label, Object value) {
+    }
+
     private String buildDocumentsPreviewText(com.egen.fitogen.dto.DocumentImportPreviewResult result) {
         StringBuilder builder = new StringBuilder();
-        builder.append("PODSUMOWANIE PLIKU\n");
-        builder.append("- Źródło: ").append(result.getSourceName()).append("\n");
-        builder.append("- Separator: ").append(printableDelimiter(result.getDelimiter())).append("\n");
-        builder.append("- Nagłówki: ").append(String.join(", ", result.getResolvedHeaders())).append("\n");
-        builder.append("- Łącznie wierszy: ").append(result.getTotalRowsCount()).append("\n");
-        builder.append("- Nowe dokumenty: ").append(result.getDocumentCount()).append("\n");
-        builder.append("- Nowe wiersze: ").append(result.getNewRowsCount()).append("\n");
-        builder.append("- Istniejące numery dokumentów: ").append(result.getMatchingExistingCount()).append("\n");
-        builder.append("- Duplikaty w pliku: ").append(result.getDuplicateInFileCount()).append("\n");
-        builder.append("- Błędne wiersze: ").append(result.getInvalidRowsCount()).append("\n\n");
+        appendPreviewFileSummary(builder,
+                result.getSourceName(),
+                result.getDelimiter(),
+                result.getResolvedHeaders(),
+                List.of(
+                        new PreviewSummaryRow("Łącznie wierszy", result.getTotalRowsCount()),
+                        new PreviewSummaryRow("Nowe dokumenty", result.getDocumentCount()),
+                        new PreviewSummaryRow("Nowe wiersze", result.getNewRowsCount()),
+                        new PreviewSummaryRow("Istniejące numery dokumentów", result.getMatchingExistingCount()),
+                        new PreviewSummaryRow("Duplikaty w pliku", result.getDuplicateInFileCount()),
+                        new PreviewSummaryRow("Błędne wiersze", result.getInvalidRowsCount())
+                ));
 
         appendDocumentsValidationSection(builder, result);
-        builder.append("PRÓBKA WIERSZY\n");
+        UiTextUtil.appendSectionHeader(builder, "PRÓBKA WIERSZY");
         int previewLimit = Math.min(result.getRows().size(), 10);
         for (int i = 0; i < previewLimit; i++) {
             var row = result.getRows().get(i);
@@ -1920,13 +1947,10 @@ public class SettingsController {
             if (!safe(row.getContrahentName()).isBlank()) {
                 builder.append(" | kontrahent: ").append(safe(row.getContrahentName()));
             }
-            if (!safe(row.getCreatedBy()).isBlank()) {
-                builder.append(" | utworzył: ").append(safe(row.getCreatedBy()));
-            }
             if (row.getMessage() != null && !row.getMessage().isBlank()) {
                 builder.append(" | uwaga: ").append(row.getMessage());
             }
-            builder.append("\n");
+            builder.append(UiTextUtil.NL);
         }
 
         appendDocumentIssuesSection(builder, result);
@@ -1934,9 +1958,10 @@ public class SettingsController {
     }
 
     private void appendDocumentsValidationSection(StringBuilder builder, com.egen.fitogen.dto.DocumentImportPreviewResult result) {
-        builder.append("OCENA WALIDACJI\n");
-        builder.append("- Gotowość importu: ").append(buildDocumentsImportReadiness(result)).append("\n");
-        builder.append("- Rekomendacja: ").append(buildDocumentsImportRecommendation(result)).append("\n\n");
+        UiTextUtil.appendSectionHeader(builder, "OCENA WALIDACJI");
+        UiTextUtil.appendSummaryLine(builder, "Gotowość importu", buildDocumentsImportReadiness(result));
+        UiTextUtil.appendSummaryLine(builder, "Rekomendacja", buildDocumentsImportRecommendation(result));
+        UiTextUtil.appendEmptyLine(builder);
     }
 
     private void appendDocumentIssuesSection(StringBuilder builder, com.egen.fitogen.dto.DocumentImportPreviewResult result) {

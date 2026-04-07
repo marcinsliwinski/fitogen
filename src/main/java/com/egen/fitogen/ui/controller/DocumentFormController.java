@@ -29,6 +29,7 @@ import com.egen.fitogen.service.EppoCodePlantLinkService;
 import com.egen.fitogen.service.EppoCodeZoneLinkService;
 import com.egen.fitogen.service.PassportAdvisoryService;
 import com.egen.fitogen.ui.util.DialogUtil;
+import com.egen.fitogen.ui.util.UiTextUtil;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.ObjectProperty;
@@ -650,25 +651,25 @@ public class DocumentFormController {
         }
 
         StringBuilder message = new StringBuilder();
-        message.append("Dokument zawiera pozycje wymagające uwagi.");
-        message.append("Podsumowanie: ");
-        message.append("- podwyższone ryzyko EPPO: ").append(elevatedRiskCount).append(" ");
-        message.append("- brak kodu EPPO: ").append(missingCodeCount).append(" ");
-        message.append("- uwaga paszportowa: ").append(passportAttentionCount).append(" ");
+        message.append("Dokument zawiera pozycje wymagające uwagi.").append(UiTextUtil.DOUBLE_NL);
+        UiTextUtil.appendSectionHeader(message, "PODSUMOWANIE");
+        UiTextUtil.appendSummaryLine(message, "Podwyższone ryzyko EPPO", elevatedRiskCount);
+        UiTextUtil.appendSummaryLine(message, "Brak kodu EPPO", missingCodeCount);
+        UiTextUtil.appendSummaryLine(message, "Uwaga paszportowa", passportAttentionCount);
 
         if (!details.isEmpty()) {
-            message.append("Szczegóły: ");
+            UiTextUtil.appendEmptyLine(message);
+            UiTextUtil.appendSectionHeader(message, "SZCZEGÓŁY");
             int limit = Math.min(details.size(), 8);
             for (int i = 0; i < limit; i++) {
-                message.append("• ").append(details.get(i)).append(" ");
+                message.append("- ").append(details.get(i)).append(UiTextUtil.NL);
             }
             if (details.size() > limit) {
-                message.append("• ... oraz ").append(details.size() - limit).append(" kolejnych uwag ");
+                message.append("- ... oraz ").append(details.size() - limit).append(" kolejnych uwag").append(UiTextUtil.NL);
             }
-            message.append(" ");
         }
 
-        message.append("Czy mimo to chcesz zapisać dokument?");
+        message.append(UiTextUtil.NL).append("Czy mimo to chcesz zapisać dokument?");
 
         Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
         alert.setTitle("Ostrzeżenie EPPO / paszportowe");
