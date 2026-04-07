@@ -145,11 +145,12 @@
         </GridPane>
 
         <Label fx:id="zoneSummaryLabel" text="Przypisane kraje / strefy EPPO: 0" wrapText="true"/>
+        <Label text="Podpowiedzi oznaczone jako [istniejący rekord EPPO] pochodzą z aktualnej bazy EPPO. Pozycje oznaczone jako [wspólny słownik] są pobierane ze wspólnego katalogu krajów i zostaną zapisane do EPPO dopiero po zapisaniu formularza." wrapText="true"/>
 
         <TableView fx:id="zoneTable" prefHeight="340">
             <columns>
                 <TableColumn fx:id="colZoneCode" text="Kod" prefWidth="140"/>
-                <TableColumn fx:id="colZoneDisplay" text="Skrót / Kraj" prefWidth="520"/>
+                <TableColumn fx:id="colZoneDisplay" text="Skrót / Kraj / Źródło" prefWidth="520"/>
                 <TableColumn fx:id="colZoneStatus" text="Status" prefWidth="120"/>
             </columns>
         </TableView>

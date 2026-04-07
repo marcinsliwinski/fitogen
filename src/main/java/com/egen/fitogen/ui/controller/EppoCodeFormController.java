@@ -66,9 +66,13 @@ public class EppoCodeFormController {
     private final EppoZoneService eppoZoneService = AppContext.getEppoZoneService();
     private final EppoCodeZoneLinkService eppoCodeZoneLinkService = AppContext.getEppoCodeZoneLinkService();
 
+    private static final String ZONE_SOURCE_EPPO = "istniejący rekord EPPO";
+    private static final String ZONE_SOURCE_SHARED_DIRECTORY = "wspólny słownik";
+
     private final Map<String, String> speciesToLatinMap = new LinkedHashMap<>();
     private final Map<String, String> latinToSpeciesMap = new LinkedHashMap<>();
     private final Map<String, EppoZone> zoneDisplayMap = new LinkedHashMap<>();
+    private final Set<String> persistedZoneSignatures = new LinkedHashSet<>();
     private final ObservableList<EppoCodeSpeciesLink> assignedSpeciesData = FXCollections.observableArrayList();
     private final ObservableList<EppoZone> assignedZoneData = FXCollections.observableArrayList();
 
@@ -303,6 +307,7 @@ public class EppoCodeFormController {
         ComboBoxAutoComplete.bindEditable(speciesDisplayField, speciesSuggestions);
 
         zoneDisplayMap.clear();
+        persistedZoneSignatures.clear();
         List<String> zoneSuggestions = new ArrayList<>();
         Set<String> uniqueZoneDisplays = new LinkedHashSet<>();
         List<EppoZone> availableZones = eppoZoneService.getAll();
@@ -311,15 +316,18 @@ public class EppoCodeFormController {
             if (!isMeaningfulZone(zone)) {
                 continue;
             }
-            addZoneSuggestion(zone, zoneSuggestions, uniqueZoneDisplays);
+            persistedZoneSignatures.add(buildZoneSignature(zone));
+            addZoneSuggestion(zone, ZONE_SOURCE_EPPO, zoneSuggestions, uniqueZoneDisplays);
         }
 
         for (CountryDirectory.CountryEntry entry : countryDirectoryService.getEntries()) {
             EppoZone zone = findExistingZoneForCountryEntry(entry, availableZones);
+            String sourceLabel = ZONE_SOURCE_EPPO;
             if (zone == null) {
                 zone = buildSharedCountryZone(entry);
+                sourceLabel = ZONE_SOURCE_SHARED_DIRECTORY;
             }
-            addZoneSuggestion(zone, zoneSuggestions, uniqueZoneDisplays);
+            addZoneSuggestion(zone, sourceLabel, zoneSuggestions, uniqueZoneDisplays);
         }
 
         ComboBoxAutoComplete.bindEditable(zonePickerField, zoneSuggestions);
@@ -336,7 +344,7 @@ public class EppoCodeFormController {
 
     private void configureZoneTable() {
         colZoneCode.setCellValueFactory(cell -> new SimpleStringProperty(nullSafe(cell.getValue().getCode())));
-        colZoneDisplay.setCellValueFactory(cell -> new SimpleStringProperty(buildZoneDisplay(cell.getValue())));
+        colZoneDisplay.setCellValueFactory(cell -> new SimpleStringProperty(buildZoneDisplayWithSource(cell.getValue())));
         colZoneStatus.setCellValueFactory(cell -> new SimpleStringProperty(nullSafe(cell.getValue().getStatus())));
         zoneTable.setItems(assignedZoneData);
         zoneTable.getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
@@ -524,15 +532,19 @@ public class EppoCodeFormController {
         return notBlank(species) ? species : latin;
     }
 
-    private void addZoneSuggestion(EppoZone zone, List<String> zoneSuggestions, Set<String> uniqueZoneDisplays) {
+    private void addZoneSuggestion(EppoZone zone, String sourceLabel, List<String> zoneSuggestions, Set<String> uniqueZoneDisplays) {
         if (!isMeaningfulZone(zone)) {
             return;
         }
 
         String display = buildZoneDisplay(zone);
-        if (notBlank(display) && uniqueZoneDisplays.add(display)) {
-            zoneSuggestions.add(display);
-            zoneDisplayMap.put(normalizeKey(display), zone);
+        String displayWithSource = buildZoneDisplayWithSource(zone, sourceLabel);
+        if (notBlank(displayWithSource) && uniqueZoneDisplays.add(displayWithSource)) {
+            zoneSuggestions.add(displayWithSource);
+            zoneDisplayMap.put(normalizeKey(displayWithSource), zone);
+            if (notBlank(display)) {
+                zoneDisplayMap.putIfAbsent(normalizeKey(display), zone);
+            }
         }
     }
 
@@ -645,6 +657,34 @@ public class EppoCodeFormController {
             return prefix + " / " + name;
         }
         return notBlank(prefix) ? prefix : nullSafe(name);
+    }
+
+    private String buildZoneDisplayWithSource(EppoZone zone) {
+        return buildZoneDisplayWithSource(zone, determineZoneSourceLabel(zone));
+    }
+
+    private String buildZoneDisplayWithSource(EppoZone zone, String sourceLabel) {
+        String display = buildZoneDisplay(zone);
+        if (!notBlank(display)) {
+            return "";
+        }
+        if (!notBlank(sourceLabel)) {
+            return display;
+        }
+        return display + " [" + sourceLabel + "]";
+    }
+
+    private String determineZoneSourceLabel(EppoZone zone) {
+        if (!isMeaningfulZone(zone)) {
+            return null;
+        }
+        if (zone.getId() > 0) {
+            return ZONE_SOURCE_EPPO;
+        }
+        String signature = buildZoneSignature(zone);
+        return signature != null && persistedZoneSignatures.contains(signature)
+                ? ZONE_SOURCE_EPPO
+                : ZONE_SOURCE_SHARED_DIRECTORY;
     }
 
     private boolean sameNormalized(String left, String right) {
