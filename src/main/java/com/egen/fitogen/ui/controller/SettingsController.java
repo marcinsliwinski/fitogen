@@ -1196,7 +1196,7 @@ public class SettingsController {
             return;
         }
 
-        backupStatusLabel.setText("Ostatni backup: " + lastBackupAt + "\nLokalizacja: " + lastBackupPath);
+        backupStatusLabel.setText(UiTextUtil.buildPathMessage("Ostatni backup: " + lastBackupAt + "\nLokalizacja:", lastBackupPath));
     }
 
     @FXML

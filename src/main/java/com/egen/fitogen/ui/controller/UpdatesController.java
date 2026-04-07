@@ -209,7 +209,7 @@ public class UpdatesController {
                     .append(" | status=").append(valueOrDash(plant.getVisibilityStatus()))
                     .append(" | paszport=").append(plant.isPassportRequired() ? "TAK" : "NIE")
                     .append(" | EPPO=").append(valueOrDash(plant.getEppoCode()))
-                    .append("\n");
+                    .append(UiTextUtil.NL);
         }
     }
 
@@ -228,7 +228,7 @@ public class UpdatesController {
                     .append(" | nazwa=").append(valueOrDash(code.getDisplaySpeciesName()))
                     .append(" | łacina=").append(valueOrDash(code.getDisplayLatinSpeciesName()))
                     .append(" | status=").append(valueOrDash(code.getStatus()))
-                    .append("\n");
+                    .append(UiTextUtil.NL);
         }
     }
 

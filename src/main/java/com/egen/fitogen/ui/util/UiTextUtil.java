@@ -47,6 +47,33 @@ public final class UiTextUtil {
         builder.append(value).append(DOUBLE_NL);
     }
 
+    public static String joinParagraphs(List<String> paragraphs) {
+        if (paragraphs == null || paragraphs.isEmpty()) {
+            return "";
+        }
+        return String.join(DOUBLE_NL, paragraphs);
+    }
+
+    public static String buildBulletList(String intro, List<String> values) {
+        StringBuilder builder = new StringBuilder();
+        if (intro != null && !intro.isBlank()) {
+            builder.append(intro);
+        }
+        if (values != null && !values.isEmpty()) {
+            for (String value : values) {
+                if (builder.length() > 0) {
+                    builder.append(NL);
+                }
+                builder.append("- ").append(value);
+            }
+        }
+        return builder.toString();
+    }
+
+    public static String buildPathMessage(String intro, Object path) {
+        return intro + NL + path;
+    }
+
     public static void appendIssuesSection(StringBuilder builder, String header, List<String> issues) {
         if (issues == null || issues.isEmpty()) {
             return;

@@ -494,7 +494,7 @@ public class DocumentFormController {
             return;
         }
 
-        eppoInfoArea.setText(String.join("\n\n", messages));
+        eppoInfoArea.setText(UiTextUtil.joinParagraphs(messages));
     }
 
     private Plant resolvePlantForRow(DocumentItemRow row) {
