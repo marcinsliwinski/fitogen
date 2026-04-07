@@ -372,7 +372,7 @@ public class SettingsController {
         auditLogSortedData.comparatorProperty().bind(auditLogTable.comparatorProperty());
         auditLogTable.setItems(auditLogSortedData);
         auditLogTable.setPlaceholder(new Label("Brak wpisów Audit Log do wyświetlenia."));
-        auditLogTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        auditLogTable.setColumnResizePolicy(TableView.UNCONSTRAINED_RESIZE_POLICY);
         auditLogTable.setEditable(false);
         auditLogTable.getSortOrder().clear();
         if (colAuditChangedAt != null) {
@@ -1743,19 +1743,28 @@ public class SettingsController {
 
     private void resetPlantsCsvPreview() {
         if (plantsCsvPreviewArea != null) {
-            plantsCsvPreviewArea.setText("Brak preview importu Plants.\n\nPo uruchomieniu analizy zobaczysz tutaj podsumowanie pliku, nagłówki oraz próbkę wierszy.");
+            plantsCsvPreviewArea.setText(UiTextUtil.buildEmptyPreviewText(
+                    "Plants",
+                    "Po uruchomieniu analizy zobaczysz tutaj podsumowanie pliku, nagłówki oraz próbkę wierszy."
+            ));
         }
     }
 
     private void resetContrahentsCsvPreview() {
         if (contrahentsCsvPreviewArea != null) {
-            contrahentsCsvPreviewArea.setText("Brak preview importu Contrahents.\n\nPo uruchomieniu analizy zobaczysz tutaj podsumowanie pliku, nagłówki oraz próbkę wierszy.");
+            contrahentsCsvPreviewArea.setText(UiTextUtil.buildEmptyPreviewText(
+                    "Contrahents",
+                    "Po uruchomieniu analizy zobaczysz tutaj podsumowanie pliku, nagłówki oraz próbkę wierszy."
+            ));
         }
     }
 
     private void resetDocumentsCsvPreview() {
         if (documentsCsvPreviewArea != null) {
-            documentsCsvPreviewArea.setText("Brak preview importu Documents.\n\nPo uruchomieniu analizy zobaczysz tutaj podsumowanie pliku, nagłówki oraz próbkę wierszy dokumentów i pozycji.");
+            documentsCsvPreviewArea.setText(UiTextUtil.buildEmptyPreviewText(
+                    "Documents",
+                    "Po uruchomieniu analizy zobaczysz tutaj podsumowanie pliku, nagłówki oraz próbkę wierszy dokumentów i pozycji."
+            ));
         }
     }
 
@@ -1852,6 +1861,20 @@ public class SettingsController {
         builder.append("- Rekomendacja: ").append(buildContrahentsImportRecommendation(result)).append("\n\n");
     }
 
+    private void appendContrahentIssuesSection(StringBuilder builder, com.egen.fitogen.dto.ContrahentImportPreviewResult result) {
+        List<String> problemRows = new ArrayList<>();
+        for (var row : result.getRows()) {
+            if (row.getMessage() != null && !row.getMessage().isBlank()) {
+                problemRows.add("#" + row.getRowNumber() + " [" + row.getStatus() + "] " + row.getMessage());
+            }
+            if (problemRows.size() >= 5) {
+                break;
+            }
+        }
+
+        UiTextUtil.appendIssuesSection(builder, "NAJWAŻNIEJSZE UWAGI", problemRows);
+    }
+
     private void appendPlantIssuesSection(StringBuilder builder, com.egen.fitogen.dto.PlantImportPreviewResult result) {
         List<String> problemRows = new ArrayList<>();
         for (var row : result.getRows()) {
@@ -1863,12 +1886,7 @@ public class SettingsController {
             }
         }
 
-        if (!problemRows.isEmpty()) {
-            builder.append("\nNAJWAŻNIEJSZE UWAGI\n");
-            for (String problem : problemRows) {
-                builder.append("- ").append(problem).append("\n");
-            }
-        }
+        UiTextUtil.appendIssuesSection(builder, "NAJWAŻNIEJSZE UWAGI", problemRows);
     }
 
     private String buildDocumentsPreviewText(com.egen.fitogen.dto.DocumentImportPreviewResult result) {
@@ -1932,12 +1950,7 @@ public class SettingsController {
             }
         }
 
-        if (!problemRows.isEmpty()) {
-            builder.append("\nNAJWAŻNIEJSZE UWAGI\n");
-            for (String problem : problemRows) {
-                builder.append("- ").append(problem).append("\n");
-            }
-        }
+        UiTextUtil.appendIssuesSection(builder, "NAJWAŻNIEJSZE UWAGI", problemRows);
     }
 
     private String buildDocumentsImportReadiness(com.egen.fitogen.dto.DocumentImportPreviewResult result) {

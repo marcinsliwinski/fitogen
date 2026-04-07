@@ -67,7 +67,7 @@ public class DocumentPreviewController {
         colPassport.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getPassportLabel()));
 
         if (itemsTable != null) {
-            itemsTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+            itemsTable.setColumnResizePolicy(TableView.UNCONSTRAINED_RESIZE_POLICY);
             itemsTable.setPlaceholder(new Label("Brak pozycji dokumentu do wyświetlenia."));
         }
         if (eppoInfoArea != null) {

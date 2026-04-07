@@ -89,7 +89,7 @@ public class PlantBatchController {
             return;
         }
 
-        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        table.setColumnResizePolicy(TableView.UNCONSTRAINED_RESIZE_POLICY);
         table.setPlaceholder(new Label("Brak partii roślin do wyświetlenia."));
     }
 

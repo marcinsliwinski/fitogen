@@ -154,7 +154,7 @@ public class EppoAdminController {
         colRecordStatus.setCellValueFactory(new PropertyValueFactory<>("status"));
 
         if (recordTable != null) {
-            recordTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+            recordTable.setColumnResizePolicy(TableView.UNCONSTRAINED_RESIZE_POLICY);
         }
     }
 
@@ -225,7 +225,7 @@ public class EppoAdminController {
 
     private void configureTableBehavior() {
         if (codeTable != null) {
-            codeTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+            codeTable.setColumnResizePolicy(TableView.UNCONSTRAINED_RESIZE_POLICY);
             codeTable.setPlaceholder(new Label("Brak kodów EPPO do wyświetlenia."));
         }
         if (recordTable != null) {

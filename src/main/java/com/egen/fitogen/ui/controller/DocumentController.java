@@ -137,7 +137,7 @@ public class DocumentController {
             return;
         }
 
-        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        table.setColumnResizePolicy(TableView.UNCONSTRAINED_RESIZE_POLICY);
         table.setPlaceholder(new Label("Brak dokumentów do wyświetlenia."));
     }
 

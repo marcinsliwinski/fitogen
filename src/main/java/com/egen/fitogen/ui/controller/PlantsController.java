@@ -71,7 +71,7 @@ public class PlantsController {
             return;
         }
 
-        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        table.setColumnResizePolicy(TableView.UNCONSTRAINED_RESIZE_POLICY);
         table.setPlaceholder(new Label("Brak roślin do wyświetlenia."));
     }
     private void configureRowFactory() {

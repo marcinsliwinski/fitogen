@@ -316,7 +316,7 @@ public class EppoCodeFormController {
         ));
         speciesTable.setItems(assignedSpeciesData);
         speciesTable.getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
-        speciesTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        speciesTable.setColumnResizePolicy(TableView.UNCONSTRAINED_RESIZE_POLICY);
     }
 
     private void configureZoneTable() {
@@ -325,7 +325,7 @@ public class EppoCodeFormController {
         colZoneStatus.setCellValueFactory(cell -> new SimpleStringProperty(nullSafe(cell.getValue().getStatus())));
         zoneTable.setItems(assignedZoneData);
         zoneTable.getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
-        zoneTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        zoneTable.setColumnResizePolicy(TableView.UNCONSTRAINED_RESIZE_POLICY);
     }
 
     private void configureActionStateListeners() {
