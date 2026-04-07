@@ -638,13 +638,13 @@ public class EppoAdminController {
             return;
         }
         if (selectedCode == null) {
-            selectedCodeLabel.setText("Kliknięcie na kod EPPO nie filtruje Bazy rekordów. Użyj wyszukiwarki, aby zawęzić wyniki.");
+            selectedCodeLabel.setText("Kody EPPO nie filtrują Bazy rekordów. Użyj wyszukiwarki.");
             return;
         }
 
         selectedCodeLabel.setText(
-                "Wybrany kod EPPO: " + selectedCode.getCode()
-                        + " | Kliknięcie nie filtruje Bazy rekordów — użyj wyszukiwarki, aby zawęzić wyniki."
+                "Wybrany kod EPPO: " + firstNonBlank(normalizeDisplayValue(selectedCode.getCode()), "—")
+                        + " • Baza rekordów nie filtruje się kliknięciem"
         );
     }
 
@@ -654,9 +654,9 @@ public class EppoAdminController {
         }
 
         if (selectedCode == null) {
-            selectedCodeSummaryLabel.setText("Podsumowanie wybranego kodu EPPO pojawi się po zaznaczeniu wiersza.");
-            selectedCodeAssignmentsLabel.setText("Przypisane gatunki i kraje / strefy będą pokazane tutaj.");
-            selectedCodeLegacyLabel.setText("Informacja o legacy fallbacku gatunku pojawi się po zaznaczeniu kodu.");
+            selectedCodeSummaryLabel.setText("Wybierz kod EPPO, aby zobaczyć jego kontekst.");
+            selectedCodeAssignmentsLabel.setText("Przypisania gatunków i krajów / stref pojawią się tutaj.");
+            selectedCodeLegacyLabel.setText("Legacy fallback: —");
             return;
         }
 
@@ -675,21 +675,18 @@ public class EppoAdminController {
         long inactiveZoneCount = linkedZones.stream().filter(zone -> isInactiveStatus(zone.getStatus())).count();
 
         selectedCodeSummaryLabel.setText(
-                "Podsumowanie kodu EPPO: " + firstNonBlank(normalizeDisplayValue(selectedCode.getCode()), "—")
-                        + ". Nazwa polska: " + buildCodePolishName(selectedCode)
-                        + ". Nazwa łacińska: " + buildCodeLatinName(selectedCode)
-                        + ". Status: " + firstNonBlank(normalizeDisplayValue(selectedCode.getStatus()), "—")
-                        + ". Przypisane gatunki: " + speciesLinks.size()
-                        + ". Przypisane kraje / strefy: " + linkedZones.size()
-                        + "."
+                firstNonBlank(normalizeDisplayValue(selectedCode.getCode()), "—")
+                        + " • " + firstNonBlank(normalizeDisplayValue(selectedCode.getStatus()), "—")
+                        + " • " + buildDisplayPair(buildCodePolishName(selectedCode), buildCodeLatinName(selectedCode))
+                        + "\nGatunki: " + speciesLinks.size()
+                        + " • Kraje / strefy: " + linkedZones.size()
+                        + " • Aktywne: " + activeZoneCount
+                        + " • Nieaktywne: " + inactiveZoneCount
         );
 
         selectedCodeAssignmentsLabel.setText(
-                "Podgląd przypisań: gatunki — " + buildSpeciesPreview(speciesLinks)
-                        + ". Kraje / strefy — " + buildZonePreview(linkedZones)
-                        + ". Aktywne kraje / strefy: " + activeZoneCount
-                        + ". Nieaktywne kraje / strefy: " + inactiveZoneCount
-                        + "."
+                "Gatunki: " + buildSpeciesPreview(speciesLinks)
+                        + "\nKraje / strefy: " + buildZonePreview(linkedZones)
         );
 
         selectedCodeLegacyLabel.setText(buildLegacySpeciesStatus(selectedCode));
@@ -697,7 +694,7 @@ public class EppoAdminController {
 
     private String buildLegacySpeciesStatus(EppoCode selectedCode) {
         if (selectedCode == null) {
-            return "Informacja o legacy fallbacku gatunku pojawi się po zaznaczeniu kodu.";
+            return "Legacy fallback: —";
         }
 
         List<EppoCodeSpeciesLink> explicitLinks = eppoCodeSpeciesLinkService == null
@@ -720,29 +717,30 @@ public class EppoAdminController {
         boolean legacyFallbackActive = hasLegacySpecies && !containsSpeciesSignature(explicitLinks, legacySpeciesName, legacyLatinName);
 
         if (hasExplicitLinks && !legacyFallbackActive) {
-            return "Fallback legacy gatunku: nieużywany. Kod korzysta wyłącznie z właściwych przypisań gatunków.";
+            return "Legacy fallback: nieużywany";
         }
 
         if (hasExplicitLinks) {
-            return "Fallback legacy gatunku: aktywny równolegle z właściwymi przypisaniami. Legacy: "
+            return "Legacy fallback: aktywny równolegle • "
                     + buildSpeciesDisplay(legacySpeciesName, legacyLatinName)
-                    + ". Właściwe przypisania: " + explicitLinks.size() + ".";
+                    + " • Właściwe przypisania: " + explicitLinks.size();
         }
 
         if (legacyFallbackActive) {
-            return "Fallback legacy gatunku: aktywny. Kod korzysta jeszcze z pola legacy: "
-                    + buildSpeciesDisplay(legacySpeciesName, legacyLatinName)
-                    + ".";
+            return "Legacy fallback: aktywny • "
+                    + buildSpeciesDisplay(legacySpeciesName, legacyLatinName);
         }
 
         if (hasLegacySpecies) {
-            return "Fallback legacy gatunku: obecny w danych, ale pokryty przez właściwe przypisania gatunków.";
+            return "Legacy fallback: obecny w danych, ale pokryty przypisaniami";
         }
 
-        return "Fallback legacy gatunku: brak. Kod nie ma ani legacy pola gatunku, ani właściwych przypisań gatunków.";
+        return "Legacy fallback: brak";
     }
 
-    private boolean containsSpeciesSignature(List<EppoCodeSpeciesLink> speciesLinks, String speciesName, String latinSpeciesName) {
+    private boolean containsSpeciesSignature(List<EppoCodeSpeciesLink> speciesLinks,
+                                             String speciesName,
+                                             String latinSpeciesName) {
         if (speciesLinks == null || speciesLinks.isEmpty()) {
             return false;
         }
@@ -751,13 +749,23 @@ public class EppoAdminController {
         String expectedLatin = normalizeDisplayValue(latinSpeciesName);
 
         for (EppoCodeSpeciesLink link : speciesLinks) {
-            if (link == null) {
+            if (!isMeaningfulSpeciesLink(link)) {
                 continue;
             }
 
             String linkSpecies = normalizeDisplayValue(link.getSpeciesName());
             String linkLatin = normalizeDisplayValue(link.getLatinSpeciesName());
-            if (equalsNormalized(linkSpecies, expectedSpecies) && equalsNormalized(linkLatin, expectedLatin)) {
+
+            boolean sameSpecies = java.util.Objects.equals(
+                    expectedSpecies == null ? null : expectedSpecies.toLowerCase(),
+                    linkSpecies == null ? null : linkSpecies.toLowerCase()
+            );
+            boolean sameLatin = java.util.Objects.equals(
+                    expectedLatin == null ? null : expectedLatin.toLowerCase(),
+                    linkLatin == null ? null : linkLatin.toLowerCase()
+            );
+
+            if (sameSpecies && sameLatin) {
                 return true;
             }
         }
@@ -765,25 +773,8 @@ public class EppoAdminController {
         return false;
     }
 
-    private boolean equalsNormalized(String first, String second) {
-        if (first == null && second == null) {
-            return true;
-        }
-        if (first == null || second == null) {
-            return false;
-        }
-        return first.equalsIgnoreCase(second);
-    }
-
     private String buildSpeciesDisplay(String speciesName, String latinSpeciesName) {
-        String normalizedSpecies = normalizeDisplayValue(speciesName);
-        String normalizedLatin = normalizeDisplayValue(latinSpeciesName);
-
-        if (notBlank(normalizedSpecies) && notBlank(normalizedLatin)) {
-            return normalizedSpecies + " / " + normalizedLatin;
-        }
-
-        return firstNonBlank(normalizedSpecies, normalizedLatin, "—");
+        return buildDisplayPair(speciesName, latinSpeciesName);
     }
 
     private String buildSpeciesPreview(List<EppoCodeSpeciesLink> speciesLinks) {
