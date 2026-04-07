@@ -81,6 +81,7 @@ public class SettingsController {
     @FXML private Label documentTypeSummaryLabel;
     @FXML private TextField documentTypeNameField;
     @FXML private TextField documentTypeCodeField;
+    @FXML private ListView<CountryDirectory.CountryEntry> allCountryEntriesList;
     @FXML private ListView<CountryDirectory.CountryEntry> customCountryEntriesList;
     @FXML private TextField customCountrySearchField;
     @FXML private Label countryDictionarySummaryLabel;
@@ -150,6 +151,8 @@ public class SettingsController {
     private final ObservableList<DocumentType> documentTypeMasterData = FXCollections.observableArrayList();
     private FilteredList<DocumentType> documentTypeFilteredData;
     private CountryDirectory.CountryEntry editingCustomCountryEntry;
+    private final ObservableList<CountryDirectory.CountryEntry> allCountryMasterData = FXCollections.observableArrayList();
+    private FilteredList<CountryDirectory.CountryEntry> allCountryFilteredData;
     private final ObservableList<CountryDirectory.CountryEntry> customCountryMasterData = FXCollections.observableArrayList();
     private FilteredList<CountryDirectory.CountryEntry> customCountryFilteredData;
     private AppUser editingUser;
@@ -224,20 +227,36 @@ public class SettingsController {
     }
 
     private void configureCustomCountryControls() {
-        if (customCountryEntriesList == null) {
-            return;
+        if (allCountryEntriesList != null) {
+            allCountryFilteredData = new FilteredList<>(allCountryMasterData, entry -> true);
+            allCountryEntriesList.setItems(allCountryFilteredData);
+            allCountryEntriesList.setPlaceholder(new Label("Brak pozycji wspólnego słownika krajów do wyświetlenia."));
+            allCountryEntriesList.setCellFactory(list -> new ListCell<>() {
+                @Override
+                protected void updateItem(CountryDirectory.CountryEntry item, boolean empty) {
+                    super.updateItem(item, empty);
+                    setText(empty || item == null ? "" : buildSharedCountryDisplay(item));
+                }
+            });
+            allCountryEntriesList.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
+                if (newVal != null && countryDictionarySummaryLabel != null) {
+                    countryDictionarySummaryLabel.setText(buildSharedCountrySummary(newVal));
+                }
+            });
         }
 
-        customCountryFilteredData = new FilteredList<>(customCountryMasterData, entry -> true);
-        customCountryEntriesList.setItems(customCountryFilteredData);
-        customCountryEntriesList.setPlaceholder(new Label("Brak własnych wpisów słownika krajów do wyświetlenia."));
-        customCountryEntriesList.setCellFactory(list -> new ListCell<>() {
-            @Override
-            protected void updateItem(CountryDirectory.CountryEntry item, boolean empty) {
-                super.updateItem(item, empty);
-                setText(empty || item == null ? "" : item.country() + " (" + item.countryCode() + ")");
-            }
-        });
+        if (customCountryEntriesList != null) {
+            customCountryFilteredData = new FilteredList<>(customCountryMasterData, entry -> true);
+            customCountryEntriesList.setItems(customCountryFilteredData);
+            customCountryEntriesList.setPlaceholder(new Label("Brak własnych wpisów słownika krajów do wyświetlenia."));
+            customCountryEntriesList.setCellFactory(list -> new ListCell<>() {
+                @Override
+                protected void updateItem(CountryDirectory.CountryEntry item, boolean empty) {
+                    super.updateItem(item, empty);
+                    setText(empty || item == null ? "" : buildCustomCountryDisplay(item));
+                }
+            });
+        }
 
         if (customCountrySearchField != null) {
             customCountrySearchField.textProperty().addListener((obs, oldVal, newVal) -> applyCustomCountryFilter(newVal));
@@ -502,17 +521,25 @@ public class SettingsController {
 
 
     private void loadCustomCountryEntries() {
-        if (customCountryEntriesList == null) {
+        if (customCountryEntriesList == null && allCountryEntriesList == null) {
             return;
         }
 
-        CountryDirectory.CountryEntry selected = customCountryEntriesList.getSelectionModel().getSelectedItem();
-        String selectedKey = selected == null ? "" : buildCustomCountryKey(selected);
+        CountryDirectory.CountryEntry selectedCustom = customCountryEntriesList == null
+                ? null
+                : customCountryEntriesList.getSelectionModel().getSelectedItem();
+        String selectedCustomKey = selectedCustom == null ? "" : buildCustomCountryKey(selectedCustom);
 
-        List<CountryDirectory.CountryEntry> entries = countryDirectoryService.getCustomEntries();
-        customCountryMasterData.setAll(entries);
+        CountryDirectory.CountryEntry selectedShared = allCountryEntriesList == null
+                ? null
+                : allCountryEntriesList.getSelectionModel().getSelectedItem();
+        String selectedSharedKey = selectedShared == null ? "" : buildCustomCountryKey(selectedShared);
+
+        customCountryMasterData.setAll(countryDirectoryService.getCustomEntries());
+        allCountryMasterData.setAll(countryDirectoryService.getEntries());
         applyCustomCountryFilter(customCountrySearchField == null ? "" : customCountrySearchField.getText());
-        restoreCustomCountrySelection(selectedKey);
+        restoreCustomCountrySelection(selectedCustomKey);
+        restoreSharedCountrySelection(selectedSharedKey);
         updateCountryDictionaryStatus();
     }
 
@@ -600,43 +627,70 @@ public class SettingsController {
 
         int customCount = countryDirectoryService.getCustomEntries().size();
         int totalCount = countryDirectoryService.getEntries().size();
-        int visibleCount = customCountryFilteredData == null ? customCount : customCountryFilteredData.size();
+        int visibleSharedCount = allCountryFilteredData == null ? totalCount : allCountryFilteredData.size();
+        int visibleCustomCount = customCountryFilteredData == null ? customCount : customCountryFilteredData.size();
         String filter = customCountrySearchField == null ? "" : safe(customCountrySearchField.getText());
         String filterSuffix = UiTextUtil.buildQuotedFilterSuffix("Filtr", filter);
         countryDictionaryStatusLabel.setText(
                 "Wspólny słownik zawiera " + totalCount + " pozycji, w tym " + customCount
-                        + " wpisów własnych. Widoczne po filtrze: " + visibleCount
+                        + " wpisów własnych. Widoczne po filtrze: katalog " + visibleSharedCount
+                        + ", wpisy własne " + visibleCustomCount
                         + ". Jest używany przez Kontrahentów, EPPO i dane podmiotu."
                         + filterSuffix
         );
 
         if (countryDictionarySummaryLabel != null) {
-            String summary = customCountryFilteredData == null || customCountryFilteredData.isEmpty()
-                    ? "Brak własnych wpisów słownika krajów spełniających bieżący filtr."
-                    : buildCustomCountrySummary(customCountryFilteredData.get(0));
-            countryDictionarySummaryLabel.setText(summary);
+            CountryDirectory.CountryEntry selectedCustom = customCountryEntriesList == null
+                    ? null
+                    : customCountryEntriesList.getSelectionModel().getSelectedItem();
+            CountryDirectory.CountryEntry selectedShared = allCountryEntriesList == null
+                    ? null
+                    : allCountryEntriesList.getSelectionModel().getSelectedItem();
+
+            if (selectedCustom != null) {
+                countryDictionarySummaryLabel.setText("Wybrany wpis własny: " + buildCustomCountryDisplay(selectedCustom) + ".");
+                return;
+            }
+
+            if (selectedShared != null) {
+                countryDictionarySummaryLabel.setText(buildSharedCountrySummary(selectedShared));
+                return;
+            }
+
+            if (allCountryFilteredData != null && !allCountryFilteredData.isEmpty()) {
+                countryDictionarySummaryLabel.setText(buildSharedCountrySummary(allCountryFilteredData.get(0)));
+                return;
+            }
+
+            if (customCountryFilteredData != null && !customCountryFilteredData.isEmpty()) {
+                countryDictionarySummaryLabel.setText(buildCustomCountrySummary(customCountryFilteredData.get(0)));
+                return;
+            }
+
+            countryDictionarySummaryLabel.setText("Brak pozycji wspólnego słownika krajów spełniających bieżący filtr.");
         }
     }
 
     private void applyCustomCountryFilter(String rawFilter) {
-        if (customCountryFilteredData == null) {
+        if (customCountryFilteredData == null && allCountryFilteredData == null) {
             return;
         }
 
         String keyword = rawFilter == null ? "" : rawFilter.trim().toLowerCase();
-        customCountryFilteredData.setPredicate(entry -> {
-            if (keyword.isBlank()) {
-                return true;
-            }
-            return containsIgnoreCase(entry.country(), keyword)
-                    || containsIgnoreCase(entry.countryCode(), keyword)
-                    || containsIgnoreCase(buildCustomCountryDisplay(entry), keyword);
-        });
+
+        if (allCountryFilteredData != null) {
+            allCountryFilteredData.setPredicate(entry -> matchesCountryDirectoryFilter(entry, keyword));
+        }
+
+        if (customCountryFilteredData != null) {
+            customCountryFilteredData.setPredicate(entry -> matchesCountryDirectoryFilter(entry, keyword));
+        }
+
         updateCountryDictionaryStatus();
     }
 
     private void restoreCustomCountrySelection(String selectedKey) {
-        if (customCountryEntriesList == null || selectedKey == null || selectedKey.isBlank()) {
+        if (customCountryEntriesList == null || selectedKey == null || selectedKey.isBlank() || customCountryFilteredData == null) {
             return;
         }
 
@@ -648,11 +702,45 @@ public class SettingsController {
         }
     }
 
+    private void restoreSharedCountrySelection(String selectedKey) {
+        if (allCountryEntriesList == null || selectedKey == null || selectedKey.isBlank() || allCountryFilteredData == null) {
+            return;
+        }
+
+        for (CountryDirectory.CountryEntry entry : allCountryFilteredData) {
+            if (buildCustomCountryKey(entry).equalsIgnoreCase(selectedKey)) {
+                allCountryEntriesList.getSelectionModel().select(entry);
+                return;
+            }
+        }
+    }
+
+    private boolean matchesCountryDirectoryFilter(CountryDirectory.CountryEntry entry, String keyword) {
+        if (entry == null) {
+            return false;
+        }
+        if (keyword == null || keyword.isBlank()) {
+            return true;
+        }
+        return containsIgnoreCase(entry.country(), keyword)
+                || containsIgnoreCase(entry.countryCode(), keyword)
+                || containsIgnoreCase(buildCustomCountryDisplay(entry), keyword)
+                || containsIgnoreCase(buildSharedCountryDisplay(entry), keyword)
+                || containsIgnoreCase(resolveCountryEntrySourceLabel(entry), keyword);
+    }
+
     private String buildCustomCountryDisplay(CountryDirectory.CountryEntry entry) {
         if (entry == null) {
             return "";
         }
         return safe(entry.country()) + " (" + safe(entry.countryCode()) + ")";
+    }
+
+    private String buildSharedCountryDisplay(CountryDirectory.CountryEntry entry) {
+        if (entry == null) {
+            return "";
+        }
+        return buildCustomCountryDisplay(entry) + " • " + resolveCountryEntrySourceLabel(entry);
     }
 
     private String buildCustomCountrySummary(CountryDirectory.CountryEntry entry) {
@@ -661,6 +749,32 @@ public class SettingsController {
         }
         return "Pierwszy widoczny wpis własny: " + buildCustomCountryDisplay(entry)
                 + ". Wpisy własne są współdzielone przez Kontrahentów, EPPO i dane wystawcy.";
+    }
+
+    private String buildSharedCountrySummary(CountryDirectory.CountryEntry entry) {
+        if (entry == null) {
+            return "Brak pozycji wspólnego słownika krajów.";
+        }
+        return "Pierwsza widoczna pozycja wspólnego słownika: " + buildSharedCountryDisplay(entry)
+                + ". Katalog bazowy i wpisy własne są współdzielone przez Kontrahentów, EPPO i dane wystawcy.";
+    }
+
+    private String resolveCountryEntrySourceLabel(CountryDirectory.CountryEntry entry) {
+        return isCustomCountryEntry(entry) ? "wpis własny użytkownika" : "katalog bazowy";
+    }
+
+    private boolean isCustomCountryEntry(CountryDirectory.CountryEntry entry) {
+        if (entry == null) {
+            return false;
+        }
+
+        String entryKey = buildCustomCountryKey(entry);
+        for (CountryDirectory.CountryEntry customEntry : countryDirectoryService.getCustomEntries()) {
+            if (buildCustomCountryKey(customEntry).equalsIgnoreCase(entryKey)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private String buildCustomCountryKey(CountryDirectory.CountryEntry entry) {

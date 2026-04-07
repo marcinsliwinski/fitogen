@@ -166,11 +166,19 @@
                             <VBox spacing="12" styleClass="stat-card">
                                 <Label text="Wspólny słownik krajów" styleClass="stat-title"/>
                                 <Label text="Ten słownik jest współdzielony przez Kontrahentów, EPPO i dane podmiotu. Możesz dopisywać własne wpisy bez zmiany schematu bazy." wrapText="true" styleClass="page-subtitle"/>
-                                <TextField fx:id="customCountrySearchField" promptText="Filtruj własne wpisy po nazwie kraju lub kodzie"/>
+                                <TextField fx:id="customCountrySearchField" promptText="Filtruj wspólny słownik krajów po nazwie kraju lub kodzie"/>
                                 <Label fx:id="countryDictionaryStatusLabel" wrapText="true" styleClass="page-subtitle"/>
                                 <Label fx:id="countryDictionarySummaryLabel" wrapText="true" styleClass="page-subtitle"/>
+
+                                <Label text="Pełny wspólny katalog (bazowy + wpisy własne)" styleClass="page-subtitle"/>
+                                <Label text="Każdy rekord w pełnym katalogu jest oznaczony jako katalog bazowy albo wpis własny użytkownika." wrapText="true" styleClass="page-subtitle"/>
+                                <ListView fx:id="allCountryEntriesList" prefHeight="220"/>
+
                                 <HBox spacing="14">
-                                    <ListView fx:id="customCountryEntriesList" prefWidth="320" prefHeight="220"/>
+                                    <VBox spacing="8">
+                                        <Label text="Wpisy własne użytkownika" styleClass="page-subtitle"/>
+                                        <ListView fx:id="customCountryEntriesList" prefWidth="320" prefHeight="220"/>
+                                    </VBox>
                                     <VBox spacing="10" HBox.hgrow="ALWAYS">
                                         <TextField fx:id="customCountryNameField" promptText="Nazwa kraju"/>
                                         <TextField fx:id="customCountryCodeField" promptText="Kod kraju, np. PL"/>
