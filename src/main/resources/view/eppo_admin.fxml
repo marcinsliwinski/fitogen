@@ -68,16 +68,17 @@
                         <TableColumn fx:id="colStatus" text="Status" prefWidth="110"/>
                     </columns>
                 </TableView>
+
+                <VBox spacing="6" styleClass="content-subcard">
+                    <Label text="Kontekst wybranego kodu EPPO" styleClass="stat-title"/>
+                    <Label fx:id="selectedCodeLabel" text="Wybierz kod EPPO. Kliknięcie nie filtruje Bazy rekordów." wrapText="true"/>
+                    <Label fx:id="selectedCodeSummaryLabel" text="Status, komplet referencyjny, legacy fallback i liczniki pojawią się po zaznaczeniu wiersza." wrapText="true"/>
+                    <Label fx:id="selectedCodeAssignmentsLabel" text="Krótki podgląd przypisań gatunków i krajów / stref pojawi się tutaj." wrapText="true"/>
+                </VBox>
             </VBox>
 
             <VBox styleClass="content-card" spacing="12">
                 <Label text="Baza rekordów" styleClass="section-title" style="-fx-font-size: 18px;"/>
-                <Label fx:id="selectedCodeLabel" text="Wybrany kod EPPO: —" wrapText="true"/>
-
-                <VBox spacing="4">
-                    <Label fx:id="selectedCodeSummaryLabel" text="Podsumowanie wybranego kodu EPPO pojawi się po zaznaczeniu wiersza." wrapText="true"/>
-                    <Label fx:id="selectedCodeAssignmentsLabel" text="Przypisane gatunki i kraje / strefy będą pokazane tutaj." wrapText="true"/>
-                </VBox>
 
                 <HBox spacing="10">
                     <TextField fx:id="recordSearchField"

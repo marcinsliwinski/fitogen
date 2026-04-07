@@ -48,7 +48,7 @@ public class EppoAdminController {
     @FXML private Label selectedCodeLabel;
     @FXML private Label selectedCodeSummaryLabel;
     @FXML private Label selectedCodeAssignmentsLabel;
-    @FXML private Label recordSummaryLabel;
+        @FXML private Label recordSummaryLabel;
     @FXML private TextField recordSearchField;
     @FXML private Label recordDetailLabel;
     @FXML private TableView<EppoRecordRow> recordTable;
@@ -624,13 +624,15 @@ public class EppoAdminController {
             return;
         }
         if (selectedCode == null) {
-            selectedCodeLabel.setText("Kliknięcie na kod EPPO nie filtruje Bazy rekordów. Użyj wyszukiwarki, aby zawęzić wyniki.");
+            selectedCodeLabel.setText("Wybierz kod EPPO. Kliknięcie nie filtruje Bazy rekordów.");
             return;
         }
 
         selectedCodeLabel.setText(
-                "Wybrany kod EPPO: " + selectedCode.getCode()
-                        + " | Kliknięcie nie filtruje Bazy rekordów — użyj wyszukiwarki, aby zawęzić wyniki."
+                "Kod: " + firstNonBlank(normalizeDisplayValue(selectedCode.getCode()), "—")
+                        + " • " + firstNonBlank(normalizeDisplayValue(selectedCode.getStatus()), "—")
+                        + " • " + buildCodePolishName(selectedCode)
+                        + " / " + buildCodeLatinName(selectedCode)
         );
     }
 
@@ -640,8 +642,8 @@ public class EppoAdminController {
         }
 
         if (selectedCode == null) {
-            selectedCodeSummaryLabel.setText("Podsumowanie wybranego kodu EPPO pojawi się po zaznaczeniu wiersza.");
-            selectedCodeAssignmentsLabel.setText("Przypisane gatunki i kraje / strefy będą pokazane tutaj.");
+            selectedCodeSummaryLabel.setText("Status, komplet referencyjny, legacy fallback i liczniki pojawią się po zaznaczeniu wiersza.");
+            selectedCodeAssignmentsLabel.setText("Krótki podgląd przypisań gatunków i krajów / stref pojawi się tutaj.");
             return;
         }
 
@@ -659,23 +661,137 @@ public class EppoAdminController {
         long activeZoneCount = linkedZones.stream().filter(zone -> !isInactiveStatus(zone.getStatus())).count();
         long inactiveZoneCount = linkedZones.stream().filter(zone -> isInactiveStatus(zone.getStatus())).count();
 
+        boolean hasReferenceCompleteness = !speciesLinks.isEmpty() && !linkedZones.isEmpty();
+
         selectedCodeSummaryLabel.setText(
-                "Podsumowanie kodu EPPO: " + firstNonBlank(normalizeDisplayValue(selectedCode.getCode()), "—")
-                        + ". Nazwa polska: " + buildCodePolishName(selectedCode)
-                        + ". Nazwa łacińska: " + buildCodeLatinName(selectedCode)
-                        + ". Status: " + firstNonBlank(normalizeDisplayValue(selectedCode.getStatus()), "—")
-                        + ". Przypisane gatunki: " + speciesLinks.size()
-                        + ". Przypisane kraje / strefy: " + linkedZones.size()
-                        + "."
+                "Status: " + firstNonBlank(normalizeDisplayValue(selectedCode.getStatus()), "—")
+                        + " • Komplet referencyjny: " + (hasReferenceCompleteness ? "tak" : "nie")
+                        + " • Legacy fallback: " + buildLegacySpeciesBadge(selectedCode)
+                        + " • Gatunki: " + speciesLinks.size()
+                        + " • Kraje / strefy: " + linkedZones.size()
         );
 
         selectedCodeAssignmentsLabel.setText(
-                "Podgląd przypisań: gatunki — " + buildSpeciesPreview(speciesLinks)
-                        + ". Kraje / strefy — " + buildZonePreview(linkedZones)
-                        + ". Aktywne kraje / strefy: " + activeZoneCount
-                        + ". Nieaktywne kraje / strefy: " + inactiveZoneCount
-                        + "."
+                "Podgląd: gatunki — " + buildSpeciesPreview(speciesLinks)
+                        + " • kraje / strefy — " + buildZonePreview(linkedZones)
+                        + " • aktywne strefy: " + activeZoneCount
+                        + " • nieaktywne strefy: " + inactiveZoneCount
         );
+    }
+
+    private String buildLegacySpeciesBadge(EppoCode selectedCode) {
+        String statusText = buildLegacySpeciesStatus(selectedCode);
+        if (statusText == null) {
+            return "—";
+        }
+
+        if (statusText.startsWith("Fallback legacy gatunku: nieużywany")) {
+            return "nieużywany";
+        }
+        if (statusText.startsWith("Fallback legacy gatunku: aktywny równolegle")) {
+            return "aktywny równolegle";
+        }
+        if (statusText.startsWith("Fallback legacy gatunku: aktywny")) {
+            return "aktywny";
+        }
+        if (statusText.startsWith("Fallback legacy gatunku: obecny w danych")) {
+            return "pokryty przypisaniami";
+        }
+        if (statusText.startsWith("Fallback legacy gatunku: brak")) {
+            return "brak";
+        }
+        return firstNonBlank(normalizeDisplayValue(statusText), "—");
+    }
+
+    private String buildLegacySpeciesStatus(EppoCode selectedCode) {
+        if (selectedCode == null) {
+            return "Informacja o legacy fallbacku gatunku pojawi się po zaznaczeniu kodu.";
+        }
+
+        List<EppoCodeSpeciesLink> explicitLinks = eppoCodeSpeciesLinkService == null
+                ? List.of()
+                : eppoCodeSpeciesLinkService.getByEppoCodeId(selectedCode.getId()).stream()
+                .filter(this::isMeaningfulSpeciesLink)
+                .toList();
+
+        String legacySpeciesName = firstNonBlank(
+                normalizeDisplayValue(selectedCode.getSpeciesName()),
+                normalizeDisplayValue(selectedCode.getCommonName())
+        );
+        String legacyLatinName = firstNonBlank(
+                normalizeDisplayValue(selectedCode.getLatinSpeciesName()),
+                normalizeDisplayValue(selectedCode.getScientificName())
+        );
+
+        boolean hasLegacySpecies = notBlank(legacySpeciesName) || notBlank(legacyLatinName);
+        boolean hasExplicitLinks = !explicitLinks.isEmpty();
+        boolean legacyFallbackActive = hasLegacySpecies && !containsSpeciesSignature(explicitLinks, legacySpeciesName, legacyLatinName);
+
+        if (hasExplicitLinks && !legacyFallbackActive) {
+            return "Fallback legacy gatunku: nieużywany. Kod korzysta wyłącznie z właściwych przypisań gatunków.";
+        }
+
+        if (hasExplicitLinks) {
+            return "Fallback legacy gatunku: aktywny równolegle z właściwymi przypisaniami. Legacy: "
+                    + buildSpeciesDisplay(legacySpeciesName, legacyLatinName)
+                    + ". Właściwe przypisania: " + explicitLinks.size() + ".";
+        }
+
+        if (legacyFallbackActive) {
+            return "Fallback legacy gatunku: aktywny. Kod korzysta jeszcze z pola legacy: "
+                    + buildSpeciesDisplay(legacySpeciesName, legacyLatinName)
+                    + ".";
+        }
+
+        if (hasLegacySpecies) {
+            return "Fallback legacy gatunku: obecny w danych, ale pokryty przez właściwe przypisania gatunków.";
+        }
+
+        return "Fallback legacy gatunku: brak. Kod nie ma ani legacy pola gatunku, ani właściwych przypisań gatunków.";
+    }
+
+    private boolean containsSpeciesSignature(List<EppoCodeSpeciesLink> speciesLinks, String speciesName, String latinSpeciesName) {
+        if (speciesLinks == null || speciesLinks.isEmpty()) {
+            return false;
+        }
+
+        String expectedSpecies = normalizeDisplayValue(speciesName);
+        String expectedLatin = normalizeDisplayValue(latinSpeciesName);
+
+        for (EppoCodeSpeciesLink link : speciesLinks) {
+            if (link == null) {
+                continue;
+            }
+
+            String linkSpecies = normalizeDisplayValue(link.getSpeciesName());
+            String linkLatin = normalizeDisplayValue(link.getLatinSpeciesName());
+            if (equalsNormalized(linkSpecies, expectedSpecies) && equalsNormalized(linkLatin, expectedLatin)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private boolean equalsNormalized(String first, String second) {
+        if (first == null && second == null) {
+            return true;
+        }
+        if (first == null || second == null) {
+            return false;
+        }
+        return first.equalsIgnoreCase(second);
+    }
+
+    private String buildSpeciesDisplay(String speciesName, String latinSpeciesName) {
+        String normalizedSpecies = normalizeDisplayValue(speciesName);
+        String normalizedLatin = normalizeDisplayValue(latinSpeciesName);
+
+        if (notBlank(normalizedSpecies) && notBlank(normalizedLatin)) {
+            return normalizedSpecies + " / " + normalizedLatin;
+        }
+
+        return firstNonBlank(normalizedSpecies, normalizedLatin, "—");
     }
 
     private String buildSpeciesPreview(List<EppoCodeSpeciesLink> speciesLinks) {
