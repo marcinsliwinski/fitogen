@@ -48,7 +48,8 @@ public class EppoAdminController {
     @FXML private Label selectedCodeLabel;
     @FXML private Label selectedCodeSummaryLabel;
     @FXML private Label selectedCodeAssignmentsLabel;
-        @FXML private Label recordSummaryLabel;
+    @FXML private Label selectedCodeLegacyLabel;
+    @FXML private Label recordSummaryLabel;
     @FXML private TextField recordSearchField;
     @FXML private Label recordDetailLabel;
     @FXML private TableView<EppoRecordRow> recordTable;
@@ -586,12 +587,10 @@ public class EppoAdminController {
         String filterSuffix = UiTextUtil.buildQuotedFilterSuffix("Fraza", keyword);
 
         recordSummaryLabel.setText(
-                "Baza rekordów pokazuje wszystkie kombinacje kodów, gatunków i krajów / stref. "
-                        + "Widoczne kody EPPO: " + codeCount
-                        + ". Widoczne gatunki: " + speciesCount
-                        + ". Widoczne kraje / strefy: " + countryCount
-                        + ". Wiersze po filtrze: " + filteredRecordData.size()
-                        + ". Kliknięcie na tabelę Kodów EPPO nie filtruje tej sekcji."
+                "Widoczne rekordy: " + filteredRecordData.size()
+                        + " • Kody EPPO: " + codeCount
+                        + " • Gatunki: " + speciesCount
+                        + " • Kraje / strefy: " + countryCount
                         + filterSuffix
         );
 
@@ -605,18 +604,33 @@ public class EppoAdminController {
 
         EppoRecordRow row = selectedRow != null ? selectedRow : filteredRecordData.stream().findFirst().orElse(null);
         if (row == null) {
-            recordDetailLabel.setText("Brak rekordów EPPO spełniających bieżący filtr.");
+            recordDetailLabel.setText("Wybierz wiersz w Bazie rekordów albo użyj filtra.");
             return;
         }
 
+        String codeLabel = firstNonBlank(normalizeDisplayValue(row.getEppoCode()), "—");
+        String statusLabel = firstNonBlank(normalizeDisplayValue(row.getStatus()), "—");
+        String eppoLabel = buildDisplayPair(row.getEppoName(), row.getEppoLatinName());
+        String speciesLabel = buildDisplayPair(row.getSpeciesName(), row.getSpeciesLatinName());
+        String countryLabel = firstNonBlank(normalizeDisplayValue(row.getCountry()), "—");
+
         recordDetailLabel.setText(
-                "Podgląd rekordu: kod EPPO " + firstNonBlank(normalizeDisplayValue(row.getEppoCode()), "—")
-                        + ", nazwa EPPO " + firstNonBlank(normalizeDisplayValue(row.getEppoName()), "—")
-                        + ", gatunek " + firstNonBlank(normalizeDisplayValue(row.getSpeciesLatinName()), normalizeDisplayValue(row.getSpeciesName()), "—")
-                        + ", kraj / strefa " + firstNonBlank(normalizeDisplayValue(row.getCountry()), "—")
-                        + ", status " + firstNonBlank(normalizeDisplayValue(row.getStatus()), "—")
-                        + "."
+                "Rekord: " + codeLabel
+                        + " • " + statusLabel
+                        + " • EPPO: " + eppoLabel
+                        + "\nGatunek: " + speciesLabel
+                        + " • Kraj / strefa: " + countryLabel
         );
+    }
+
+    private String buildDisplayPair(String primaryValue, String secondaryValue) {
+        String normalizedPrimary = normalizeDisplayValue(primaryValue);
+        String normalizedSecondary = normalizeDisplayValue(secondaryValue);
+
+        if (notBlank(normalizedPrimary) && notBlank(normalizedSecondary)) {
+            return normalizedPrimary + " / " + normalizedSecondary;
+        }
+        return firstNonBlank(normalizedPrimary, normalizedSecondary, "—");
     }
 
     private void updateSelectedCodeHeader(EppoCode selectedCode) {
@@ -624,26 +638,25 @@ public class EppoAdminController {
             return;
         }
         if (selectedCode == null) {
-            selectedCodeLabel.setText("Wybierz kod EPPO. Kliknięcie nie filtruje Bazy rekordów.");
+            selectedCodeLabel.setText("Kliknięcie na kod EPPO nie filtruje Bazy rekordów. Użyj wyszukiwarki, aby zawęzić wyniki.");
             return;
         }
 
         selectedCodeLabel.setText(
-                "Kod: " + firstNonBlank(normalizeDisplayValue(selectedCode.getCode()), "—")
-                        + " • " + firstNonBlank(normalizeDisplayValue(selectedCode.getStatus()), "—")
-                        + " • " + buildCodePolishName(selectedCode)
-                        + " / " + buildCodeLatinName(selectedCode)
+                "Wybrany kod EPPO: " + selectedCode.getCode()
+                        + " | Kliknięcie nie filtruje Bazy rekordów — użyj wyszukiwarki, aby zawęzić wyniki."
         );
     }
 
     private void updateSelectedCodeSummary(EppoCode selectedCode) {
-        if (selectedCodeSummaryLabel == null || selectedCodeAssignmentsLabel == null) {
+        if (selectedCodeSummaryLabel == null || selectedCodeAssignmentsLabel == null || selectedCodeLegacyLabel == null) {
             return;
         }
 
         if (selectedCode == null) {
-            selectedCodeSummaryLabel.setText("Status, komplet referencyjny, legacy fallback i liczniki pojawią się po zaznaczeniu wiersza.");
-            selectedCodeAssignmentsLabel.setText("Krótki podgląd przypisań gatunków i krajów / stref pojawi się tutaj.");
+            selectedCodeSummaryLabel.setText("Podsumowanie wybranego kodu EPPO pojawi się po zaznaczeniu wiersza.");
+            selectedCodeAssignmentsLabel.setText("Przypisane gatunki i kraje / strefy będą pokazane tutaj.");
+            selectedCodeLegacyLabel.setText("Informacja o legacy fallbacku gatunku pojawi się po zaznaczeniu kodu.");
             return;
         }
 
@@ -661,46 +674,25 @@ public class EppoAdminController {
         long activeZoneCount = linkedZones.stream().filter(zone -> !isInactiveStatus(zone.getStatus())).count();
         long inactiveZoneCount = linkedZones.stream().filter(zone -> isInactiveStatus(zone.getStatus())).count();
 
-        boolean hasReferenceCompleteness = !speciesLinks.isEmpty() && !linkedZones.isEmpty();
-
         selectedCodeSummaryLabel.setText(
-                "Status: " + firstNonBlank(normalizeDisplayValue(selectedCode.getStatus()), "—")
-                        + " • Komplet referencyjny: " + (hasReferenceCompleteness ? "tak" : "nie")
-                        + " • Legacy fallback: " + buildLegacySpeciesBadge(selectedCode)
-                        + " • Gatunki: " + speciesLinks.size()
-                        + " • Kraje / strefy: " + linkedZones.size()
+                "Podsumowanie kodu EPPO: " + firstNonBlank(normalizeDisplayValue(selectedCode.getCode()), "—")
+                        + ". Nazwa polska: " + buildCodePolishName(selectedCode)
+                        + ". Nazwa łacińska: " + buildCodeLatinName(selectedCode)
+                        + ". Status: " + firstNonBlank(normalizeDisplayValue(selectedCode.getStatus()), "—")
+                        + ". Przypisane gatunki: " + speciesLinks.size()
+                        + ". Przypisane kraje / strefy: " + linkedZones.size()
+                        + "."
         );
 
         selectedCodeAssignmentsLabel.setText(
-                "Podgląd: gatunki — " + buildSpeciesPreview(speciesLinks)
-                        + " • kraje / strefy — " + buildZonePreview(linkedZones)
-                        + " • aktywne strefy: " + activeZoneCount
-                        + " • nieaktywne strefy: " + inactiveZoneCount
+                "Podgląd przypisań: gatunki — " + buildSpeciesPreview(speciesLinks)
+                        + ". Kraje / strefy — " + buildZonePreview(linkedZones)
+                        + ". Aktywne kraje / strefy: " + activeZoneCount
+                        + ". Nieaktywne kraje / strefy: " + inactiveZoneCount
+                        + "."
         );
-    }
 
-    private String buildLegacySpeciesBadge(EppoCode selectedCode) {
-        String statusText = buildLegacySpeciesStatus(selectedCode);
-        if (statusText == null) {
-            return "—";
-        }
-
-        if (statusText.startsWith("Fallback legacy gatunku: nieużywany")) {
-            return "nieużywany";
-        }
-        if (statusText.startsWith("Fallback legacy gatunku: aktywny równolegle")) {
-            return "aktywny równolegle";
-        }
-        if (statusText.startsWith("Fallback legacy gatunku: aktywny")) {
-            return "aktywny";
-        }
-        if (statusText.startsWith("Fallback legacy gatunku: obecny w danych")) {
-            return "pokryty przypisaniami";
-        }
-        if (statusText.startsWith("Fallback legacy gatunku: brak")) {
-            return "brak";
-        }
-        return firstNonBlank(normalizeDisplayValue(statusText), "—");
+        selectedCodeLegacyLabel.setText(buildLegacySpeciesStatus(selectedCode));
     }
 
     private String buildLegacySpeciesStatus(EppoCode selectedCode) {

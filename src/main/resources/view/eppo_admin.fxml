@@ -69,11 +69,12 @@
                     </columns>
                 </TableView>
 
-                <VBox spacing="6" styleClass="content-subcard">
+                <VBox spacing="4">
                     <Label text="Kontekst wybranego kodu EPPO" styleClass="stat-title"/>
-                    <Label fx:id="selectedCodeLabel" text="Wybierz kod EPPO. Kliknięcie nie filtruje Bazy rekordów." wrapText="true"/>
-                    <Label fx:id="selectedCodeSummaryLabel" text="Status, komplet referencyjny, legacy fallback i liczniki pojawią się po zaznaczeniu wiersza." wrapText="true"/>
-                    <Label fx:id="selectedCodeAssignmentsLabel" text="Krótki podgląd przypisań gatunków i krajów / stref pojawi się tutaj." wrapText="true"/>
+                    <Label fx:id="selectedCodeLabel" text="Wybrany kod EPPO: —" wrapText="true"/>
+                    <Label fx:id="selectedCodeSummaryLabel" text="Podsumowanie wybranego kodu EPPO pojawi się po zaznaczeniu wiersza." wrapText="true"/>
+                    <Label fx:id="selectedCodeAssignmentsLabel" text="Przypisane gatunki i kraje / strefy będą pokazane tutaj." wrapText="true"/>
+                    <Label fx:id="selectedCodeLegacyLabel" text="Informacja o legacy fallbacku gatunku pojawi się po zaznaczeniu kodu." wrapText="true"/>
                 </VBox>
             </VBox>
 
