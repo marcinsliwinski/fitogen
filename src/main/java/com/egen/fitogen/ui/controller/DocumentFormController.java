@@ -13,8 +13,6 @@ import com.egen.fitogen.model.Contrahent;
 import com.egen.fitogen.model.Document;
 import com.egen.fitogen.model.DocumentStatus;
 import com.egen.fitogen.model.DocumentType;
-import com.egen.fitogen.model.EppoCode;
-import com.egen.fitogen.model.EppoZone;
 import com.egen.fitogen.model.Plant;
 import com.egen.fitogen.model.PlantBatch;
 import com.egen.fitogen.model.PlantBatchStatus;
@@ -26,7 +24,6 @@ import com.egen.fitogen.service.DocumentService;
 import com.egen.fitogen.service.DocumentTypeService;
 import com.egen.fitogen.service.EppoAdvisoryService;
 import com.egen.fitogen.service.EppoCodePlantLinkService;
-import com.egen.fitogen.service.EppoCodeZoneLinkService;
 import com.egen.fitogen.service.PassportAdvisoryService;
 import com.egen.fitogen.ui.util.DialogUtil;
 import com.egen.fitogen.ui.util.UiTextUtil;
@@ -92,7 +89,6 @@ public class DocumentFormController {
     private final DocumentTypeService documentTypeService = AppContext.getDocumentTypeService();
     private final AppUserService appUserService = AppContext.getAppUserService();
     private final EppoCodePlantLinkService eppoCodePlantLinkService = AppContext.getEppoCodePlantLinkService();
-    private final EppoCodeZoneLinkService eppoCodeZoneLinkService = AppContext.getEppoCodeZoneLinkService();
     private final EppoAdvisoryService eppoAdvisoryService = AppContext.getEppoAdvisoryService();
     private final PassportAdvisoryService passportAdvisoryService = AppContext.getPassportAdvisoryService();
     private final ContrahentRepository contrahentRepository = new SqliteContrahentRepository();
@@ -144,6 +140,10 @@ public class DocumentFormController {
         issueDateField.setValue(dto.getIssueDate());
         commentsField.setText(dto.getComments());
         selectContrahent(dto.getContrahentId());
+        updateStatusLabel(dto.getStatus());
+        if (dto.getStatus() == DocumentStatus.CANCELLED) {
+            applyReadOnlyMode();
+        }
 
         rows.clear();
         internalRowChange = true;
@@ -467,11 +467,7 @@ public class DocumentFormController {
             return;
         }
 
-        if (clientCountryCode.isBlank()) {
-            eppoInfoSummaryLabel.setText("Informacje EPPO dla klienta");
-            eppoInfoArea.setText("Wybrany klient nie ma uzupełnionego kodu kraju. Uzupełnij kod kraju, aby sprawdzić informacyjne dopasowanie EPPO.");
-            return;
-        }
+        boolean missingCountryCode = clientCountryCode.isBlank();
 
         for (int i = 0; i < rows.size(); i++) {
             DocumentItemRow row = rows.get(i);
@@ -485,10 +481,13 @@ public class DocumentFormController {
                 continue;
             }
 
-            messages.add(buildEppoMessageForRow(i + 1, plant, clientCountryCode));
+            messages.add(buildRowAdvisoryMessage(i + 1, row, plant, clientCountryCode, missingCountryCode));
         }
 
-        eppoInfoSummaryLabel.setText("Informacje EPPO dla klienta: " + safe(contrahent.getName()) + " [" + clientCountryCode + "]");
+        String summarySuffix = missingCountryCode
+                ? " [brak kodu kraju klienta]"
+                : " [" + clientCountryCode + "]";
+        eppoInfoSummaryLabel.setText("Informacje EPPO dla klienta: " + safe(contrahent.getName()) + summarySuffix);
 
         if (messages.isEmpty()) {
             eppoInfoArea.setText("Dodaj pozycje dokumentu, aby zobaczyć informacyjne dopasowanie EPPO dla kraju klienta.");
@@ -511,53 +510,44 @@ public class DocumentFormController {
         return null;
     }
 
-    private String buildEppoMessageForRow(int rowNumber, Plant plant, String clientCountryCode) {
-        List<EppoCode> codes = eppoCodePlantLinkService.getCodesForPlant(plant.getId());
-        if (codes.isEmpty()) {
-            return "Pozycja " + rowNumber + " — " + formatPlantName(plant) + ": brak powiązanego kodu EPPO w słowniku.";
+    private String buildRowAdvisoryMessage(int rowNumber, DocumentItemRow row, Plant plant, String clientCountryCode, boolean missingCountryCode) {
+        StringBuilder message = new StringBuilder();
+        message.append("Pozycja ").append(rowNumber).append(" — ").append(formatPlantName(plant));
+
+        PlantBatch batch = row.getBatch();
+        if (batch == null) {
+            message.append(UiTextUtil.NL)
+                    .append("Status partii: brak wybranej partii dla pozycji.");
+        } else if (batch.getStatus() == PlantBatchStatus.CANCELLED) {
+            message.append(UiTextUtil.NL)
+                    .append("Status partii: wybrana partia jest anulowana i nie może zostać użyta w aktywnym dokumencie.");
+        } else {
+            int availableQty = document == null
+                    ? documentService.getAvailableQtyForBatch(batch.getId())
+                    : documentService.getAvailableQtyForBatch(batch.getId(), document.getId());
+            message.append(UiTextUtil.NL)
+                    .append("Partia: ").append(formatBatchChoice(batch))
+                    .append(UiTextUtil.NL)
+                    .append("Dostępna ilość dla pozycji: ").append(availableQty);
         }
 
-        List<String> codeLabels = codes.stream()
-                .map(code -> {
-                    String codeValue = safe(code.getCode());
-                    String nameValue = firstNonBlank(safe(code.getCommonName()), safe(code.getScientificName()));
-                    return nameValue.isBlank() ? codeValue : codeValue + " (" + nameValue + ")";
-                })
-                .filter(value -> !value.isBlank())
-                .distinct()
-                .toList();
+        PassportAdvisoryService.AdvisoryResult passportResult = passportAdvisoryService.analyzePlant(plant);
+        message.append(UiTextUtil.DOUBLE_NL)
+                .append(passportResult.message());
 
-        List<EppoZone> matchedZones = codes.stream()
-                .flatMap(code -> eppoCodeZoneLinkService.getZonesForCode(code.getId()).stream())
-                .filter(zone -> clientCountryCode.equalsIgnoreCase(safe(zone.getCountryCode())))
-                .collect(java.util.stream.Collectors.toMap(
-                        EppoZone::getId,
-                        zone -> zone,
-                        (left, right) -> left,
-                        java.util.LinkedHashMap::new
-                ))
-                .values()
-                .stream()
-                .toList();
-
-        String base = "Pozycja " + rowNumber + " — " + formatPlantName(plant) + "\n"
-                + "Kody EPPO: " + String.join(", ", codeLabels);
-
-        if (matchedZones.isEmpty()) {
-            return base + "\nDla kraju klienta [" + clientCountryCode + "] nie znaleziono powiązanej strefy chronionej EPPO.";
+        if (missingCountryCode) {
+            message.append(UiTextUtil.DOUBLE_NL)
+                    .append("EPPO: klient nie ma uzupełnionego kodu kraju, więc dopasowanie kraju/strefy EPPO nie może zostać ocenione.");
+            return message.toString();
         }
 
-        String zonesText = matchedZones.stream()
-                .map(zone -> {
-                    String code = safe(zone.getCode());
-                    String name = safe(zone.getName());
-                    return name.isBlank() ? code : code + " (" + name + ")";
-                })
-                .filter(value -> !value.isBlank())
-                .distinct()
-                .collect(Collectors.joining(", "));
+        EppoAdvisoryService.AdvisoryResult eppoResult = eppoAdvisoryService
+                .analyzePlantForCountry(plant, clientCountryCode, rowNumber, "Pozycja");
 
-        return base + "\nUwaga informacyjna: dla kraju klienta [" + clientCountryCode + "] znaleziono powiązane strefy EPPO: " + zonesText + ".";
+        message.append(UiTextUtil.DOUBLE_NL)
+                .append(eppoResult.message());
+
+        return message.toString();
     }
 
     private String formatPlantName(Plant plant) {
@@ -707,6 +697,9 @@ public class DocumentFormController {
             }
             if (row.getBatch() == null) {
                 throw new IllegalArgumentException("Każda pozycja dokumentu musi mieć wybraną partię.");
+            }
+            if (row.getBatch().getStatus() == PlantBatchStatus.CANCELLED) {
+                throw new IllegalArgumentException("Nie można użyć anulowanej partii w aktywnym dokumencie.");
             }
             if (row.getBatch().getPlantId() != row.getPlant().getId()) {
                 throw new IllegalArgumentException("Wybrana partia nie należy do wskazanej rośliny.");
