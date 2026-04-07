@@ -6,6 +6,7 @@ import com.egen.fitogen.model.EppoCodeSpeciesLink;
 import com.egen.fitogen.model.EppoZone;
 import com.egen.fitogen.model.Plant;
 import com.egen.fitogen.service.CountryDirectoryService;
+import com.egen.fitogen.service.AuditLogService;
 import com.egen.fitogen.service.EppoCodeService;
 import com.egen.fitogen.service.EppoCodeSpeciesLinkService;
 import com.egen.fitogen.service.EppoCodeZoneLinkService;
@@ -60,6 +61,7 @@ public class EppoCodeFormController {
     @FXML private TableColumn<EppoZone, String> colZoneStatus;
 
     private final EppoCodeService eppoCodeService = AppContext.getEppoCodeService();
+    private final AuditLogService auditLogService = AppContext.getAuditLogService();
     private final CountryDirectoryService countryDirectoryService = AppContext.getCountryDirectoryService();
     private final PlantService plantService = AppContext.getPlantService();
     private final EppoCodeSpeciesLinkService eppoCodeSpeciesLinkService = AppContext.getEppoCodeSpeciesLinkService();
@@ -250,7 +252,10 @@ public class EppoCodeFormController {
 
             eppoCodeSpeciesLinkService.replaceSpeciesForCode(persisted.getId(), normalizedSpeciesLinks);
 
-            List<EppoZone> persistedZones = ensurePersistedZones(assignedZoneData);
+            List<PersistedZoneResult> persistedZoneResults = ensurePersistedZones(assignedZoneData);
+            List<EppoZone> persistedZones = persistedZoneResults.stream()
+                    .map(PersistedZoneResult::zone)
+                    .toList();
             assignedZoneData.setAll(persistedZones);
 
             List<Integer> selectedZoneIds = persistedZones.stream()
@@ -259,6 +264,7 @@ public class EppoCodeFormController {
                     .distinct()
                     .toList();
             eppoCodeZoneLinkService.replaceZonesForCode(persisted.getId(), selectedZoneIds);
+            logAutoCreatedZonesFromSharedDictionary(persisted, persistedZoneResults);
 
             if (eppoCode == null) {
                 DialogUtil.showSuccess("Kod EPPO został dodany razem z przypisanymi gatunkami i krajami.");
@@ -584,32 +590,35 @@ public class EppoCodeFormController {
         return new EppoZone(0, code, name, countryCode, "ACTIVE");
     }
 
-    private List<EppoZone> ensurePersistedZones(List<EppoZone> zones) {
-        List<EppoZone> persistedZones = new ArrayList<>();
+    private List<PersistedZoneResult> ensurePersistedZones(List<EppoZone> zones) {
+        List<PersistedZoneResult> persistedZones = new ArrayList<>();
         Set<String> signatures = new LinkedHashSet<>();
 
         for (EppoZone zone : zones) {
-            EppoZone persisted = ensurePersistedZone(zone);
+            PersistedZoneResult persistedResult = ensurePersistedZone(zone);
+            EppoZone persisted = persistedResult == null ? null : persistedResult.zone();
             if (persisted == null || persisted.getId() <= 0) {
                 continue;
             }
 
             String signature = buildZoneSignature(persisted);
             if (signatures.add(signature)) {
-                persistedZones.add(persisted);
+                persistedZones.add(persistedResult);
             }
         }
 
         return persistedZones;
     }
 
-    private EppoZone ensurePersistedZone(EppoZone zone) {
+    private PersistedZoneResult ensurePersistedZone(EppoZone zone) {
         if (!isMeaningfulZone(zone)) {
             return null;
         }
 
+        String requestedSignature = buildZoneSignature(zone);
+
         if (zone.getId() > 0) {
-            return zone;
+            return new PersistedZoneResult(zone, false, null);
         }
 
         String code = normalizeDisplay(firstNonBlank(zone.getCode(), zone.getCountryCode()));
@@ -619,7 +628,10 @@ public class EppoCodeFormController {
 
         EppoZone existingByCode = eppoZoneService.getByCode(code);
         if (existingByCode != null) {
-            return existingByCode;
+            boolean createdFromSharedDirectory = requestedSignature != null
+                    && !persistedZoneSignatures.contains(requestedSignature)
+                    && sameNormalized(buildZoneSignature(existingByCode), requestedSignature);
+            return new PersistedZoneResult(existingByCode, createdFromSharedDirectory, zone);
         }
 
         EppoZone newZone = new EppoZone(
@@ -635,7 +647,44 @@ public class EppoCodeFormController {
         if (persisted == null || persisted.getId() <= 0) {
             throw new IllegalStateException("Nie udało się zapisać kraju / strefy EPPO: " + code + ".");
         }
-        return persisted;
+        boolean createdFromSharedDirectory = requestedSignature != null && !persistedZoneSignatures.contains(requestedSignature);
+        return new PersistedZoneResult(persisted, createdFromSharedDirectory, zone);
+    }
+
+    private void logAutoCreatedZonesFromSharedDictionary(EppoCode persistedCode, List<PersistedZoneResult> persistedZoneResults) {
+        if (auditLogService == null || persistedCode == null || persistedZoneResults == null || persistedZoneResults.isEmpty()) {
+            return;
+        }
+
+        for (PersistedZoneResult result : persistedZoneResults) {
+            if (result == null || !result.createdFromSharedDirectory()) {
+                continue;
+            }
+
+            EppoZone persistedZone = result.zone();
+            EppoZone sourceZone = result.sourceZone();
+            if (persistedZone == null || persistedZone.getId() <= 0) {
+                continue;
+            }
+
+            String zoneDisplay = firstNonBlank(buildZoneDisplay(persistedZone), buildZoneDisplay(sourceZone), "—");
+            String sourceDescription = buildZoneDisplay(sourceZone);
+            StringBuilder description = new StringBuilder();
+            description.append("Automatycznie dodano kraj / strefę EPPO ze wspólnego słownika podczas zapisu kodu EPPO ")
+                    .append(firstNonBlank(normalizeDisplay(persistedCode.getCode()), "—"))
+                    .append(": ")
+                    .append(zoneDisplay);
+            if (notBlank(sourceDescription) && !sameNormalized(sourceDescription, zoneDisplay)) {
+                description.append(" (źródło: ").append(sourceDescription).append(")");
+            }
+
+            auditLogService.log(
+                    "EPPO_ZONE",
+                    persistedZone.getId(),
+                    "CREATE",
+                    description.toString()
+            );
+        }
     }
 
     private String buildZoneSignature(EppoZone zone) {
@@ -724,6 +773,11 @@ public class EppoCodeFormController {
         return notBlank(first) ? first : second;
     }
 
+    private String firstNonBlank(String first, String second, String third) {
+        String firstResolved = firstNonBlank(first, second);
+        return notBlank(firstResolved) ? firstResolved : third;
+    }
+
     private String nullSafe(String value) {
         return value == null ? "" : value;
     }
@@ -734,4 +788,6 @@ public class EppoCodeFormController {
     }
 
     private record ParsedSpecies(String speciesName, String latinSpeciesName) {}
+
+    private record PersistedZoneResult(EppoZone zone, boolean createdFromSharedDirectory, EppoZone sourceZone) {}
 }
