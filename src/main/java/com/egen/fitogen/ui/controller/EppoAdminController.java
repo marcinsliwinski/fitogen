@@ -46,6 +46,8 @@ public class EppoAdminController {
     @FXML private TableColumn<EppoCode, String> colStatus;
 
     @FXML private Label selectedCodeLabel;
+    @FXML private Label selectedCodeSummaryLabel;
+    @FXML private Label selectedCodeAssignmentsLabel;
     @FXML private Label recordSummaryLabel;
     @FXML private TextField recordSearchField;
     @FXML private Label recordDetailLabel;
@@ -236,6 +238,7 @@ public class EppoAdminController {
     private void configureSelectionBehavior() {
         codeTable.getSelectionModel().selectedItemProperty().addListener((obs, oldValue, newValue) -> {
             updateSelectedCodeHeader(newValue);
+            updateSelectedCodeSummary(newValue);
             updateCodeSummary();
         });
         recordTable.getSelectionModel().selectedItemProperty().addListener((obs, oldValue, newValue) ->
@@ -244,8 +247,10 @@ public class EppoAdminController {
     }
 
     private void refresh() {
-        EppoCode previouslySelectedCode = codeTable.getSelectionModel().getSelectedItem();
+        EppoCode previouslySelectedCode = codeTable == null ? null : codeTable.getSelectionModel().getSelectedItem();
         Integer previouslySelectedCodeId = previouslySelectedCode == null ? null : previouslySelectedCode.getId();
+        EppoRecordRow previouslySelectedRecord = recordTable == null ? null : recordTable.getSelectionModel().getSelectedItem();
+        String previouslySelectedRecordSignature = buildRecordSignature(previouslySelectedRecord);
 
         List<EppoCode> codes = eppoCodeService == null ? List.of() : eppoCodeService.getAll().stream()
                                                                      .filter(this::isMeaningfulCode)
@@ -267,11 +272,13 @@ public class EppoAdminController {
         restoreCodeSelection(previouslySelectedCodeId);
         ensureCodeSelection();
 
-        EppoCode selectedCode = codeTable.getSelectionModel().getSelectedItem();
+        EppoCode selectedCode = codeTable == null ? null : codeTable.getSelectionModel().getSelectedItem();
         updateSelectedCodeHeader(selectedCode);
+        updateSelectedCodeSummary(selectedCode);
         updateCodeSummary();
         rebuildRecordRows();
         applyRecordFilter();
+        restoreRecordSelection(previouslySelectedRecordSignature, selectedCode);
         updateRecordSummary();
     }
 
@@ -298,6 +305,59 @@ public class EppoAdminController {
                 break;
             }
         }
+    }
+
+    private void restoreRecordSelection(String recordSignature, EppoCode selectedCode) {
+        if (recordTable == null) {
+            return;
+        }
+
+        ObservableList<EppoRecordRow> visibleRows = recordTable.getItems();
+        if (visibleRows == null || visibleRows.isEmpty()) {
+            recordTable.getSelectionModel().clearSelection();
+            return;
+        }
+
+        EppoRecordRow matchingRecord = null;
+        if (notBlank(recordSignature)) {
+            for (EppoRecordRow row : visibleRows) {
+                if (recordSignature.equals(buildRecordSignature(row))) {
+                    matchingRecord = row;
+                    break;
+                }
+            }
+        }
+
+        if (matchingRecord == null && selectedCode != null && notBlank(selectedCode.getCode())) {
+            String selectedCodeValue = normalizeDisplayValue(selectedCode.getCode());
+            for (EppoRecordRow row : visibleRows) {
+                if (selectedCodeValue != null && selectedCodeValue.equalsIgnoreCase(normalizeDisplayValue(row.getEppoCode()))) {
+                    matchingRecord = row;
+                    break;
+                }
+            }
+        }
+
+        if (matchingRecord == null) {
+            matchingRecord = visibleRows.get(0);
+        }
+
+        recordTable.getSelectionModel().select(matchingRecord);
+        recordTable.scrollTo(matchingRecord);
+    }
+
+    private String buildRecordSignature(EppoRecordRow row) {
+        if (row == null) {
+            return null;
+        }
+
+        return String.join("||",
+                firstNonBlank(normalizeDisplayValue(row.getEppoCode()), "—"),
+                firstNonBlank(normalizeDisplayValue(row.getSpeciesLatinName()), "—"),
+                firstNonBlank(normalizeDisplayValue(row.getSpeciesName()), "—"),
+                firstNonBlank(normalizeDisplayValue(row.getCountry()), "—"),
+                firstNonBlank(normalizeDisplayValue(row.getStatus()), "—")
+        );
     }
 
     @FXML
@@ -572,6 +632,100 @@ public class EppoAdminController {
                 "Wybrany kod EPPO: " + selectedCode.getCode()
                         + " | Kliknięcie nie filtruje Bazy rekordów — użyj wyszukiwarki, aby zawęzić wyniki."
         );
+    }
+
+    private void updateSelectedCodeSummary(EppoCode selectedCode) {
+        if (selectedCodeSummaryLabel == null || selectedCodeAssignmentsLabel == null) {
+            return;
+        }
+
+        if (selectedCode == null) {
+            selectedCodeSummaryLabel.setText("Podsumowanie wybranego kodu EPPO pojawi się po zaznaczeniu wiersza.");
+            selectedCodeAssignmentsLabel.setText("Przypisane gatunki i kraje / strefy będą pokazane tutaj.");
+            return;
+        }
+
+        List<EppoCodeSpeciesLink> speciesLinks = eppoCodeSpeciesLinkService == null
+                ? List.of()
+                : eppoCodeSpeciesLinkService.getEffectiveSpeciesLinks(selectedCode.getId()).stream()
+                .filter(this::isMeaningfulSpeciesLink)
+                .toList();
+        List<EppoZone> linkedZones = eppoCodeZoneLinkService == null
+                ? List.of()
+                : eppoCodeZoneLinkService.getZonesForCode(selectedCode.getId()).stream()
+                .filter(this::isMeaningfulZone)
+                .toList();
+
+        long activeZoneCount = linkedZones.stream().filter(zone -> !isInactiveStatus(zone.getStatus())).count();
+        long inactiveZoneCount = linkedZones.stream().filter(zone -> isInactiveStatus(zone.getStatus())).count();
+
+        selectedCodeSummaryLabel.setText(
+                "Podsumowanie kodu EPPO: " + firstNonBlank(normalizeDisplayValue(selectedCode.getCode()), "—")
+                        + ". Nazwa polska: " + buildCodePolishName(selectedCode)
+                        + ". Nazwa łacińska: " + buildCodeLatinName(selectedCode)
+                        + ". Status: " + firstNonBlank(normalizeDisplayValue(selectedCode.getStatus()), "—")
+                        + ". Przypisane gatunki: " + speciesLinks.size()
+                        + ". Przypisane kraje / strefy: " + linkedZones.size()
+                        + "."
+        );
+
+        selectedCodeAssignmentsLabel.setText(
+                "Podgląd przypisań: gatunki — " + buildSpeciesPreview(speciesLinks)
+                        + ". Kraje / strefy — " + buildZonePreview(linkedZones)
+                        + ". Aktywne kraje / strefy: " + activeZoneCount
+                        + ". Nieaktywne kraje / strefy: " + inactiveZoneCount
+                        + "."
+        );
+    }
+
+    private String buildSpeciesPreview(List<EppoCodeSpeciesLink> speciesLinks) {
+        if (speciesLinks == null || speciesLinks.isEmpty()) {
+            return "brak";
+        }
+
+        List<String> values = speciesLinks.stream()
+                .map(link -> firstNonBlank(
+                        normalizeDisplayValue(link.getLatinSpeciesName()),
+                        normalizeDisplayValue(link.getSpeciesName())
+                ))
+                .filter(this::notBlank)
+                .distinct()
+                .limit(3)
+                .toList();
+
+        if (values.isEmpty()) {
+            return "brak";
+        }
+
+        String preview = String.join(", ", values);
+        if (speciesLinks.size() > values.size()) {
+            preview += " i jeszcze " + (speciesLinks.size() - values.size());
+        }
+        return preview;
+    }
+
+    private String buildZonePreview(List<EppoZone> linkedZones) {
+        if (linkedZones == null || linkedZones.isEmpty()) {
+            return "brak";
+        }
+
+        List<String> values = linkedZones.stream()
+                .map(this::buildCountryDisplay)
+                .filter(this::notBlank)
+                .filter(value -> !"—".equals(value))
+                .distinct()
+                .limit(3)
+                .toList();
+
+        if (values.isEmpty()) {
+            return "brak";
+        }
+
+        String preview = String.join(", ", values);
+        if (linkedZones.size() > values.size()) {
+            preview += " i jeszcze " + (linkedZones.size() - values.size());
+        }
+        return preview;
     }
 
     private String buildCodePolishName(EppoCode code) {
