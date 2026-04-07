@@ -39,20 +39,30 @@ public class UpdatesController {
 
     @FXML
     public void initialize() {
-        appVersionLabel.setText(APP_VERSION);
+        if (appVersionLabel != null) {
+            appVersionLabel.setText(APP_VERSION);
+        }
 
-        appUpdateStatusLabel.setText(
+        if (appUpdateStatusLabel != null) {
+            appUpdateStatusLabel.setText(
                 "Moduł aktualizacji aplikacji nie jest jeszcze aktywny. Ekran jest przygotowany pod bezpieczne wdrożenie sprawdzania, pobierania i instalacji nowszej wersji programu."
         );
-        plantsUpdateStatusLabel.setText(
+        }
+        if (plantsUpdateStatusLabel != null) {
+            plantsUpdateStatusLabel.setText(
                 "Server Update dla bazy roślin nie jest jeszcze aktywny. Docelowo tutaj będą obsługiwane import i aktualizacja danych roślin z serwera."
         );
-        eppoUpdateStatusLabel.setText(
+        }
+        if (eppoUpdateStatusLabel != null) {
+            eppoUpdateStatusLabel.setText(
                 "Server Update dla bazy EPPO nie jest jeszcze aktywny. Docelowo tutaj będą obsługiwane import i aktualizacja danych referencyjnych EPPO z serwera."
         );
-        countriesUpdateStatusLabel.setText(
+        }
+        if (countriesUpdateStatusLabel != null) {
+            countriesUpdateStatusLabel.setText(
                 "Server Update dla wspólnego słownika krajów nie jest jeszcze aktywny. Docelowo tutaj będą obsługiwane import i aktualizacja słownika krajów z serwera."
         );
+        }
 
         refreshTechnicalState();
         initializeDryRunPreviewState();
@@ -279,6 +289,10 @@ public class UpdatesController {
 
     private void refreshBackupInfo() {
         String lastBackupAt = appSettingsService.getLastBackupAt();
+        if (lastBackupInfoLabel == null) {
+            return;
+        }
+
         if (lastBackupAt == null || lastBackupAt.isBlank()) {
             lastBackupInfoLabel.setText("Brak informacji o wykonanym backupie.");
         } else {
@@ -329,7 +343,9 @@ public class UpdatesController {
                 .append(", duplikaty kodów: ").append(duplicateCountryCodes)
                 .append(")");
 
-        readinessSummaryLabel.setText(builder.toString());
+        if (readinessSummaryLabel != null) {
+            readinessSummaryLabel.setText(builder.toString());
+        }
     }
 
     private void setDryRunStatus(String message) {

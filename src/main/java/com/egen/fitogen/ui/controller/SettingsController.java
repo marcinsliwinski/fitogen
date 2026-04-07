@@ -1183,8 +1183,12 @@ public class SettingsController {
     }
 
     private void refreshBackupStatus() {
-        String lastBackupAt = appSettingsService.getLastBackupAt();
-        String lastBackupPath = appSettingsService.getLastBackupPath();
+        if (backupStatusLabel == null) {
+            return;
+        }
+
+        String lastBackupAt = safe(appSettingsService.getLastBackupAt());
+        String lastBackupPath = safe(appSettingsService.getLastBackupPath());
 
         if (lastBackupAt.isBlank()) {
             backupStatusLabel.setText("Backup nie został jeszcze wykonany.");
@@ -1196,7 +1200,7 @@ public class SettingsController {
             return;
         }
 
-        backupStatusLabel.setText(UiTextUtil.buildPathMessage("Ostatni backup: " + lastBackupAt + "\nLokalizacja:", lastBackupPath));
+        backupStatusLabel.setText(UiTextUtil.buildPathMessage("Ostatni backup: " + lastBackupAt, "Lokalizacja: " + lastBackupPath));
     }
 
     @FXML
@@ -1204,7 +1208,7 @@ public class SettingsController {
         try {
             DirectoryChooser chooser = new DirectoryChooser();
             chooser.setTitle("Wybierz katalog dla backupu");
-            Window window = previewLabel.getScene() != null ? previewLabel.getScene().getWindow() : null;
+            Window window = getOwningWindow();
             File selectedDirectory = chooser.showDialog(window);
             if (selectedDirectory == null) {
                 return;
@@ -1690,16 +1694,27 @@ public class SettingsController {
 
     private Path chooseCsvToOpen(String title) {
         FileChooser chooser = createCsvFileChooser(title, null);
-        Window window = previewLabel.getScene() != null ? previewLabel.getScene().getWindow() : null;
+        Window window = getOwningWindow();
         File selectedFile = chooser.showOpenDialog(window);
         return selectedFile == null ? null : selectedFile.toPath();
     }
 
     private Path chooseCsvToSave(String title, String initialFileName) {
         FileChooser chooser = createCsvFileChooser(title, initialFileName);
-        Window window = previewLabel.getScene() != null ? previewLabel.getScene().getWindow() : null;
+        Window window = getOwningWindow();
         File selectedFile = chooser.showSaveDialog(window);
         return selectedFile == null ? null : selectedFile.toPath();
+    }
+
+
+    private Window getOwningWindow() {
+        if (previewLabel != null && previewLabel.getScene() != null) {
+            return previewLabel.getScene().getWindow();
+        }
+        if (backupStatusLabel != null && backupStatusLabel.getScene() != null) {
+            return backupStatusLabel.getScene().getWindow();
+        }
+        return null;
     }
 
     private FileChooser createCsvFileChooser(String title, String initialFileName) {
