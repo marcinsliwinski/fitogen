@@ -6,6 +6,7 @@ import com.egen.fitogen.service.CountryDirectoryService;
 import com.egen.fitogen.service.EppoCodeService;
 import com.egen.fitogen.service.PlantService;
 import com.egen.fitogen.ui.util.CountryDirectory;
+import com.egen.fitogen.ui.util.UiTextUtil;
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
@@ -135,17 +136,17 @@ public class UpdatesController {
                 .count();
 
         StringBuilder builder = new StringBuilder();
-        builder.append("Lokalna baza Plants: ").append(plants.size()).append(" rekordów\n");
-        builder.append("Rośliny z wymaganym paszportem: ").append(passportRequiredCount).append("\n");
-        builder.append("Rośliny z informacyjnym kodem EPPO: ").append(withEppoCount).append("\n");
-        builder.append("Rośliny bez nazwy gatunku: ").append(missingSpeciesCount).append("\n");
-        builder.append("Rośliny bez visibilityStatus: ").append(missingVisibilityCount).append("\n");
-        builder.append("Rośliny oznaczone jako Nieużywany: ").append(unusedCount).append("\n\n");
+        builder.append("Lokalna baza Plants: ").append(plants.size()).append(" rekordów").append(UiTextUtil.NL);
+        builder.append("Rośliny z wymaganym paszportem: ").append(passportRequiredCount).append(UiTextUtil.NL);
+        builder.append("Rośliny z informacyjnym kodem EPPO: ").append(withEppoCount).append(UiTextUtil.NL);
+        builder.append("Rośliny bez nazwy gatunku: ").append(missingSpeciesCount).append(UiTextUtil.NL);
+        builder.append("Rośliny bez visibilityStatus: ").append(missingVisibilityCount).append(UiTextUtil.NL);
+        builder.append("Rośliny oznaczone jako Nieużywany: ").append(unusedCount).append(UiTextUtil.DOUBLE_NL);
         builder.append("Ocena gotowości: ")
                 .append(buildPlantsReadinessStatus(plants.size(), missingSpeciesCount, missingVisibilityCount))
-                .append("\n\n");
+                .append(UiTextUtil.DOUBLE_NL);
         appendPlantsPreviewSample(builder, plants);
-        builder.append("\nTo jest tylko lokalny preview gotowości pod przyszły Server Update Plants.");
+        builder.append(UiTextUtil.NL).append("To jest tylko lokalny preview gotowości pod przyszły Server Update Plants.");
         return builder.toString();
     }
 
@@ -159,16 +160,16 @@ public class UpdatesController {
         long missingStatusCount = codes.stream().filter(code -> isBlank(code.getStatus())).count();
 
         StringBuilder builder = new StringBuilder();
-        builder.append("Lokalna baza EPPO: ").append(codes.size()).append(" rekordów\n");
-        builder.append("Rekordy aktywne: ").append(activeCount).append("\n");
-        builder.append("Rekordy bez kodu: ").append(missingCodeCount).append("\n");
-        builder.append("Rekordy bez nazwy referencyjnej: ").append(missingDisplayNameCount).append("\n");
-        builder.append("Rekordy bez statusu: ").append(missingStatusCount).append("\n\n");
+        builder.append("Lokalna baza EPPO: ").append(codes.size()).append(" rekordów").append(UiTextUtil.NL);
+        builder.append("Rekordy aktywne: ").append(activeCount).append(UiTextUtil.NL);
+        builder.append("Rekordy bez kodu: ").append(missingCodeCount).append(UiTextUtil.NL);
+        builder.append("Rekordy bez nazwy referencyjnej: ").append(missingDisplayNameCount).append(UiTextUtil.NL);
+        builder.append("Rekordy bez statusu: ").append(missingStatusCount).append(UiTextUtil.DOUBLE_NL);
         builder.append("Ocena gotowości: ")
                 .append(buildEppoReadinessStatus(codes.size(), missingCodeCount, missingDisplayNameCount))
-                .append("\n\n");
+                .append(UiTextUtil.DOUBLE_NL);
         appendEppoPreviewSample(builder, codes);
-        builder.append("\nTo jest tylko lokalny preview gotowości pod przyszły Server Update EPPO.");
+        builder.append(UiTextUtil.NL).append("To jest tylko lokalny preview gotowości pod przyszły Server Update EPPO.");
         return builder.toString();
     }
 
@@ -180,23 +181,23 @@ public class UpdatesController {
         long duplicateCodeCount = countDuplicateCountryCodes(entries);
 
         StringBuilder builder = new StringBuilder();
-        builder.append("Wspólny słownik krajów: ").append(entries.size()).append(" rekordów łącznie\n");
-        builder.append("Wpisy własne użytkownika: ").append(customEntries.size()).append("\n");
-        builder.append("Rekordy bez nazwy kraju: ").append(missingCountryCount).append("\n");
-        builder.append("Rekordy bez kodu kraju: ").append(missingCodeCount).append("\n");
-        builder.append("Powtarzające się kody kraju: ").append(duplicateCodeCount).append("\n\n");
+        builder.append("Wspólny słownik krajów: ").append(entries.size()).append(" rekordów łącznie").append(UiTextUtil.NL);
+        builder.append("Wpisy własne użytkownika: ").append(customEntries.size()).append(UiTextUtil.NL);
+        builder.append("Rekordy bez nazwy kraju: ").append(missingCountryCount).append(UiTextUtil.NL);
+        builder.append("Rekordy bez kodu kraju: ").append(missingCodeCount).append(UiTextUtil.NL);
+        builder.append("Powtarzające się kody kraju: ").append(duplicateCodeCount).append(UiTextUtil.DOUBLE_NL);
         builder.append("Ocena gotowości: ")
                 .append(buildCountriesReadinessStatus(entries.size(), missingCountryCount, missingCodeCount, duplicateCodeCount))
-                .append("\n\n");
+                .append(UiTextUtil.DOUBLE_NL);
         appendCountriesPreviewSample(builder, entries, customEntries);
-        builder.append("\nTo jest tylko lokalny preview gotowości pod przyszły Server Update wspólnego słownika krajów.");
+        builder.append(UiTextUtil.NL).append("To jest tylko lokalny preview gotowości pod przyszły Server Update wspólnego słownika krajów.");
         return builder.toString();
     }
 
     private void appendPlantsPreviewSample(StringBuilder builder, List<com.egen.fitogen.model.Plant> plants) {
-        builder.append("Próbka pierwszych rekordów:\n");
+        builder.append("Próbka pierwszych rekordów:").append(UiTextUtil.NL);
         if (plants.isEmpty()) {
-            builder.append("- Brak lokalnych rekordów Plants.\n");
+            builder.append("- Brak lokalnych rekordów Plants.").append(UiTextUtil.NL);
             return;
         }
 
@@ -213,9 +214,9 @@ public class UpdatesController {
     }
 
     private void appendEppoPreviewSample(StringBuilder builder, List<com.egen.fitogen.model.EppoCode> codes) {
-        builder.append("Próbka pierwszych rekordów:\n");
+        builder.append("Próbka pierwszych rekordów:").append(UiTextUtil.NL);
         if (codes.isEmpty()) {
-            builder.append("- Brak lokalnych rekordów EPPO.\n");
+            builder.append("- Brak lokalnych rekordów EPPO.").append(UiTextUtil.NL);
             return;
         }
 
@@ -234,9 +235,9 @@ public class UpdatesController {
     private void appendCountriesPreviewSample(StringBuilder builder,
                                               List<CountryDirectory.CountryEntry> entries,
                                               List<CountryDirectory.CountryEntry> customEntries) {
-        builder.append("Próbka pierwszych rekordów:\n");
+        builder.append("Próbka pierwszych rekordów:").append(UiTextUtil.NL);
         if (entries.isEmpty()) {
-            builder.append("- Brak lokalnych rekordów słownika krajów.\n");
+            builder.append("- Brak lokalnych rekordów słownika krajów.").append(UiTextUtil.NL);
             return;
         }
 
@@ -249,25 +250,25 @@ public class UpdatesController {
             if (containsCustomEntry(customEntries, entry)) {
                 builder.append(" | wpis własny");
             }
-            builder.append("\n");
+            builder.append(UiTextUtil.NL);
         }
     }
 
     private void resetPlantsDryRunPreview() {
         if (plantsDryRunPreviewArea != null) {
-            plantsDryRunPreviewArea.setText("Brak preview Plants Server Update.");
+            plantsDryRunPreviewArea.setText(UiTextUtil.buildEmptyPreviewText("Plants Server Update", "Użyj przycisku preview, aby zobaczyć lokalne podsumowanie gotowości."));
         }
     }
 
     private void resetEppoDryRunPreview() {
         if (eppoDryRunPreviewArea != null) {
-            eppoDryRunPreviewArea.setText("Brak preview EPPO Server Update.");
+            eppoDryRunPreviewArea.setText(UiTextUtil.buildEmptyPreviewText("EPPO Server Update", "Użyj przycisku preview, aby zobaczyć lokalne podsumowanie gotowości."));
         }
     }
 
     private void resetCountriesDryRunPreview() {
         if (countriesDryRunPreviewArea != null) {
-            countriesDryRunPreviewArea.setText("Brak preview wspólnego słownika krajów.");
+            countriesDryRunPreviewArea.setText(UiTextUtil.buildEmptyPreviewText("wspólnego słownika krajów", "Użyj przycisku preview, aby zobaczyć lokalne podsumowanie gotowości."));
         }
     }
 
@@ -310,17 +311,17 @@ public class UpdatesController {
         );
 
         StringBuilder builder = new StringBuilder();
-        builder.append("Ten ekran jest zarezerwowany wyłącznie dla aktualizacji aplikacji i przyszłych synchronizacji Server Update. Lokalne importy i eksporty CSV pozostają poza tym modułem.\n\n");
+        builder.append("Ten ekran jest zarezerwowany wyłącznie dla aktualizacji aplikacji i przyszłych synchronizacji Server Update. Lokalne importy i eksporty CSV pozostają poza tym modułem.").append(UiTextUtil.DOUBLE_NL);
         builder.append("Plants: ").append(plantsStatus)
                 .append(" (rekordy: ").append(plants.size())
                 .append(", braki gatunku: ").append(plantsMissingSpecies)
                 .append(", braki visibilityStatus: ").append(plantsMissingVisibility)
-                .append(")\n");
+                .append(")").append(UiTextUtil.NL);
         builder.append("EPPO: ").append(eppoStatus)
                 .append(" (rekordy: ").append(eppoCodes.size())
                 .append(", braki kodu: ").append(eppoMissingCode)
                 .append(", braki nazwy: ").append(eppoMissingDisplayName)
-                .append(")\n");
+                .append(")").append(UiTextUtil.NL);
         builder.append("Kraje: ").append(countriesStatus)
                 .append(" (rekordy: ").append(countryEntries.size())
                 .append(", braki nazwy: ").append(countriesMissingCountry)

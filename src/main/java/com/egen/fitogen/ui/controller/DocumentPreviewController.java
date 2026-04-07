@@ -6,6 +6,7 @@ import com.egen.fitogen.dto.DocumentPreviewItemDTO;
 import com.egen.fitogen.service.DocumentPdfService;
 import com.egen.fitogen.service.DocumentRenderService;
 import com.egen.fitogen.ui.util.DialogUtil;
+import com.egen.fitogen.ui.util.UiTextUtil;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
@@ -235,19 +236,19 @@ public class DocumentPreviewController {
         if (safeLine2.isBlank()) {
             return safeLine1;
         }
-        return safeLine1 + "\n" + safeLine2;
+        return safeLine1 + UiTextUtil.NL + safeLine2;
     }
 
     private String buildEppoInfoText(DocumentPreviewDTO preview) {
         StringBuilder builder = new StringBuilder();
-        builder.append("Ta sekcja ma charakter informacyjny i nie zmienia treści dokumentu.\n\n");
-        builder.append("Klient: ").append(valueOrDash(preview.getCustomerName())).append("\n");
-        builder.append("Typ dokumentu: ").append(valueOrDash(preview.getDocumentType())).append("\n");
-        builder.append("Status: ").append(valueOrDash(preview.getStatusLabel())).append("\n");
-        builder.append("Liczba pozycji: ").append(preview.getItems() == null ? 0 : preview.getItems().size()).append("\n");
-        builder.append("Łączna ilość: ").append(preview.getTotalQty()).append("\n\n");
+        builder.append("Ta sekcja ma charakter informacyjny i nie zmienia treści dokumentu.").append(UiTextUtil.DOUBLE_NL);
+        builder.append("Klient: ").append(valueOrDash(preview.getCustomerName())).append(UiTextUtil.NL);
+        builder.append("Typ dokumentu: ").append(valueOrDash(preview.getDocumentType())).append(UiTextUtil.NL);
+        builder.append("Status: ").append(valueOrDash(preview.getStatusLabel())).append(UiTextUtil.NL);
+        builder.append("Liczba pozycji: ").append(preview.getItems() == null ? 0 : preview.getItems().size()).append(UiTextUtil.NL);
+        builder.append("Łączna ilość: ").append(preview.getTotalQty()).append(UiTextUtil.DOUBLE_NL);
         if (preview.isCancelled()) {
-            builder.append("Ostrzeżenie: dokument został anulowany. Nie używaj go jako aktywnego dokumentu operacyjnego.\n\n");
+            builder.append("Ostrzeżenie: dokument został anulowany. Nie używaj go jako aktywnego dokumentu operacyjnego.").append(UiTextUtil.DOUBLE_NL);
         }
         builder.append("Uwaga: szczegółowe dopasowanie EPPO dla kraju klienta jest rozwijane w formularzu dokumentu i dalszych etapach modułu referencyjnego.");
         return builder.toString();
