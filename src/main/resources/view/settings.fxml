@@ -170,26 +170,22 @@
                                 <Label fx:id="countryDictionaryStatusLabel" wrapText="true" styleClass="page-subtitle"/>
                                 <Label fx:id="countryDictionarySummaryLabel" wrapText="true" styleClass="page-subtitle"/>
 
-                                <Label text="Pełny wspólny katalog (bazowy + wpisy własne)" styleClass="page-subtitle"/>
-                                <Label text="Każdy rekord w pełnym katalogu jest oznaczony jako katalog bazowy albo wpis własny użytkownika." wrapText="true" styleClass="page-subtitle"/>
-                                <ListView fx:id="allCountryEntriesList" prefHeight="220"/>
+                                <Label text="Wspólny katalog krajów (jedna lista + kontrolki)" styleClass="page-subtitle"/>
+                                <Label text="Jedna lista pokazuje pełny katalog bazowy i wpisy własne. Rekordy własne są oznaczone w liście, a kontrolki poniżej działają tylko dla wpisów własnych użytkownika." wrapText="true" styleClass="page-subtitle"/>
+                                <ListView fx:id="allCountryEntriesList" prefHeight="260"/>
 
-                                <HBox spacing="14">
-                                    <VBox spacing="8">
-                                        <Label text="Wpisy własne użytkownika" styleClass="page-subtitle"/>
-                                        <ListView fx:id="customCountryEntriesList" prefWidth="320" prefHeight="220"/>
-                                    </VBox>
-                                    <VBox spacing="10" HBox.hgrow="ALWAYS">
-                                        <TextField fx:id="customCountryNameField" promptText="Nazwa kraju"/>
-                                        <TextField fx:id="customCountryCodeField" promptText="Kod kraju, np. PL"/>
-                                        <HBox spacing="10">
-                                            <Button text="Nowy" onAction="#clearCustomCountryEntryForm" styleClass="button-secondary"/>
-                                            <Button text="Wyczyść filtr" onAction="#clearCustomCountryFilter" styleClass="button-secondary"/>
-                                            <Button text="Zapisz wpis" onAction="#saveCustomCountryEntry"/>
-                                            <Button text="Usuń wpis" onAction="#deleteCustomCountryEntry" styleClass="button-danger"/>
-                                        </HBox>
-                                    </VBox>
-                                </HBox>
+                                <VBox spacing="10">
+                                    <TextField fx:id="customCountryNameField" promptText="Nazwa kraju dla wpisu własnego"/>
+                                    <TextField fx:id="customCountryCodeField" promptText="Kod kraju, np. PL"/>
+                                    <Label fx:id="customCountryUsageLabel" wrapText="true" styleClass="page-subtitle" text="Status użycia wybranego wpisu: brak zaznaczenia. Wybierz własny wpis, aby sprawdzić użycie w danych wystawcy i kontrahentach."/>
+                                    <Label fx:id="customCountryUsageCountsLabel" wrapText="true" styleClass="page-subtitle" text="Licznik powiązań: brak zaznaczenia. Po wyborze własnego wpisu zobaczysz, czy używają go dane wystawcy oraz ilu kontrahentów."/>
+                                    <HBox spacing="10">
+                                        <Button text="Nowy wpis własny" onAction="#clearCustomCountryEntryForm" styleClass="button-secondary"/>
+                                        <Button text="Wyczyść filtr" onAction="#clearCustomCountryFilter" styleClass="button-secondary"/>
+                                        <Button text="Zapisz wpis własny" onAction="#saveCustomCountryEntry"/>
+                                        <Button text="Usuń wpis własny" onAction="#deleteCustomCountryEntry" styleClass="button-danger"/>
+                                    </HBox>
+                                </VBox>
                             </VBox>
                         </VBox>
                     </content>

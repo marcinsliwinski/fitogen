@@ -5,12 +5,14 @@ import com.egen.fitogen.model.EppoCode;
 import com.egen.fitogen.model.EppoCodeSpeciesLink;
 import com.egen.fitogen.model.EppoZone;
 import com.egen.fitogen.model.Plant;
+import com.egen.fitogen.service.CountryDirectoryService;
 import com.egen.fitogen.service.EppoCodeService;
 import com.egen.fitogen.service.EppoCodeSpeciesLinkService;
 import com.egen.fitogen.service.EppoCodeZoneLinkService;
 import com.egen.fitogen.service.EppoZoneService;
 import com.egen.fitogen.service.PlantService;
 import com.egen.fitogen.ui.util.ComboBoxAutoComplete;
+import com.egen.fitogen.ui.util.CountryDirectory;
 import com.egen.fitogen.ui.util.DialogUtil;
 import com.egen.fitogen.ui.util.ValidationUtil;
 import javafx.beans.property.SimpleStringProperty;
@@ -58,6 +60,7 @@ public class EppoCodeFormController {
     @FXML private TableColumn<EppoZone, String> colZoneStatus;
 
     private final EppoCodeService eppoCodeService = AppContext.getEppoCodeService();
+    private final CountryDirectoryService countryDirectoryService = AppContext.getCountryDirectoryService();
     private final PlantService plantService = AppContext.getPlantService();
     private final EppoCodeSpeciesLinkService eppoCodeSpeciesLinkService = AppContext.getEppoCodeSpeciesLinkService();
     private final EppoZoneService eppoZoneService = AppContext.getEppoZoneService();
@@ -243,8 +246,12 @@ public class EppoCodeFormController {
 
             eppoCodeSpeciesLinkService.replaceSpeciesForCode(persisted.getId(), normalizedSpeciesLinks);
 
-            List<Integer> selectedZoneIds = assignedZoneData.stream()
+            List<EppoZone> persistedZones = ensurePersistedZones(assignedZoneData);
+            assignedZoneData.setAll(persistedZones);
+
+            List<Integer> selectedZoneIds = persistedZones.stream()
                     .map(EppoZone::getId)
+                    .filter(zoneId -> zoneId > 0)
                     .distinct()
                     .toList();
             eppoCodeZoneLinkService.replaceZonesForCode(persisted.getId(), selectedZoneIds);
@@ -295,18 +302,26 @@ public class EppoCodeFormController {
         }
         ComboBoxAutoComplete.bindEditable(speciesDisplayField, speciesSuggestions);
 
+        zoneDisplayMap.clear();
         List<String> zoneSuggestions = new ArrayList<>();
         Set<String> uniqueZoneDisplays = new LinkedHashSet<>();
-        for (EppoZone zone : eppoZoneService.getAll()) {
+        List<EppoZone> availableZones = eppoZoneService.getAll();
+
+        for (EppoZone zone : availableZones) {
             if (!isMeaningfulZone(zone)) {
                 continue;
             }
-            String display = buildZoneDisplay(zone);
-            if (notBlank(display) && uniqueZoneDisplays.add(display)) {
-                zoneSuggestions.add(display);
-                zoneDisplayMap.put(normalizeKey(display), zone);
-            }
+            addZoneSuggestion(zone, zoneSuggestions, uniqueZoneDisplays);
         }
+
+        for (CountryDirectory.CountryEntry entry : countryDirectoryService.getEntries()) {
+            EppoZone zone = findExistingZoneForCountryEntry(entry, availableZones);
+            if (zone == null) {
+                zone = buildSharedCountryZone(entry);
+            }
+            addZoneSuggestion(zone, zoneSuggestions, uniqueZoneDisplays);
+        }
+
         ComboBoxAutoComplete.bindEditable(zonePickerField, zoneSuggestions);
     }
 
@@ -435,8 +450,12 @@ public class EppoCodeFormController {
             return null;
         }
 
+        String targetSignature = buildZoneSignature(zone);
         for (EppoZone existing : assignedZoneData) {
-            if (existing.getId() == zone.getId()) {
+            if (existing.getId() > 0 && zone.getId() > 0 && existing.getId() == zone.getId()) {
+                return existing;
+            }
+            if (sameNormalized(buildZoneSignature(existing), targetSignature)) {
                 return existing;
             }
         }
@@ -503,6 +522,117 @@ public class EppoCodeFormController {
             return species + " / " + latin;
         }
         return notBlank(species) ? species : latin;
+    }
+
+    private void addZoneSuggestion(EppoZone zone, List<String> zoneSuggestions, Set<String> uniqueZoneDisplays) {
+        if (!isMeaningfulZone(zone)) {
+            return;
+        }
+
+        String display = buildZoneDisplay(zone);
+        if (notBlank(display) && uniqueZoneDisplays.add(display)) {
+            zoneSuggestions.add(display);
+            zoneDisplayMap.put(normalizeKey(display), zone);
+        }
+    }
+
+    private EppoZone findExistingZoneForCountryEntry(CountryDirectory.CountryEntry entry, List<EppoZone> availableZones) {
+        if (entry == null || availableZones == null) {
+            return null;
+        }
+
+        String entryCountry = normalizeKey(entry.country());
+        String entryCode = normalizeKey(entry.countryCode());
+        for (EppoZone zone : availableZones) {
+            if (zone == null) {
+                continue;
+            }
+
+            String zoneCode = normalizeKey(zone.getCode());
+            String zoneCountryCode = normalizeKey(zone.getCountryCode());
+            String zoneName = normalizeKey(zone.getName());
+
+            if (entryCode != null && (entryCode.equals(zoneCountryCode) || entryCode.equals(zoneCode))) {
+                return zone;
+            }
+            if (entryCountry != null && entryCountry.equals(zoneName)) {
+                return zone;
+            }
+        }
+        return null;
+    }
+
+    private EppoZone buildSharedCountryZone(CountryDirectory.CountryEntry entry) {
+        if (entry == null) {
+            return null;
+        }
+        String code = normalizeDisplay(firstNonBlank(entry.countryCode(), entry.countryCode()));
+        String name = normalizeDisplay(entry.country());
+        String countryCode = normalizeDisplay(entry.countryCode());
+        return new EppoZone(0, code, name, countryCode, "ACTIVE");
+    }
+
+    private List<EppoZone> ensurePersistedZones(List<EppoZone> zones) {
+        List<EppoZone> persistedZones = new ArrayList<>();
+        Set<String> signatures = new LinkedHashSet<>();
+
+        for (EppoZone zone : zones) {
+            EppoZone persisted = ensurePersistedZone(zone);
+            if (persisted == null || persisted.getId() <= 0) {
+                continue;
+            }
+
+            String signature = buildZoneSignature(persisted);
+            if (signatures.add(signature)) {
+                persistedZones.add(persisted);
+            }
+        }
+
+        return persistedZones;
+    }
+
+    private EppoZone ensurePersistedZone(EppoZone zone) {
+        if (!isMeaningfulZone(zone)) {
+            return null;
+        }
+
+        if (zone.getId() > 0) {
+            return zone;
+        }
+
+        String code = normalizeDisplay(firstNonBlank(zone.getCode(), zone.getCountryCode()));
+        if (!notBlank(code)) {
+            throw new IllegalArgumentException("Wybrany kraj / strefa EPPO nie ma poprawnego kodu.");
+        }
+
+        EppoZone existingByCode = eppoZoneService.getByCode(code);
+        if (existingByCode != null) {
+            return existingByCode;
+        }
+
+        EppoZone newZone = new EppoZone(
+                0,
+                code,
+                normalizeDisplay(zone.getName()),
+                normalizeDisplay(firstNonBlank(zone.getCountryCode(), code)),
+                normalizeDisplay(firstNonBlank(zone.getStatus(), "ACTIVE"))
+        );
+        eppoZoneService.save(newZone);
+
+        EppoZone persisted = eppoZoneService.getByCode(code);
+        if (persisted == null || persisted.getId() <= 0) {
+            throw new IllegalStateException("Nie udało się zapisać kraju / strefy EPPO: " + code + ".");
+        }
+        return persisted;
+    }
+
+    private String buildZoneSignature(EppoZone zone) {
+        if (zone == null) {
+            return null;
+        }
+        return normalizeKey(firstNonBlank(zone.getCode(), zone.getCountryCode()))
+                + "||" + normalizeKey(zone.getName())
+                + "||" + normalizeKey(zone.getCountryCode());
     }
 
     private String buildZoneDisplay(EppoZone zone) {
