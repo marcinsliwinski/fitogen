@@ -14,6 +14,8 @@ import com.egen.fitogen.service.BackupService;
 import com.egen.fitogen.service.ContrahentCsvExportService;
 import com.egen.fitogen.service.ContrahentCsvImportService;
 import com.egen.fitogen.service.CountryDirectoryService;
+import com.egen.fitogen.service.DocumentCsvExportService;
+import com.egen.fitogen.service.DocumentCsvImportService;
 import com.egen.fitogen.service.DocumentTypeService;
 import com.egen.fitogen.service.NumberingConfigService;
 import com.egen.fitogen.service.PlantCsvExportService;
@@ -50,6 +52,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
 import com.egen.fitogen.ui.util.UiTextUtil;
+import com.egen.fitogen.database.SqliteDocumentItemRepository;
+import com.egen.fitogen.database.SqliteDocumentRepository;
 
 public class SettingsController {
 
@@ -109,6 +113,9 @@ public class SettingsController {
     @FXML private Label contrahentsCsvColumnsLabel;
     @FXML private Label contrahentsCsvStatusLabel;
     @FXML private TextArea contrahentsCsvPreviewArea;
+    @FXML private Label documentsCsvColumnsLabel;
+    @FXML private Label documentsCsvStatusLabel;
+    @FXML private TextArea documentsCsvPreviewArea;
 
     @FXML private Label auditLogStatusLabel;
     @FXML private TextField auditLogSearchField;
@@ -132,6 +139,8 @@ public class SettingsController {
     private final PlantCsvExportService plantCsvExportService = new PlantCsvExportService(AppContext.getPlantService());
     private final ContrahentCsvImportService contrahentCsvImportService = new ContrahentCsvImportService(AppContext.getContrahentService(), AppContext.getCountryDirectoryService());
     private final ContrahentCsvExportService contrahentCsvExportService = new ContrahentCsvExportService(AppContext.getContrahentService());
+    private final DocumentCsvImportService documentCsvImportService = new DocumentCsvImportService(AppContext.getDocumentService(), AppContext.getContrahentService(), AppContext.getPlantBatchService());
+    private final DocumentCsvExportService documentCsvExportService = new DocumentCsvExportService(new SqliteDocumentRepository(), new SqliteDocumentItemRepository(), AppContext.getContrahentService(), AppContext.getPlantBatchService());
 
     private boolean loading;
     private boolean updatingDefaultUserSelection;
@@ -1528,14 +1537,21 @@ public class SettingsController {
         if (contrahentsCsvColumnsLabel != null) {
             contrahentsCsvColumnsLabel.setText(contrahentCsvImportService.getSupportedColumnsSummary() + " " + contrahentCsvExportService.getSupportedColumnsSummary());
         }
+        if (documentsCsvColumnsLabel != null) {
+            documentsCsvColumnsLabel.setText(documentCsvImportService.getSupportedColumnsSummary() + " " + documentCsvExportService.getSupportedColumnsSummary());
+        }
         if (plantsCsvStatusLabel != null) {
             plantsCsvStatusLabel.setText("Wybierz plik CSV, aby zobaczyć preview importu Plants, albo zapisz aktualny eksport do pliku.");
         }
         if (contrahentsCsvStatusLabel != null) {
             contrahentsCsvStatusLabel.setText("Wybierz plik CSV, aby zobaczyć preview importu Contrahents, albo zapisz aktualny eksport do pliku.");
         }
+        if (documentsCsvStatusLabel != null) {
+            documentsCsvStatusLabel.setText("Wybierz plik CSV, aby zobaczyć preview importu Documents, albo zapisz aktualny eksport do pliku.");
+        }
         resetPlantsCsvPreview();
         resetContrahentsCsvPreview();
+        resetDocumentsCsvPreview();
     }
 
     @FXML
@@ -1612,6 +1628,43 @@ public class SettingsController {
 
 
     @FXML
+    private void previewDocumentsCsvImport() {
+        Path selectedPath = chooseCsvToOpen("Wybierz plik CSV dokumentów");
+        if (selectedPath == null) {
+            return;
+        }
+
+        try {
+            var result = documentCsvImportService.preview(selectedPath);
+            documentsCsvStatusLabel.setText(buildDocumentsPreviewStatus(result));
+            documentsCsvPreviewArea.setText(buildDocumentsPreviewText(result));
+        } catch (Exception e) {
+            e.printStackTrace();
+            documentsCsvStatusLabel.setText("Nie udało się przygotować preview importu Documents.");
+            DialogUtil.showError("Preview importu Documents CSV", "Nie udało się odczytać ani przeanalizować pliku CSV dokumentów.");
+        }
+    }
+
+    @FXML
+    private void exportDocumentsCsv() {
+        Path selectedPath = chooseCsvToSave("Eksportuj Documents do CSV", "documents-export.csv");
+        if (selectedPath == null) {
+            return;
+        }
+
+        try {
+            Path exported = documentCsvExportService.export(selectedPath);
+            documentsCsvStatusLabel.setText("Eksport Documents zakończony powodzeniem: " + exported + ". Format pozostaje lokalnym standardem Settings -> Import / Eksport CSV.");
+            DialogUtil.showSuccess("Documents zostały wyeksportowane do pliku:\n" + exported);
+        } catch (Exception e) {
+            e.printStackTrace();
+            documentsCsvStatusLabel.setText("Nie udało się wyeksportować Documents do CSV.");
+            DialogUtil.showError("Eksport Documents CSV", "Nie udało się wyeksportować dokumentów do pliku CSV.");
+        }
+    }
+
+
+    @FXML
     private void clearPlantsCsvPreview() {
         resetPlantsCsvPreview();
         if (plantsCsvStatusLabel != null) {
@@ -1624,6 +1677,14 @@ public class SettingsController {
         resetContrahentsCsvPreview();
         if (contrahentsCsvStatusLabel != null) {
             contrahentsCsvStatusLabel.setText("Preview Contrahents zostało wyczyszczone. Wybierz plik CSV, aby uruchomić analizę ponownie.");
+        }
+    }
+
+    @FXML
+    private void clearDocumentsCsvPreview() {
+        resetDocumentsCsvPreview();
+        if (documentsCsvStatusLabel != null) {
+            documentsCsvStatusLabel.setText("Preview Documents zostało wyczyszczone. Wybierz plik CSV, aby uruchomić analizę ponownie.");
         }
     }
 
@@ -1670,6 +1731,16 @@ public class SettingsController {
                 + ". Ocena: " + buildContrahentsImportReadiness(result);
     }
 
+    private String buildDocumentsPreviewStatus(com.egen.fitogen.dto.DocumentImportPreviewResult result) {
+        return "Documents CSV — łącznie wierszy: " + result.getTotalRowsCount()
+                + ", nowych wierszy: " + result.getNewRowsCount()
+                + ", istniejących numerów: " + result.getMatchingExistingCount()
+                + ", duplikatów w pliku: " + result.getDuplicateInFileCount()
+                + ", błędnych: " + result.getInvalidRowsCount()
+                + ", nowych dokumentów: " + result.getDocumentCount()
+                + ". Ocena: " + buildDocumentsImportReadiness(result);
+    }
+
     private void resetPlantsCsvPreview() {
         if (plantsCsvPreviewArea != null) {
             plantsCsvPreviewArea.setText("Brak preview importu Plants.\n\nPo uruchomieniu analizy zobaczysz tutaj podsumowanie pliku, nagłówki oraz próbkę wierszy.");
@@ -1679,6 +1750,12 @@ public class SettingsController {
     private void resetContrahentsCsvPreview() {
         if (contrahentsCsvPreviewArea != null) {
             contrahentsCsvPreviewArea.setText("Brak preview importu Contrahents.\n\nPo uruchomieniu analizy zobaczysz tutaj podsumowanie pliku, nagłówki oraz próbkę wierszy.");
+        }
+    }
+
+    private void resetDocumentsCsvPreview() {
+        if (documentsCsvPreviewArea != null) {
+            documentsCsvPreviewArea.setText("Brak preview importu Documents.\n\nPo uruchomieniu analizy zobaczysz tutaj podsumowanie pliku, nagłówki oraz próbkę wierszy dokumentów i pozycji.");
         }
     }
 
@@ -1794,11 +1871,61 @@ public class SettingsController {
         }
     }
 
-    private void appendContrahentIssuesSection(StringBuilder builder, com.egen.fitogen.dto.ContrahentImportPreviewResult result) {
+    private String buildDocumentsPreviewText(com.egen.fitogen.dto.DocumentImportPreviewResult result) {
+        StringBuilder builder = new StringBuilder();
+        builder.append("PODSUMOWANIE PLIKU\n");
+        builder.append("- Źródło: ").append(result.getSourceName()).append("\n");
+        builder.append("- Separator: ").append(printableDelimiter(result.getDelimiter())).append("\n");
+        builder.append("- Nagłówki: ").append(String.join(", ", result.getResolvedHeaders())).append("\n");
+        builder.append("- Łącznie wierszy: ").append(result.getTotalRowsCount()).append("\n");
+        builder.append("- Nowe dokumenty: ").append(result.getDocumentCount()).append("\n");
+        builder.append("- Nowe wiersze: ").append(result.getNewRowsCount()).append("\n");
+        builder.append("- Istniejące numery dokumentów: ").append(result.getMatchingExistingCount()).append("\n");
+        builder.append("- Duplikaty w pliku: ").append(result.getDuplicateInFileCount()).append("\n");
+        builder.append("- Błędne wiersze: ").append(result.getInvalidRowsCount()).append("\n\n");
+
+        appendDocumentsValidationSection(builder, result);
+        builder.append("PRÓBKA WIERSZY\n");
+        int previewLimit = Math.min(result.getRows().size(), 10);
+        for (int i = 0; i < previewLimit; i++) {
+            var row = result.getRows().get(i);
+            builder.append("#").append(row.getRowNumber())
+                    .append(" [").append(row.getRowStatus()).append("] ")
+                    .append(safe(row.getDocumentNumber()))
+                    .append(" | typ: ").append(safe(row.getDocumentType()))
+                    .append(" | data: ").append(safe(row.getIssueDate()))
+                    .append(" | status: ").append(safe(row.getStatus()))
+                    .append(" | pozycja: ").append(row.getLineNo())
+                    .append(" | partia: ").append(fallback(safe(row.getPlantBatchNumber()), fallback(safe(row.getPlantBatchId()), "[brak partii]")))
+                    .append(" | ilość: ").append(row.getQty())
+                    .append(" | paszport: ").append(row.isPassportRequired() ? "tak" : "nie");
+            if (!safe(row.getContrahentName()).isBlank()) {
+                builder.append(" | kontrahent: ").append(safe(row.getContrahentName()));
+            }
+            if (!safe(row.getCreatedBy()).isBlank()) {
+                builder.append(" | utworzył: ").append(safe(row.getCreatedBy()));
+            }
+            if (row.getMessage() != null && !row.getMessage().isBlank()) {
+                builder.append(" | uwaga: ").append(row.getMessage());
+            }
+            builder.append("\n");
+        }
+
+        appendDocumentIssuesSection(builder, result);
+        return builder.toString();
+    }
+
+    private void appendDocumentsValidationSection(StringBuilder builder, com.egen.fitogen.dto.DocumentImportPreviewResult result) {
+        builder.append("OCENA WALIDACJI\n");
+        builder.append("- Gotowość importu: ").append(buildDocumentsImportReadiness(result)).append("\n");
+        builder.append("- Rekomendacja: ").append(buildDocumentsImportRecommendation(result)).append("\n\n");
+    }
+
+    private void appendDocumentIssuesSection(StringBuilder builder, com.egen.fitogen.dto.DocumentImportPreviewResult result) {
         List<String> problemRows = new ArrayList<>();
         for (var row : result.getRows()) {
             if (row.getMessage() != null && !row.getMessage().isBlank()) {
-                problemRows.add("#" + row.getRowNumber() + " [" + row.getStatus() + "] " + row.getMessage());
+                problemRows.add("#" + row.getRowNumber() + " [" + row.getRowStatus() + "] " + row.getMessage());
             }
             if (problemRows.size() >= 5) {
                 break;
@@ -1813,6 +1940,37 @@ public class SettingsController {
         }
     }
 
+    private String buildDocumentsImportReadiness(com.egen.fitogen.dto.DocumentImportPreviewResult result) {
+        if (result.getTotalRowsCount() == 0) {
+            return "plik nie zawiera danych do analizy";
+        }
+        if (result.getInvalidRowsCount() > 0) {
+            return "wymaga korekty przed importem";
+        }
+        if (result.getDuplicateInFileCount() > 0) {
+            return "wymaga usunięcia duplikatów z pliku";
+        }
+        if (result.getDocumentCount() == 0) {
+            return "brak nowych dokumentów do importu";
+        }
+        return "gotowy do bezpiecznego importu preview";
+    }
+
+    private String buildDocumentsImportRecommendation(com.egen.fitogen.dto.DocumentImportPreviewResult result) {
+        if (result.getTotalRowsCount() == 0) {
+            return "Przygotuj plik z numerem dokumentu, typem, datą i pozycjami dokumentu.";
+        }
+        if (result.getInvalidRowsCount() > 0) {
+            return "Najpierw popraw błędne daty, pozycje lub brakujące powiązania z partiami.";
+        }
+        if (result.getDuplicateInFileCount() > 0) {
+            return "Usuń zduplikowane pozycje tego samego dokumentu przed dalszym użyciem pliku.";
+        }
+        if (result.getDocumentCount() == 0) {
+            return "Plik wygląda poprawnie, ale nie wnosi nowych numerów dokumentów względem aktualnej bazy.";
+        }
+        return "Format wygląda spójnie z lokalnym standardem Documents CSV w Settings.";
+    }
 
     private String buildPlantsImportReadiness(com.egen.fitogen.dto.PlantImportPreviewResult result) {
         if (result.getTotalRowsCount() == 0) {
@@ -1876,6 +2034,10 @@ public class SettingsController {
             return "Plik nie wniesie nowych kontrahentów. Zweryfikuj, czy to właściwy zestaw danych.";
         }
         return "Preview wygląda spójnie. Zachowaj ten sam standard kolumn w kolejnych plikach lokalnych CSV.";
+    }
+
+    private String fallback(String value, String defaultValue) {
+        return value == null || value.isBlank() ? defaultValue : value;
     }
 
     private String printableDelimiter(char delimiter) {
