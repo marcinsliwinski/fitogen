@@ -92,7 +92,7 @@ Current direction:
 - users,
 - issuer profile,
 - backup,
-- CSV import/export preview for Plants and Contrahents,
+- CSV import/export preview for Plants, Contrahents and Documents,
 - read-only Audit Log.
 
 Recent UX direction in `Settings`:
@@ -116,7 +116,8 @@ Recent UX direction in `Settings`:
 Current direction of the screen:
 - local readiness and dry-run style preview,
 - no local CSV import/export,
-- no mixing of Settings CSV workflows into Updates.
+- no mixing of Settings CSV workflows into Updates,
+- readiness preview for Plants, EPPO and shared country dictionary.
 
 ## Current CSV direction
 
@@ -125,9 +126,9 @@ Local CSV workflows are handled in **Settings -> Import / Export CSV**.
 Implemented direction:
 - Plants: import preview + export
 - Contrahents: import preview + export
+- Documents: import preview + export
 
 Planned later:
-- Documents CSV
 - broader validation
 - richer dry-run support before final import actions
 
