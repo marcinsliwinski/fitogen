@@ -5,6 +5,7 @@
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.Tooltip?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
 
@@ -59,11 +60,19 @@
             </VBox>
 
             <VBox styleClass="content-card" spacing="12">
-                <Label text="Podgląd / test bez zapisu aktualizacji serwerowej" styleClass="section-title" style="-fx-font-size: 18px;"/>
+                <Label text="Podgląd gotowości bez zapisu" styleClass="section-title" style="-fx-font-size: 18px;"/>
                 <Label fx:id="dryRunStatusLabel" wrapText="true"/>
                 <HBox spacing="10">
-                    <Button text="Generuj pełny podgląd" onAction="#previewAllDryRun"/>
-                    <Button text="Wyczyść wszystko" onAction="#clearAllDryRunPreviews" styleClass="button-secondary"/>
+                    <Button text="Generuj pełny podgląd" onAction="#previewAllDryRun">
+                        <tooltip>
+                            <Tooltip text="Generuje lokalne podsumowanie gotowości dla roślin, EPPO i wspólnego słownika krajów bez pobierania danych z serwera."/>
+                        </tooltip>
+                    </Button>
+                    <Button text="Wyczyść wszystkie podglądy" onAction="#clearAllDryRunPreviews" styleClass="button-secondary">
+                        <tooltip>
+                            <Tooltip text="Czyści wszystkie lokalne podglądy gotowości bez zapisu zmian."/>
+                        </tooltip>
+                    </Button>
                 </HBox>
 
                 <VBox spacing="8">
@@ -75,8 +84,16 @@
                         <Label text="To nie pobiera danych z serwera i nie zapisuje zmian." wrapText="true" HBox.hgrow="ALWAYS"/>
                     </HBox>
                     <HBox spacing="10">
-                        <Button text="Generuj podgląd roślin" onAction="#previewPlantsDryRun"/>
-                        <Button text="Wyczyść podgląd" onAction="#clearPlantsDryRunPreview" styleClass="button-secondary"/>
+                        <Button text="Generuj podgląd roślin" onAction="#previewPlantsDryRun">
+                            <tooltip>
+                                <Tooltip text="Generuje lokalny podgląd gotowości danych roślin bez zapisu zmian."/>
+                            </tooltip>
+                        </Button>
+                        <Button text="Wyczyść podgląd" onAction="#clearPlantsDryRunPreview" styleClass="button-secondary">
+                            <tooltip>
+                                <Tooltip text="Czyści tylko podgląd gotowości danych roślin."/>
+                            </tooltip>
+                        </Button>
                     </HBox>
                     <TextArea fx:id="plantsDryRunPreviewArea" editable="false" wrapText="true" prefRowCount="8"/>
                 </VBox>
@@ -90,8 +107,16 @@
                         <Label text="To nie pobiera danych z serwera i nie zapisuje zmian." wrapText="true" HBox.hgrow="ALWAYS"/>
                     </HBox>
                     <HBox spacing="10">
-                        <Button text="Generuj podgląd EPPO" onAction="#previewEppoDryRun"/>
-                        <Button text="Wyczyść podgląd" onAction="#clearEppoDryRunPreview" styleClass="button-secondary"/>
+                        <Button text="Generuj podgląd EPPO" onAction="#previewEppoDryRun">
+                            <tooltip>
+                                <Tooltip text="Generuje lokalny podgląd gotowości danych EPPO bez zapisu zmian."/>
+                            </tooltip>
+                        </Button>
+                        <Button text="Wyczyść podgląd" onAction="#clearEppoDryRunPreview" styleClass="button-secondary">
+                            <tooltip>
+                                <Tooltip text="Czyści tylko podgląd gotowości danych EPPO."/>
+                            </tooltip>
+                        </Button>
                     </HBox>
                     <TextArea fx:id="eppoDryRunPreviewArea" editable="false" wrapText="true" prefRowCount="8"/>
                 </VBox>
@@ -105,8 +130,16 @@
                         <Label text="To nie pobiera danych z serwera i nie zapisuje zmian." wrapText="true" HBox.hgrow="ALWAYS"/>
                     </HBox>
                     <HBox spacing="10">
-                        <Button text="Generuj podgląd słownika krajów" onAction="#previewCountriesDryRun"/>
-                        <Button text="Wyczyść podgląd" onAction="#clearCountriesDryRunPreview" styleClass="button-secondary"/>
+                        <Button text="Generuj podgląd słownika krajów" onAction="#previewCountriesDryRun">
+                            <tooltip>
+                                <Tooltip text="Generuje lokalny podgląd gotowości wspólnego słownika krajów bez zapisu zmian."/>
+                            </tooltip>
+                        </Button>
+                        <Button text="Wyczyść podgląd" onAction="#clearCountriesDryRunPreview" styleClass="button-secondary">
+                            <tooltip>
+                                <Tooltip text="Czyści tylko podgląd gotowości wspólnego słownika krajów."/>
+                            </tooltip>
+                        </Button>
                     </HBox>
                     <TextArea fx:id="countriesDryRunPreviewArea" editable="false" wrapText="true" prefRowCount="8"/>
                 </VBox>

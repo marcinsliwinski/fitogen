@@ -19,10 +19,12 @@ import com.egen.fitogen.service.PlantBatchService;
 import com.egen.fitogen.service.PlantService;
 import com.egen.fitogen.ui.router.ViewManager;
 import com.egen.fitogen.ui.util.ModalViewUtil;
+import com.egen.fitogen.ui.util.UiTextUtil;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.Hyperlink;
 import javafx.scene.control.Label;
+import javafx.scene.control.Tooltip;
 import javafx.scene.layout.VBox;
 
 import java.time.format.DateTimeFormatter;
@@ -111,8 +113,8 @@ public class DashboardController {
                 .filter(batch -> batch.getStatus() == PlantBatchStatus.CANCELLED)
                 .count();
 
-        documentsStatusValueLabel.setText("Aktywne: " + activeDocuments + " | Anulowane: " + cancelledDocuments);
-        batchesStatusValueLabel.setText("Aktywne: " + activeBatches + " | Anulowane: " + cancelledBatches);
+        documentsStatusValueLabel.setText(buildStatusSummary(activeDocuments, cancelledDocuments));
+        batchesStatusValueLabel.setText(buildStatusSummary(activeBatches, cancelledBatches));
     }
 
     private void updateIssuerCompletenessSection() {
@@ -129,17 +131,8 @@ public class DashboardController {
                         .thenComparing(Document::getId, Comparator.reverseOrder()))
                 .limit(5)
                 .forEach(document -> {
-                    Hyperlink link = new Hyperlink(
-                            safe(document.getDocumentNumber())
-                                    + " • "
-                                    + safe(document.getDocumentType())
-                                    + " • "
-                                    + getContrahentName(document.getContrahentId())
-                                    + " • "
-                                    + (document.getIssueDate() != null
-                                    ? document.getIssueDate().format(dateFormatter)
-                                    : "")
-                    );
+                    Hyperlink link = new Hyperlink(buildRecentDocumentLabel(document));
+                    link.setTooltip(new Tooltip(buildRecentDocumentTooltip(document)));
                     link.setWrapText(true);
                     link.setMaxWidth(Double.MAX_VALUE);
                     applyLinkStatusStyle(link, document.getStatus() == DocumentStatus.CANCELLED, false);
@@ -161,13 +154,8 @@ public class DashboardController {
                         .thenComparing(PlantBatch::getId, Comparator.reverseOrder()))
                 .limit(5)
                 .forEach(batch -> {
-                    Hyperlink link = new Hyperlink(
-                            getPlantLabel(batch.getPlantId())
-                                    + " • "
-                                    + batchLabel(batch)
-                                    + " • ilość: "
-                                    + batch.getQty()
-                    );
+                    Hyperlink link = new Hyperlink(buildRecentBatchLabel(batch));
+                    link.setTooltip(new Tooltip(buildRecentBatchTooltip(batch)));
                     link.setWrapText(true);
                     link.setMaxWidth(Double.MAX_VALUE);
                     applyLinkStatusStyle(link, batch.getStatus() == PlantBatchStatus.CANCELLED, false);
@@ -178,6 +166,70 @@ public class DashboardController {
         if (recentBatchesBox.getChildren().isEmpty()) {
             recentBatchesBox.getChildren().add(new Label("Brak partii do wyświetlenia."));
         }
+    }
+
+    private String buildStatusSummary(long activeCount, long cancelledCount) {
+        return "Aktywne: " + activeCount + UiTextUtil.NL
+                + "Anulowane: " + cancelledCount;
+    }
+
+    private String buildRecentDocumentLabel(Document document) {
+        String number = safe(document.getDocumentNumber()).trim();
+        String type = safe(document.getDocumentType()).trim();
+        String customer = getContrahentName(document.getContrahentId());
+        String issueDate = document.getIssueDate() != null
+                ? document.getIssueDate().format(dateFormatter)
+                : "Brak daty";
+
+        StringBuilder builder = new StringBuilder();
+        if (!number.isEmpty()) {
+            builder.append(number);
+        } else {
+            builder.append("Dokument ID: ").append(document.getId());
+        }
+        if (!type.isEmpty()) {
+            builder.append(" — ").append(type);
+        }
+        builder.append(UiTextUtil.NL).append("Kontrahent: ").append(customer);
+        builder.append(UiTextUtil.NL).append("Data: ").append(issueDate);
+        return builder.toString();
+    }
+
+    private String buildRecentDocumentTooltip(Document document) {
+        StringBuilder builder = new StringBuilder();
+        builder.append("Otwiera podgląd dokumentu.").append(UiTextUtil.NL).append(UiTextUtil.NL);
+        builder.append("Numer: ").append(valueOrDash(document.getDocumentNumber())).append(UiTextUtil.NL);
+        builder.append("Typ: ").append(valueOrDash(document.getDocumentType())).append(UiTextUtil.NL);
+        builder.append("Kontrahent: ").append(getContrahentName(document.getContrahentId())).append(UiTextUtil.NL);
+        builder.append("Data: ")
+                .append(document.getIssueDate() != null ? document.getIssueDate().format(dateFormatter) : "—");
+        if (document.getStatus() == DocumentStatus.CANCELLED) {
+            builder.append(UiTextUtil.NL).append("Status: Anulowany");
+        }
+        return builder.toString();
+    }
+
+    private String buildRecentBatchLabel(PlantBatch batch) {
+        return getPlantLabel(batch.getPlantId())
+                + UiTextUtil.NL
+                + "Partia: " + batchLabel(batch)
+                + UiTextUtil.NL
+                + "Ilość: " + batch.getQty();
+    }
+
+    private String buildRecentBatchTooltip(PlantBatch batch) {
+        StringBuilder builder = new StringBuilder();
+        builder.append("Otwiera podgląd i edycję partii.").append(UiTextUtil.NL).append(UiTextUtil.NL);
+        builder.append("Roślina: ").append(getPlantLabel(batch.getPlantId())).append(UiTextUtil.NL);
+        builder.append("Partia: ").append(batchLabel(batch)).append(UiTextUtil.NL);
+        builder.append("Ilość: ").append(batch.getQty());
+        if (batch.getCreationDate() != null) {
+            builder.append(UiTextUtil.NL).append("Data utworzenia: ").append(batch.getCreationDate().format(dateFormatter));
+        }
+        if (batch.getStatus() == PlantBatchStatus.CANCELLED) {
+            builder.append(UiTextUtil.NL).append("Status: Anulowana");
+        }
+        return builder.toString();
     }
 
     private void applyLinkStatusStyle(Hyperlink link, boolean cancelled, boolean inactive) {
@@ -208,7 +260,7 @@ public class DashboardController {
     private void openBatchPreview(PlantBatch batch) {
         ModalViewUtil.openModal(
                 "/view/plant_batch_form.fxml",
-                "Podgląd / edycja partii",
+                "Podgląd i edycja partii",
                 900, 760,
                 860, 720,
                 (PlantBatchFormController controller) -> controller.setPlantBatch(batch)
@@ -273,6 +325,11 @@ public class DashboardController {
             return exterior;
         }
         return "Partia ID: " + batch.getId();
+    }
+
+    private String valueOrDash(String value) {
+        String normalized = safe(value).trim();
+        return normalized.isEmpty() ? "—" : normalized;
     }
 
     private String safe(String value) {
