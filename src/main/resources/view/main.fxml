@@ -52,7 +52,7 @@
 
             <Region VBox.vgrow="ALWAYS"/>
 
-            <Label text="Fito Gen v1.0" styleClass="sidebar-subtitle"/>
+            <Label text="Fito Gen Essentials v1.0" styleClass="sidebar-subtitle"/>
             <Label text="Powered by eGen Labs" styleClass="sidebar-subtitle"/>
         </VBox>
     </left>

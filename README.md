@@ -1,6 +1,6 @@
-# Fito Gen
+# Fito Gen Essentials
 
-**Fito Gen** is a commercial-style desktop application for plant nurseries focused on:
+**Fito Gen Essentials** is a commercial-style desktop application for plant nurseries focused on:
 - plant inventory,
 - plant batch tracking,
 - contrahent management,
@@ -18,7 +18,9 @@ The project is developed as a layered production-oriented desktop application, n
 
 - Java 21
 - JavaFX
+- AtlantaFX
 - SQLite
+- OpenPDF
 - Maven
 
 ## Current modules
@@ -116,8 +118,7 @@ Recent UX direction in `Settings`:
 Current direction of the screen:
 - local readiness and dry-run style preview,
 - no local CSV import/export,
-- no mixing of Settings CSV workflows into Updates,
-- readiness preview for Plants, EPPO and shared country dictionary.
+- no mixing of Settings CSV workflows into Updates.
 
 ## Current CSV direction
 

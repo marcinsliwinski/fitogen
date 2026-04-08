@@ -27,7 +27,7 @@ public class MainAppFX extends Application {
 
         try {
             Scene scene = new Scene(loader.load(), 1200, 800);
-            stage.setTitle("FitoGen Free Edition");
+            stage.setTitle("Fito Gen Essentials");
             stage.setScene(scene);
             stage.show();
         } catch (Exception e) {
