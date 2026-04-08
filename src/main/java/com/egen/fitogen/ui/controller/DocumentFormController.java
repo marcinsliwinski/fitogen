@@ -54,6 +54,7 @@ import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
+import javafx.stage.Stage;
 
 
 import java.time.LocalDate;
@@ -106,6 +107,10 @@ public class DocumentFormController {
 
     private Document document;
     private boolean internalRowChange;
+    private String initialSnapshot = "";
+    private boolean saveCompleted;
+    private boolean closeConfirmed;
+    private boolean closeGuardInstalled;
 
     @FXML
     public void initialize() {
@@ -124,6 +129,11 @@ public class DocumentFormController {
         ensureTrailingBlankRow();
         configureEppoInfoArea();
         refreshEppoInfo();
+
+        Platform.runLater(() -> {
+            installWindowCloseGuard();
+            markCurrentStateAsClean();
+        });
     }
 
     public void setDocument(Document document) {
@@ -163,6 +173,7 @@ public class DocumentFormController {
         internalRowChange = false;
         ensureTrailingBlankRow();
         refreshEppoInfo();
+        markCurrentStateAsClean();
     }
 
     @FXML
@@ -181,6 +192,8 @@ public class DocumentFormController {
                 documentService.updateDocument(dto);
                 DialogUtil.showSuccess("Dokument został zaktualizowany.");
             }
+            saveCompleted = true;
+            closeConfirmed = true;
             close();
         } catch (IllegalArgumentException | IllegalStateException e) {
             DialogUtil.showWarning("Błędne dane", e.getMessage());
@@ -196,9 +209,14 @@ public class DocumentFormController {
     }
 
     private void close() {
-        javafx.scene.Node owner = cancelButton != null ? cancelButton : (saveButton != null ? saveButton : itemsTable);
-        if (owner != null && owner.getScene() != null && owner.getScene().getWindow() != null) {
-            owner.getScene().getWindow().hide();
+        if (!canCloseWindow()) {
+            return;
+        }
+
+        Stage stage = resolveStage();
+        if (stage != null) {
+            closeConfirmed = true;
+            stage.close();
         }
     }
 
@@ -590,6 +608,9 @@ public class DocumentFormController {
         itemsTable.setDisable(true);
         saveButton.setDisable(true);
         saveButton.setText("Dokument anulowany");
+        if (cancelButton != null) {
+            cancelButton.setText("Zamknij");
+        }
     }
 
 
@@ -759,6 +780,117 @@ public class DocumentFormController {
                 return;
             }
         }
+    }
+
+    private boolean canCloseWindow() {
+        if (closeConfirmed || saveCompleted || !hasUnsavedChanges()) {
+            return true;
+        }
+        return DialogUtil.confirmDiscardChanges(document == null ? "dokumentu" : "edycji dokumentu");
+    }
+
+    private boolean hasUnsavedChanges() {
+        return !java.util.Objects.equals(initialSnapshot, buildFormSnapshot());
+    }
+
+    private void markCurrentStateAsClean() {
+        initialSnapshot = buildFormSnapshot();
+        saveCompleted = false;
+        closeConfirmed = false;
+    }
+
+    private String buildFormSnapshot() {
+        StringBuilder snapshot = new StringBuilder();
+        snapshot.append(String.join("|",
+                String.valueOf(documentTypeBox == null || documentTypeBox.getValue() == null ? 0 : documentTypeBox.getValue().getId()),
+                String.valueOf(contrahentBox == null || contrahentBox.getValue() == null ? 0 : contrahentBox.getValue().getId()),
+                String.valueOf(issueDateField == null ? null : issueDateField.getValue()),
+                String.valueOf(createdByBox == null || createdByBox.getValue() == null ? 0 : createdByBox.getValue().getId()),
+                normalizeSnapshotText(commentsField == null ? null : commentsField.getText()),
+                normalizeSnapshotText(statusValueLabel == null ? null : statusValueLabel.getText())
+        ));
+
+        if (rows != null) {
+            for (DocumentItemRow row : rows) {
+                if (row == null || row.isBlank()) {
+                    continue;
+                }
+                snapshot.append("\n").append(buildRowSnapshot(row));
+            }
+        }
+
+        return snapshot.toString();
+    }
+
+    private String buildRowSnapshot(DocumentItemRow row) {
+        Plant plant = row.getPlant();
+        PlantBatch batch = row.getBatch();
+
+        return String.join("|",
+                String.valueOf(plant == null ? 0 : plant.getId()),
+                String.valueOf(batch == null ? 0 : batch.getId()),
+                String.valueOf(row.getQty()),
+                String.valueOf(row.isPassportRequired())
+        );
+    }
+
+    private String buildDocumentItemDeleteLabel(DocumentItemRow row) {
+        String plantLabel = formatPlantName(resolvePlantForRow(row));
+        String batchLabel = row != null && row.getBatch() != null ? formatBatchNumber(row.getBatch()) : "brak partii";
+        String qtyLabel = row != null && row.getQty() > 0 ? (", ilość: " + row.getQty()) : "";
+
+        StringBuilder label = new StringBuilder("pozycję dokumentu");
+        if (!plantLabel.isBlank() || !batchLabel.isBlank()) {
+            label.append(" — ");
+            if (!plantLabel.isBlank()) {
+                label.append(plantLabel);
+            }
+            if (!batchLabel.isBlank()) {
+                if (!plantLabel.isBlank()) {
+                    label.append(" / ");
+                }
+                label.append(batchLabel);
+            }
+            label.append(qtyLabel);
+        }
+        return label.toString();
+    }
+
+    private String normalizeSnapshotText(String value) {
+        if (value == null) {
+            return "";
+        }
+        String normalized = value.trim().replaceAll("\\s+", " ");
+        return normalized.isBlank() ? "" : normalized;
+    }
+
+    private void installWindowCloseGuard() {
+        Stage stage = resolveStage();
+        if (stage == null || closeGuardInstalled) {
+            return;
+        }
+
+        stage.setOnCloseRequest(event -> {
+            if (closeConfirmed || saveCompleted || !hasUnsavedChanges()) {
+                return;
+            }
+
+            if (!DialogUtil.confirmDiscardChanges(document == null ? "dokumentu" : "edycji dokumentu")) {
+                event.consume();
+                return;
+            }
+
+            closeConfirmed = true;
+        });
+        closeGuardInstalled = true;
+    }
+
+    private Stage resolveStage() {
+        javafx.scene.Node owner = cancelButton != null ? cancelButton : (saveButton != null ? saveButton : itemsTable);
+        if (owner != null && owner.getScene() != null && owner.getScene().getWindow() instanceof Stage stage) {
+            return stage;
+        }
+        return null;
     }
 
     private void selectContrahent(int contrahentId) {
@@ -1084,6 +1216,11 @@ public class DocumentFormController {
                 if (row == null) {
                     return;
                 }
+
+                if (!row.isBlank() && !DialogUtil.confirmDelete(buildDocumentItemDeleteLabel(row))) {
+                    return;
+                }
+
                 rows.remove(row);
                 ensureTrailingBlankRow();
                 refreshEppoInfo();

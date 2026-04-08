@@ -104,8 +104,6 @@
     </VBox>
 
     <HBox spacing="10" alignment="CENTER_RIGHT" styleClass="form-actions">
-        <Button text="Podgląd" disable="true" styleClass="button-secondary"/>
-        <Button text="PDF" disable="true" styleClass="button-secondary"/>
         <Button fx:id="cancelButton" text="Anuluj" minWidth="110" onAction="#cancel"/>
         <Button fx:id="saveButton" text="Zapisz dokument" minWidth="150" onAction="#save"/>
     </HBox>
