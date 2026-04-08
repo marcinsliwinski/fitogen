@@ -634,11 +634,17 @@ public class SettingsController {
             return;
         }
 
-        countryDirectoryService.deleteCustomEntry(selected.country(), selected.countryCode());
-        loadCustomCountryEntries();
-        refreshSharedCountryCombos();
-        clearCustomCountryEntryForm();
-        DialogUtil.showSuccess("Wpis słownika krajów został usunięty.");
+        try {
+            countryDirectoryService.deleteCustomEntry(selected.country(), selected.countryCode());
+            loadCustomCountryEntries();
+            refreshSharedCountryCombos();
+            clearCustomCountryEntryForm();
+            DialogUtil.showSuccess("Wpis słownika krajów został usunięty.");
+        } catch (IllegalStateException e) {
+            DialogUtil.showWarning("Nie można usunąć wpisu", e.getMessage());
+        } catch (Exception e) {
+            DialogUtil.showError("Błąd usuwania", "Nie udało się usunąć wpisu słownika krajów.");
+        }
     }
 
     @FXML
@@ -1152,10 +1158,16 @@ public class SettingsController {
             return;
         }
 
-        documentTypeService.delete(selected.getId());
-        refreshDocumentTypes();
-        clearDocumentTypeForm();
-        DialogUtil.showSuccess("Typ dokumentu został usunięty.");
+        try {
+            documentTypeService.delete(selected.getId());
+            refreshDocumentTypes();
+            clearDocumentTypeForm();
+            DialogUtil.showSuccess("Typ dokumentu został usunięty.");
+        } catch (IllegalStateException e) {
+            DialogUtil.showWarning("Nie można usunąć typu dokumentu", e.getMessage());
+        } catch (Exception e) {
+            DialogUtil.showError("Błąd usuwania", "Nie udało się usunąć typu dokumentu.");
+        }
     }
 
     @FXML
@@ -1198,11 +1210,17 @@ public class SettingsController {
             return;
         }
 
-        appUserService.delete(selected.getId());
-        refreshUsers();
-        clearUserForm();
-        loadDefaultUser();
-        DialogUtil.showSuccess("Użytkownik został usunięty.");
+        try {
+            appUserService.delete(selected.getId());
+            refreshUsers();
+            clearUserForm();
+            loadDefaultUser();
+            DialogUtil.showSuccess("Użytkownik został usunięty.");
+        } catch (IllegalStateException e) {
+            DialogUtil.showWarning("Nie można usunąć użytkownika", e.getMessage());
+        } catch (Exception e) {
+            DialogUtil.showError("Błąd usuwania", "Nie udało się usunąć użytkownika.");
+        }
     }
 
     @FXML

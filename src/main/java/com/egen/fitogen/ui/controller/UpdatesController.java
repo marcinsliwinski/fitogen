@@ -6,6 +6,7 @@ import com.egen.fitogen.service.CountryDirectoryService;
 import com.egen.fitogen.service.EppoCodeService;
 import com.egen.fitogen.service.PlantService;
 import com.egen.fitogen.ui.util.CountryDirectory;
+import com.egen.fitogen.ui.util.DialogUtil;
 import com.egen.fitogen.ui.util.UiTextUtil;
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
@@ -86,6 +87,14 @@ public class UpdatesController {
 
     @FXML
     private void clearAllDryRunPreviews() {
+        if (!DialogUtil.confirmAction(
+                "Czyszczenie podglądu",
+                "wyczyścić",
+                "wszystkie sekcje podglądu / testu bez zapisu"
+        )) {
+            return;
+        }
+
         resetPlantsDryRunPreview();
         resetEppoDryRunPreview();
         resetCountriesDryRunPreview();
@@ -237,7 +246,7 @@ public class UpdatesController {
                     .append(valueOrDash(code.getCode()))
                     .append(" | nazwa=").append(valueOrDash(code.getDisplaySpeciesName()))
                     .append(" | łacina=").append(valueOrDash(code.getDisplayLatinSpeciesName()))
-                    .append(" | status=").append(valueOrDash(code.getStatus()))
+                    .append(" | status=").append(formatEppoStatusForPreview(code.getStatus()))
                     .append(UiTextUtil.NL);
         }
     }
@@ -423,6 +432,17 @@ public class UpdatesController {
 
     private boolean isEppoActive(com.egen.fitogen.model.EppoCode code) {
         return isBlank(code.getStatus()) || "ACTIVE".equalsIgnoreCase(safe(code.getStatus()));
+    }
+
+    private String formatEppoStatusForPreview(String status) {
+        String normalized = safe(status).toUpperCase(Locale.ROOT);
+        if (normalized.isBlank() || "ACTIVE".equals(normalized)) {
+            return "Aktywny";
+        }
+        if ("INACTIVE".equals(normalized)) {
+            return "Nieaktywny";
+        }
+        return valueOrDash(status);
     }
 
     private String buildPlantDisplay(com.egen.fitogen.model.Plant plant) {

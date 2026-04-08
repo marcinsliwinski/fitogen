@@ -210,8 +210,34 @@ public class PlantBatchController {
                 + ".";
     }
 
+    private String buildBatchConfirmationLabel(PlantBatch batch) {
+        if (batch == null) {
+            return "wybrana partia";
+        }
+
+        String interiorNumber = safeValue(batch.getInteriorBatchNo());
+        String exteriorNumber = safeValue(batch.getExteriorBatchNo());
+        String plantLabel = safeValue(buildPlantLabel(batch.getPlantId()));
+
+        if (!interiorNumber.isBlank()) {
+            return interiorNumber + " — " + (plantLabel.isBlank() ? "partia roślin" : plantLabel);
+        }
+        if (!exteriorNumber.isBlank()) {
+            return exteriorNumber + " — " + (plantLabel.isBlank() ? "partia roślin" : plantLabel);
+        }
+        if (!plantLabel.isBlank()) {
+            return plantLabel;
+        }
+        return "wybrana partia";
+    }
+
+
     private String safe(String value) {
         return value == null || value.isBlank() ? "—" : value;
+    }
+
+    private String safeValue(String value) {
+        return value == null ? "" : value.trim();
     }
 
     private boolean contains(String value, String keyword) {
@@ -352,9 +378,7 @@ public class PlantBatchController {
             return;
         }
 
-        String label = buildPlantLabel(selected.getPlantId());
-
-        if (!DialogUtil.confirmDelete(label.isBlank() ? "wybraną partię" : label)) {
+        if (!DialogUtil.confirmCancellation("partii roślin", buildBatchConfirmationLabel(selected))) {
             return;
         }
 

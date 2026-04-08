@@ -350,6 +350,23 @@ public class DocumentController {
         return selected;
     }
 
+    private String buildDocumentConfirmationLabel(Document document) {
+        String number = document == null ? "" : safe(document.getDocumentNumber());
+        String type = document == null ? "" : safe(document.getDocumentType());
+
+        if (!number.isBlank() && !type.isBlank()) {
+            return number + " („" + type + "”)";
+        }
+        if (!number.isBlank()) {
+            return number;
+        }
+        if (!type.isBlank()) {
+            return type;
+        }
+        return "wybrany dokument";
+    }
+
+
     @FXML
     private void deleteDocument() {
         Document selected = table.getSelectionModel().getSelectedItem();
@@ -366,7 +383,7 @@ public class DocumentController {
             return;
         }
 
-        if (!DialogUtil.confirmDelete(selected.getDocumentNumber())) {
+        if (!DialogUtil.confirmCancellation("dokumentu", buildDocumentConfirmationLabel(selected))) {
             return;
         }
 
