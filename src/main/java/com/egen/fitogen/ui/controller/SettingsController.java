@@ -1928,7 +1928,7 @@ public class SettingsController {
             contrahentsCsvStatusLabel.setText("Wybierz plik CSV, aby zobaczyć preview importu Contrahents, albo zapisz aktualny eksport do pliku.");
         }
         if (documentsCsvStatusLabel != null) {
-            documentsCsvStatusLabel.setText("Wybierz plik CSV, aby zobaczyć preview importu Documents, albo zapisz aktualny eksport do pliku.");
+            documentsCsvStatusLabel.setText("Wybierz plik CSV, aby zobaczyć podgląd importu CSV dokumentów, albo zapisz aktualny eksport do pliku.");
         }
         resetPlantsCsvPreview();
         resetContrahentsCsvPreview();
@@ -2021,26 +2021,26 @@ public class SettingsController {
             documentsCsvPreviewArea.setText(buildDocumentsPreviewText(result));
         } catch (Exception e) {
             e.printStackTrace();
-            documentsCsvStatusLabel.setText("Nie udało się przygotować preview importu Documents.");
-            DialogUtil.showError("Preview importu Documents CSV", "Nie udało się odczytać ani przeanalizować pliku CSV dokumentów.");
+            documentsCsvStatusLabel.setText("Nie udało się przygotować podglądu importu CSV dokumentów.");
+            DialogUtil.showError("Podgląd importu CSV dokumentów", "Nie udało się odczytać ani przeanalizować pliku CSV dokumentów.");
         }
     }
 
     @FXML
     private void exportDocumentsCsv() {
-        Path selectedPath = chooseCsvToSave("Eksportuj Documents do CSV", "documents-export.csv");
+        Path selectedPath = chooseCsvToSave("Eksportuj dokumenty do CSV", "documents-export.csv");
         if (selectedPath == null) {
             return;
         }
 
         try {
             Path exported = documentCsvExportService.export(selectedPath);
-            documentsCsvStatusLabel.setText("Eksport Documents zakończony powodzeniem: " + exported + ". Format pozostaje lokalnym standardem Settings -> Import / Eksport CSV.");
-            DialogUtil.showSuccess("Documents zostały wyeksportowane do pliku:\n" + exported);
+            documentsCsvStatusLabel.setText("Eksport dokumentów CSV zakończony powodzeniem: " + exported + ". Format pozostaje lokalnym standardem Settings -> Import / Eksport CSV.");
+            DialogUtil.showSuccess("Dokumenty zostały wyeksportowane do pliku:\n" + exported);
         } catch (Exception e) {
             e.printStackTrace();
-            documentsCsvStatusLabel.setText("Nie udało się wyeksportować Documents do CSV.");
-            DialogUtil.showError("Eksport Documents CSV", "Nie udało się wyeksportować dokumentów do pliku CSV.");
+            documentsCsvStatusLabel.setText("Nie udało się wyeksportować dokumentów do CSV.");
+            DialogUtil.showError("Eksport CSV dokumentów", "Nie udało się wyeksportować dokumentów do pliku CSV.");
         }
     }
 
@@ -2065,7 +2065,7 @@ public class SettingsController {
     private void clearDocumentsCsvPreview() {
         resetDocumentsCsvPreview();
         if (documentsCsvStatusLabel != null) {
-            documentsCsvStatusLabel.setText("Preview Documents zostało wyczyszczone. Wybierz plik CSV, aby uruchomić analizę ponownie.");
+            documentsCsvStatusLabel.setText("Podgląd importu CSV dokumentów został wyczyszczony. Wybierz plik CSV, aby uruchomić analizę ponownie.");
         }
     }
 
@@ -2124,7 +2124,7 @@ public class SettingsController {
     }
 
     private String buildDocumentsPreviewStatus(com.egen.fitogen.dto.DocumentImportPreviewResult result) {
-        return "Documents CSV — łącznie wierszy: " + result.getTotalRowsCount()
+        return "Dokumenty CSV — łącznie wierszy: " + result.getTotalRowsCount()
                 + ", nowych wierszy: " + result.getNewRowsCount()
                 + ", istniejących numerów: " + result.getMatchingExistingCount()
                 + ", duplikatów w pliku: " + result.getDuplicateInFileCount()
@@ -2154,7 +2154,7 @@ public class SettingsController {
     private void resetDocumentsCsvPreview() {
         if (documentsCsvPreviewArea != null) {
             documentsCsvPreviewArea.setText(UiTextUtil.buildEmptyPreviewText(
-                    "Documents",
+                    "Dokumenty CSV",
                     "Po uruchomieniu analizy zobaczysz tutaj podsumowanie pliku, nagłówki oraz próbkę wierszy dokumentów i pozycji."
             ));
         }
@@ -2399,7 +2399,7 @@ public class SettingsController {
         if (result.getDocumentCount() == 0) {
             return "Plik wygląda poprawnie, ale nie wnosi nowych numerów dokumentów względem aktualnej bazy.";
         }
-        return "Format wygląda spójnie z lokalnym standardem Documents CSV w Settings.";
+        return "Format wygląda spójnie z lokalnym standardem CSV dokumentów w Settings.";
     }
 
     private String buildPlantsImportReadiness(com.egen.fitogen.dto.PlantImportPreviewResult result) {

@@ -264,13 +264,13 @@
                             <Separator/>
 
                             <VBox spacing="12" styleClass="stat-card">
-                                <Label text="Documents CSV" styleClass="stat-title"/>
-                                <Label text="Lokalne preview importu i eksport CSV dla dokumentów. Format pozostaje w Settings -> Import / Eksport CSV i nie wchodzi do modułu Updates." wrapText="true" styleClass="page-subtitle"/>
+                                <Label text="Dokumenty CSV" styleClass="stat-title"/>
+                                <Label text="Lokalny podgląd importu i eksport CSV dla dokumentów. Format pozostaje w Settings -> Import / Eksport CSV i nie wchodzi do modułu Updates." wrapText="true" styleClass="page-subtitle"/>
                                 <Label fx:id="documentsCsvColumnsLabel" wrapText="true" styleClass="page-subtitle"/>
                                 <Label fx:id="documentsCsvStatusLabel" wrapText="true" styleClass="page-subtitle"/>
                                 <HBox spacing="10">
-                                    <Button text="Preview importu Documents CSV" onAction="#previewDocumentsCsvImport"/>
-                                    <Button text="Eksport Documents CSV" onAction="#exportDocumentsCsv" styleClass="button-secondary"/>
+                                    <Button text="Podgląd importu CSV dokumentów" onAction="#previewDocumentsCsvImport"/>
+                                    <Button text="Eksport CSV dokumentów" onAction="#exportDocumentsCsv" styleClass="button-secondary"/>
                                     <Button text="Wyczyść preview" onAction="#clearDocumentsCsvPreview" styleClass="button-secondary"/>
                                 </HBox>
                                 <TextArea fx:id="documentsCsvPreviewArea" editable="false" wrapText="true" prefRowCount="12"/>
@@ -332,7 +332,7 @@
                 </ScrollPane>
             </Tab>
 
-            <Tab text="Ogólne / Dane podmiotu">
+            <Tab text="Dane podmiotu">
                 <ScrollPane fitToWidth="true" fitToHeight="true">
                     <content>
                         <VBox spacing="16" styleClass="content-card">
