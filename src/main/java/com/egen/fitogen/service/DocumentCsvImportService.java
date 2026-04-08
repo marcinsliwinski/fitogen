@@ -201,7 +201,7 @@ public class DocumentCsvImportService {
     }
 
     public String getSupportedColumnsSummary() {
-        return "Obsługiwane kolumny CSV: documentNumber/numerDokumentu, documentType/typDokumentu, issueDate/dataWystawienia, status, contrahentName, contrahentCountryCode, createdBy, comments, lineNo, plantBatchNumber, plantBatchId, qty/ilosc, passportRequired.";
+        return "Obsługiwane kolumny importu: numer dokumentu (documentNumber), typ dokumentu (documentType), data wystawienia (issueDate), status (status), nazwa kontrahenta (contrahentName), kod kraju kontrahenta (contrahentCountryCode), utworzył (createdBy), uwagi (comments), numer pozycji (lineNo), numer partii (plantBatchNumber), identyfikator partii (plantBatchId), ilość (qty), wymagany paszport (passportRequired).";
     }
 
     private List<Document> getExistingDocuments() {

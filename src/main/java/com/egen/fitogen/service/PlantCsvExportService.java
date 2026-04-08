@@ -42,7 +42,7 @@ public class PlantCsvExportService {
     }
 
     public String getSupportedColumnsSummary() {
-        return "Kolumny eksportu Plants CSV: species, variety, rootstock, latinSpeciesName, eppoCode, passportRequired, visibilityStatus.";
+        return "Kolumny eksportu: gatunek (species), odmiana (variety), podkładka (rootstock), nazwa łacińska (latinSpeciesName), kod EPPO (eppoCode), wymagany paszport (passportRequired), status widoczności (visibilityStatus).";
     }
 
     private String escape(String value) {

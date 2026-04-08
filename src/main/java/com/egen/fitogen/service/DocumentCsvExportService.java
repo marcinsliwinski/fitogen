@@ -91,7 +91,7 @@ public class DocumentCsvExportService {
     }
 
     public String getSupportedColumnsSummary() {
-        return "Kolumny eksportu Documents CSV: documentNumber, documentType, issueDate, status, contrahentName, contrahentCountryCode, createdBy, comments, lineNo, plantBatchNumber, plantBatchId, qty, passportRequired.";
+        return "Kolumny eksportu: numer dokumentu (documentNumber), typ dokumentu (documentType), data wystawienia (issueDate), status (status), nazwa kontrahenta (contrahentName), kod kraju kontrahenta (contrahentCountryCode), utworzył (createdBy), uwagi (comments), numer pozycji (lineNo), numer partii (plantBatchNumber), identyfikator partii (plantBatchId), ilość (qty), wymagany paszport (passportRequired).";
     }
 
     private Contrahent resolveContrahent(int contrahentId) {

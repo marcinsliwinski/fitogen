@@ -1610,7 +1610,7 @@ public class SettingsController {
         } catch (Exception e) {
             e.printStackTrace();
             backupStatusLabel.setText("Nie udało się utworzyć kopii zapasowej.");
-            DialogUtil.showError("Błąd backupu", "Nie udało się utworzyć backupu bazy danych.");
+            DialogUtil.showError("Błąd kopii zapasowej", "Nie udało się utworzyć kopii zapasowej bazy danych.");
         }
     }
 
@@ -1913,22 +1913,28 @@ public class SettingsController {
 
     private void loadCsvOverview() {
         if (plantsCsvColumnsLabel != null) {
-            plantsCsvColumnsLabel.setText(plantCsvImportService.getSupportedColumnsSummary() + " " + plantCsvExportService.getSupportedColumnsSummary());
+            plantsCsvColumnsLabel.setText(plantCsvImportService.getSupportedColumnsSummary()
+                    + UiTextUtil.NL
+                    + plantCsvExportService.getSupportedColumnsSummary());
         }
         if (contrahentsCsvColumnsLabel != null) {
-            contrahentsCsvColumnsLabel.setText(contrahentCsvImportService.getSupportedColumnsSummary() + " " + contrahentCsvExportService.getSupportedColumnsSummary());
+            contrahentsCsvColumnsLabel.setText(contrahentCsvImportService.getSupportedColumnsSummary()
+                    + UiTextUtil.NL
+                    + contrahentCsvExportService.getSupportedColumnsSummary());
         }
         if (documentsCsvColumnsLabel != null) {
-            documentsCsvColumnsLabel.setText(documentCsvImportService.getSupportedColumnsSummary() + " " + documentCsvExportService.getSupportedColumnsSummary());
+            documentsCsvColumnsLabel.setText(documentCsvImportService.getSupportedColumnsSummary()
+                    + UiTextUtil.NL
+                    + documentCsvExportService.getSupportedColumnsSummary());
         }
         if (plantsCsvStatusLabel != null) {
-            plantsCsvStatusLabel.setText("Wybierz plik CSV, aby zobaczyć podgląd importu roślin, albo zapisz aktualny eksport do pliku.");
+            plantsCsvStatusLabel.setText(buildCsvInitialStatus("roślin"));
         }
         if (contrahentsCsvStatusLabel != null) {
-            contrahentsCsvStatusLabel.setText("Wybierz plik CSV, aby zobaczyć podgląd importu kontrahentów, albo zapisz aktualny eksport do pliku.");
+            contrahentsCsvStatusLabel.setText(buildCsvInitialStatus("kontrahentów"));
         }
         if (documentsCsvStatusLabel != null) {
-            documentsCsvStatusLabel.setText("Wybierz plik CSV, aby zobaczyć podgląd importu dokumentów, albo zapisz aktualny eksport do pliku.");
+            documentsCsvStatusLabel.setText(buildCsvInitialStatus("dokumentów"));
         }
         resetPlantsCsvPreview();
         resetContrahentsCsvPreview();
@@ -1948,8 +1954,8 @@ public class SettingsController {
             plantsCsvPreviewArea.setText(buildPlantsPreviewText(result));
         } catch (Exception e) {
             e.printStackTrace();
-            plantsCsvStatusLabel.setText("Nie udało się przygotować podglądu importu roślin.");
-            DialogUtil.showError("Podgląd importu CSV roślin", "Nie udało się odczytać ani przeanalizować pliku CSV roślin.");
+            plantsCsvStatusLabel.setText(buildCsvPreviewErrorStatus("roślin"));
+            DialogUtil.showError(buildCsvPreviewDialogTitle("roślin"), buildCsvPreviewErrorMessage("roślin"));
         }
     }
 
@@ -1962,12 +1968,12 @@ public class SettingsController {
 
         try {
             Path exported = plantCsvExportService.export(selectedPath);
-            plantsCsvStatusLabel.setText("Eksport roślin zakończony powodzeniem: " + exported + ". Format pozostaje lokalnym standardem Ustawienia -> Import / Eksport CSV.");
-            DialogUtil.showSuccess("Rośliny zostały wyeksportowane do pliku:\n" + exported);
+            plantsCsvStatusLabel.setText(buildCsvExportSuccessStatus("roślin", exported));
+            DialogUtil.showSuccess(buildCsvExportSuccessDialogMessage("Rośliny", exported));
         } catch (Exception e) {
             e.printStackTrace();
-            plantsCsvStatusLabel.setText("Nie udało się wyeksportować roślin do CSV.");
-            DialogUtil.showError("Eksport CSV roślin", "Nie udało się wyeksportować roślin do pliku CSV.");
+            plantsCsvStatusLabel.setText(buildCsvExportErrorStatus("roślin"));
+            DialogUtil.showError(buildCsvExportDialogTitle("roślin"), buildCsvExportErrorMessage("roślin"));
         }
     }
 
@@ -1984,8 +1990,8 @@ public class SettingsController {
             contrahentsCsvPreviewArea.setText(buildContrahentsPreviewText(result));
         } catch (Exception e) {
             e.printStackTrace();
-            contrahentsCsvStatusLabel.setText("Nie udało się przygotować podglądu importu kontrahentów.");
-            DialogUtil.showError("Podgląd importu CSV kontrahentów", "Nie udało się odczytać ani przeanalizować pliku CSV kontrahentów.");
+            contrahentsCsvStatusLabel.setText(buildCsvPreviewErrorStatus("kontrahentów"));
+            DialogUtil.showError(buildCsvPreviewDialogTitle("kontrahentów"), buildCsvPreviewErrorMessage("kontrahentów"));
         }
     }
 
@@ -1998,12 +2004,12 @@ public class SettingsController {
 
         try {
             Path exported = contrahentCsvExportService.export(selectedPath);
-            contrahentsCsvStatusLabel.setText("Eksport kontrahentów zakończony powodzeniem: " + exported + ". Format pozostaje lokalnym standardem Ustawienia -> Import / Eksport CSV.");
-            DialogUtil.showSuccess("Kontrahenci zostali wyeksportowani do pliku:\n" + exported);
+            contrahentsCsvStatusLabel.setText(buildCsvExportSuccessStatus("kontrahentów", exported));
+            DialogUtil.showSuccess(buildCsvExportSuccessDialogMessage("Kontrahenci", exported));
         } catch (Exception e) {
             e.printStackTrace();
-            contrahentsCsvStatusLabel.setText("Nie udało się wyeksportować kontrahentów do CSV.");
-            DialogUtil.showError("Eksport CSV kontrahentów", "Nie udało się wyeksportować kontrahentów do pliku CSV.");
+            contrahentsCsvStatusLabel.setText(buildCsvExportErrorStatus("kontrahentów"));
+            DialogUtil.showError(buildCsvExportDialogTitle("kontrahentów"), buildCsvExportErrorMessage("kontrahentów"));
         }
     }
 
@@ -2021,8 +2027,8 @@ public class SettingsController {
             documentsCsvPreviewArea.setText(buildDocumentsPreviewText(result));
         } catch (Exception e) {
             e.printStackTrace();
-            documentsCsvStatusLabel.setText("Nie udało się przygotować podglądu importu dokumentów.");
-            DialogUtil.showError("Podgląd importu CSV dokumentów", "Nie udało się odczytać ani przeanalizować pliku CSV dokumentów.");
+            documentsCsvStatusLabel.setText(buildCsvPreviewErrorStatus("dokumentów"));
+            DialogUtil.showError(buildCsvPreviewDialogTitle("dokumentów"), buildCsvPreviewErrorMessage("dokumentów"));
         }
     }
 
@@ -2035,12 +2041,12 @@ public class SettingsController {
 
         try {
             Path exported = documentCsvExportService.export(selectedPath);
-            documentsCsvStatusLabel.setText("Eksport dokumentów zakończony powodzeniem: " + exported + ". Format pozostaje lokalnym standardem Ustawienia -> Import / Eksport CSV.");
-            DialogUtil.showSuccess("Dokumenty zostały wyeksportowane do pliku:\n" + exported);
+            documentsCsvStatusLabel.setText(buildCsvExportSuccessStatus("dokumentów", exported));
+            DialogUtil.showSuccess(buildCsvExportSuccessDialogMessage("Dokumenty", exported));
         } catch (Exception e) {
             e.printStackTrace();
-            documentsCsvStatusLabel.setText("Nie udało się wyeksportować dokumentów do CSV.");
-            DialogUtil.showError("Eksport CSV dokumentów", "Nie udało się wyeksportować dokumentów do pliku CSV.");
+            documentsCsvStatusLabel.setText(buildCsvExportErrorStatus("dokumentów"));
+            DialogUtil.showError(buildCsvExportDialogTitle("dokumentów"), buildCsvExportErrorMessage("dokumentów"));
         }
     }
 
@@ -2049,7 +2055,7 @@ public class SettingsController {
     private void clearPlantsCsvPreview() {
         resetPlantsCsvPreview();
         if (plantsCsvStatusLabel != null) {
-            plantsCsvStatusLabel.setText("Podgląd importu roślin został wyczyszczony. Wybierz plik CSV, aby uruchomić analizę ponownie.");
+            plantsCsvStatusLabel.setText(buildCsvPreviewClearedStatus("roślin"));
         }
     }
 
@@ -2057,7 +2063,7 @@ public class SettingsController {
     private void clearContrahentsCsvPreview() {
         resetContrahentsCsvPreview();
         if (contrahentsCsvStatusLabel != null) {
-            contrahentsCsvStatusLabel.setText("Podgląd importu kontrahentów został wyczyszczony. Wybierz plik CSV, aby uruchomić analizę ponownie.");
+            contrahentsCsvStatusLabel.setText(buildCsvPreviewClearedStatus("kontrahentów"));
         }
     }
 
@@ -2065,8 +2071,51 @@ public class SettingsController {
     private void clearDocumentsCsvPreview() {
         resetDocumentsCsvPreview();
         if (documentsCsvStatusLabel != null) {
-            documentsCsvStatusLabel.setText("Podgląd importu dokumentów został wyczyszczony. Wybierz plik CSV, aby uruchomić analizę ponownie.");
+            documentsCsvStatusLabel.setText(buildCsvPreviewClearedStatus("dokumentów"));
         }
+    }
+
+    private String buildCsvInitialStatus(String entityGenitivePlural) {
+        return "Wybierz plik CSV, aby przygotować podgląd importu " + entityGenitivePlural
+                + ", albo zapisz aktualny eksport do pliku.";
+    }
+
+    private String buildCsvPreviewErrorStatus(String entityGenitivePlural) {
+        return "Nie udało się przygotować podglądu importu " + entityGenitivePlural + ".";
+    }
+
+    private String buildCsvPreviewDialogTitle(String entityGenitivePlural) {
+        return "Podgląd importu " + entityGenitivePlural;
+    }
+
+    private String buildCsvPreviewErrorMessage(String entityGenitivePlural) {
+        return "Nie udało się odczytać ani przeanalizować pliku CSV " + entityGenitivePlural + ".";
+    }
+
+    private String buildCsvExportSuccessStatus(String entityGenitivePlural, Path exportedPath) {
+        return "Eksport " + entityGenitivePlural + " zakończył się powodzeniem: " + exportedPath
+                + ". Format pozostaje lokalnym standardem sekcji Ustawienia -> Import / Eksport CSV.";
+    }
+
+    private String buildCsvExportSuccessDialogMessage(String entityNominativePlural, Path exportedPath) {
+        return entityNominativePlural + " zostały wyeksportowane do pliku:\n" + exportedPath;
+    }
+
+    private String buildCsvExportErrorStatus(String entityGenitivePlural) {
+        return "Nie udało się wyeksportować " + entityGenitivePlural + " do pliku CSV.";
+    }
+
+    private String buildCsvExportDialogTitle(String entityGenitivePlural) {
+        return "Eksport " + entityGenitivePlural;
+    }
+
+    private String buildCsvExportErrorMessage(String entityGenitivePlural) {
+        return "Nie udało się wyeksportować " + entityGenitivePlural + " do pliku CSV.";
+    }
+
+    private String buildCsvPreviewClearedStatus(String entityGenitivePlural) {
+        return "Podgląd importu " + entityGenitivePlural
+                + " został wyczyszczony. Wybierz plik CSV, aby przygotować go ponownie.";
     }
 
     private Path chooseCsvToOpen(String title) {
@@ -2154,7 +2203,7 @@ public class SettingsController {
     private void resetDocumentsCsvPreview() {
         if (documentsCsvPreviewArea != null) {
             documentsCsvPreviewArea.setText(UiTextUtil.buildEmptyPreviewText(
-                    "Dokumenty CSV",
+                    "CSV dokumentów",
                     "Po uruchomieniu analizy zobaczysz tutaj podsumowanie pliku, nagłówki oraz próbkę wierszy dokumentów i pozycji."
             ));
         }

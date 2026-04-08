@@ -113,7 +113,7 @@ public class ContrahentCsvImportService {
     }
 
     public String getSupportedColumnsSummary() {
-        return "Obsługiwane kolumny CSV: name/nazwa, country/kraj, countryCode/kodKraju, city/miasto, postalCode, phytosanitaryNumber, supplier/dostawca, client/odbiorca.";
+        return "Obsługiwane kolumny importu: nazwa (name), kraj (country), kod kraju (countryCode), miasto (city), kod pocztowy (postalCode), numer fitosanitarny (phytosanitaryNumber), dostawca (supplier), odbiorca (client).";
     }
 
     private int indexOf(List<String> headers, String... aliases) {

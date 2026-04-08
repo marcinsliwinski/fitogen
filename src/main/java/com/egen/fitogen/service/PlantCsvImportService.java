@@ -97,7 +97,7 @@ public class PlantCsvImportService {
     }
 
     public String getSupportedColumnsSummary() {
-        return "Obsługiwane kolumny CSV: species/gatunek, variety/odmiana, rootstock/podkladka, latinSpeciesName/nazwaLacinska, eppoCode, passportRequired, visibilityStatus.";
+        return "Obsługiwane kolumny importu: gatunek (species), odmiana (variety), podkładka (rootstock), nazwa łacińska (latinSpeciesName), kod EPPO (eppoCode), wymagany paszport (passportRequired), status widoczności (visibilityStatus).";
     }
 
     private int indexOf(List<String> headers, String... aliases) {

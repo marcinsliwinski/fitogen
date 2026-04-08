@@ -42,7 +42,7 @@ public class ContrahentCsvExportService {
     }
 
     public String getSupportedColumnsSummary() {
-        return "Kolumny eksportu Contrahents CSV: name, country, countryCode, city, postalCode, street, phytosanitaryNumber, supplier, client.";
+        return "Kolumny eksportu: nazwa (name), kraj (country), kod kraju (countryCode), miasto (city), kod pocztowy (postalCode), ulica i numer (street), numer fitosanitarny (phytosanitaryNumber), dostawca (supplier), odbiorca (client).";
     }
 
     private String escape(String value) {
