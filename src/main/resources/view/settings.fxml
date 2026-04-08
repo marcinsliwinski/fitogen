@@ -72,7 +72,7 @@
                         <VBox spacing="16" styleClass="content-card">
                             <padding><Insets top="16" right="16" bottom="16" left="16"/></padding>
                             <VBox spacing="8">
-                                <Label text="Numerator" styleClass="stat-title"/>
+                                <Label text="Ustawienia numeracji" styleClass="stat-title"/>
                                 <HBox spacing="12" alignment="CENTER_LEFT">
                                     <Label text="Typ numeracji:" minWidth="140"/>
                                     <ComboBox fx:id="numberingTypeBox" prefWidth="240"/>
@@ -234,14 +234,14 @@
                             <padding><Insets top="16" right="16" bottom="16" left="16"/></padding>
 
                             <VBox spacing="12" styleClass="stat-card">
-                                <Label text="Plants CSV" styleClass="stat-title"/>
-                                <Label text="Lokalne preview importu i eksport CSV dla roślin. Ten obszar pozostaje w Settings i nie jest częścią modułu Updates." wrapText="true" styleClass="page-subtitle"/>
+                                <Label text="CSV roślin" styleClass="stat-title"/>
+                                <Label text="Lokalny podgląd importu i eksport CSV dla roślin. Ten obszar pozostaje w Ustawieniach i nie jest częścią modułu Aktualizacje." wrapText="true" styleClass="page-subtitle"/>
                                 <Label fx:id="plantsCsvColumnsLabel" wrapText="true" styleClass="page-subtitle"/>
                                 <Label fx:id="plantsCsvStatusLabel" wrapText="true" styleClass="page-subtitle"/>
                                 <HBox spacing="10">
-                                    <Button text="Preview importu Plants CSV" onAction="#previewPlantsCsvImport"/>
-                                    <Button text="Eksport Plants CSV" onAction="#exportPlantsCsv" styleClass="button-secondary"/>
-                                    <Button text="Wyczyść preview" onAction="#clearPlantsCsvPreview" styleClass="button-secondary"/>
+                                    <Button text="Podgląd importu CSV roślin" onAction="#previewPlantsCsvImport"/>
+                                    <Button text="Eksport CSV roślin" onAction="#exportPlantsCsv" styleClass="button-secondary"/>
+                                    <Button text="Wyczyść podgląd" onAction="#clearPlantsCsvPreview" styleClass="button-secondary"/>
                                 </HBox>
                                 <TextArea fx:id="plantsCsvPreviewArea" editable="false" wrapText="true" prefRowCount="10"/>
                             </VBox>
@@ -249,14 +249,14 @@
                             <Separator/>
 
                             <VBox spacing="12" styleClass="stat-card">
-                                <Label text="Contrahents CSV" styleClass="stat-title"/>
-                                <Label text="Lokalne preview importu i eksport CSV dla kontrahentów w tym samym standardzie ustawień lokalnych." wrapText="true" styleClass="page-subtitle"/>
+                                <Label text="CSV kontrahentów" styleClass="stat-title"/>
+                                <Label text="Lokalny podgląd importu i eksport CSV dla kontrahentów w tym samym standardzie ustawień lokalnych." wrapText="true" styleClass="page-subtitle"/>
                                 <Label fx:id="contrahentsCsvColumnsLabel" wrapText="true" styleClass="page-subtitle"/>
                                 <Label fx:id="contrahentsCsvStatusLabel" wrapText="true" styleClass="page-subtitle"/>
                                 <HBox spacing="10">
-                                    <Button text="Preview importu Contrahents CSV" onAction="#previewContrahentsCsvImport"/>
-                                    <Button text="Eksport Contrahents CSV" onAction="#exportContrahentsCsv" styleClass="button-secondary"/>
-                                    <Button text="Wyczyść preview" onAction="#clearContrahentsCsvPreview" styleClass="button-secondary"/>
+                                    <Button text="Podgląd importu CSV kontrahentów" onAction="#previewContrahentsCsvImport"/>
+                                    <Button text="Eksport CSV kontrahentów" onAction="#exportContrahentsCsv" styleClass="button-secondary"/>
+                                    <Button text="Wyczyść podgląd" onAction="#clearContrahentsCsvPreview" styleClass="button-secondary"/>
                                 </HBox>
                                 <TextArea fx:id="contrahentsCsvPreviewArea" editable="false" wrapText="true" prefRowCount="10"/>
                             </VBox>
@@ -265,13 +265,13 @@
 
                             <VBox spacing="12" styleClass="stat-card">
                                 <Label text="Dokumenty CSV" styleClass="stat-title"/>
-                                <Label text="Lokalny podgląd importu i eksport CSV dla dokumentów. Format pozostaje w Settings -> Import / Eksport CSV i nie wchodzi do modułu Updates." wrapText="true" styleClass="page-subtitle"/>
+                                <Label text="Lokalny podgląd importu i eksport CSV dla dokumentów. Format pozostaje w Ustawieniach -> Import / Eksport CSV i nie wchodzi do modułu Aktualizacje." wrapText="true" styleClass="page-subtitle"/>
                                 <Label fx:id="documentsCsvColumnsLabel" wrapText="true" styleClass="page-subtitle"/>
                                 <Label fx:id="documentsCsvStatusLabel" wrapText="true" styleClass="page-subtitle"/>
                                 <HBox spacing="10">
                                     <Button text="Podgląd importu CSV dokumentów" onAction="#previewDocumentsCsvImport"/>
                                     <Button text="Eksport CSV dokumentów" onAction="#exportDocumentsCsv" styleClass="button-secondary"/>
-                                    <Button text="Wyczyść preview" onAction="#clearDocumentsCsvPreview" styleClass="button-secondary"/>
+                                    <Button text="Wyczyść podgląd" onAction="#clearDocumentsCsvPreview" styleClass="button-secondary"/>
                                 </HBox>
                                 <TextArea fx:id="documentsCsvPreviewArea" editable="false" wrapText="true" prefRowCount="12"/>
                             </VBox>
@@ -281,21 +281,21 @@
             </Tab>
 
 
-            <Tab text="Audit Log">
+            <Tab text="Dziennik audytu">
                 <ScrollPane fitToWidth="true" fitToHeight="true">
                     <content>
                         <VBox spacing="16" styleClass="content-card">
                             <padding><Insets top="16" right="16" bottom="16" left="16"/></padding>
 
                             <VBox spacing="12" styleClass="stat-card">
-                                <Label text="Audit Log" styleClass="stat-title"/>
+                                <Label text="Dziennik audytu" styleClass="stat-title"/>
                                 <Label text="Podgląd ostatnich wpisów audytowych zapisanych w bazie. Na tym etapie ekran jest tylko do odczytu i nie zmienia sposobu logowania zdarzeń." wrapText="true" styleClass="page-subtitle"/>
                                 <Label fx:id="auditLogStatusLabel" wrapText="true" styleClass="page-subtitle"/>
                                 <Label text="Najnowszy wpis" styleClass="stat-title"/>
                                 <Label fx:id="auditLogSummaryLabel" wrapText="true" styleClass="page-subtitle"/>
-                                <TextField fx:id="auditLogSearchField" promptText="Filtruj wpisy Audit Log po użytkowniku, encji, akcji lub opisie..."/>
+                                <TextField fx:id="auditLogSearchField" promptText="Filtruj wpisy dziennika audytu po użytkowniku, encji, akcji lub opisie..."/>
                                 <HBox spacing="10">
-                                    <Button text="Odśwież Audit Log" onAction="#refreshAuditLog" styleClass="button-secondary"/>
+                                    <Button text="Odśwież dziennik audytu" onAction="#refreshAuditLog" styleClass="button-secondary"/>
                                     <Button text="Wyczyść filtr" onAction="#clearAuditLogFilter" styleClass="button-secondary"/>
                                 </HBox>
                                 <TableView fx:id="auditLogTable" prefHeight="420">
@@ -314,18 +314,18 @@
                 </ScrollPane>
             </Tab>
 
-            <Tab text="Backup i baza">
+            <Tab text="Kopia zapasowa i baza">
                 <ScrollPane fitToWidth="true" fitToHeight="true">
                     <content>
                         <VBox spacing="16" styleClass="content-card">
                             <padding><Insets top="16" right="16" bottom="16" left="16"/></padding>
-                            <Label text="Backup ręczny" styleClass="stat-title"/>
+                            <Label text="Ręczna kopia zapasowa" styleClass="stat-title"/>
                             <Label text="Plik bazy danych:"/>
                             <Label fx:id="databasePathLabel" wrapText="true" styleClass="page-subtitle"/>
-                            <Label text="Stan backupu:"/>
+                            <Label text="Stan kopii zapasowej:"/>
                             <Label fx:id="backupStatusLabel" wrapText="true" styleClass="page-subtitle"/>
                             <HBox spacing="10">
-                                <Button text="Utwórz backup" onAction="#createBackup"/>
+                                <Button text="Utwórz kopię zapasową" onAction="#createBackup"/>
                             </HBox>
                         </VBox>
                     </content>

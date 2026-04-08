@@ -50,17 +50,17 @@ public class UpdatesController {
         }
         if (plantsUpdateStatusLabel != null) {
             plantsUpdateStatusLabel.setText(
-                "Server Update dla bazy roślin nie jest jeszcze aktywny. Docelowo tutaj będą obsługiwane import i aktualizacja danych roślin z serwera."
+                "Aktualizacja serwerowa dla bazy roślin nie jest jeszcze aktywna. Docelowo tutaj będą obsługiwane import i aktualizacja danych roślin z serwera."
         );
         }
         if (eppoUpdateStatusLabel != null) {
             eppoUpdateStatusLabel.setText(
-                "Server Update dla bazy EPPO nie jest jeszcze aktywny. Docelowo tutaj będą obsługiwane import i aktualizacja danych referencyjnych EPPO z serwera."
+                "Aktualizacja serwerowa dla bazy EPPO nie jest jeszcze aktywna. Docelowo tutaj będą obsługiwane import i aktualizacja danych referencyjnych EPPO z serwera."
         );
         }
         if (countriesUpdateStatusLabel != null) {
             countriesUpdateStatusLabel.setText(
-                "Server Update dla wspólnego słownika krajów nie jest jeszcze aktywny. Docelowo tutaj będą obsługiwane import i aktualizacja słownika krajów z serwera."
+                "Aktualizacja serwerowa dla wspólnego słownika krajów nie jest jeszcze aktywna. Docelowo tutaj będą obsługiwane import i aktualizacja słownika krajów z serwera."
         );
         }
 
@@ -69,7 +69,7 @@ public class UpdatesController {
     }
 
     private void initializeDryRunPreviewState() {
-        setDryRunStatus("Preview / dry-run pokazuje tylko lokalne podsumowanie gotowości. Nie pobiera danych z serwera i nie zapisuje zmian.");
+        setDryRunStatus("Podgląd / test bez zapisu pokazuje tylko lokalne podsumowanie gotowości. Nie pobiera danych z serwera i nie zapisuje zmian.");
         resetPlantsDryRunPreview();
         resetEppoDryRunPreview();
         resetCountriesDryRunPreview();
@@ -81,7 +81,7 @@ public class UpdatesController {
         plantsDryRunPreviewArea.setText(buildPlantsDryRunPreview());
         eppoDryRunPreviewArea.setText(buildEppoDryRunPreview());
         countriesDryRunPreviewArea.setText(buildCountriesDryRunPreview());
-        setDryRunStatus("Wygenerowano pełny preview Server Update dla Plants, EPPO i wspólnego słownika krajów bez pobierania danych z serwera.");
+        setDryRunStatus("Wygenerowano pełny podgląd aktualizacji serwerowej dla roślin, EPPO i wspólnego słownika krajów bez pobierania danych z serwera.");
     }
 
     @FXML
@@ -90,49 +90,49 @@ public class UpdatesController {
         resetEppoDryRunPreview();
         resetCountriesDryRunPreview();
         refreshTechnicalState();
-        setDryRunStatus("Wyczyszczono wszystkie sekcje preview / dry-run.");
+        setDryRunStatus("Wyczyszczono wszystkie sekcje podglądu / testu bez zapisu.");
     }
 
     @FXML
     private void previewPlantsDryRun() {
         refreshTechnicalState();
         plantsDryRunPreviewArea.setText(buildPlantsDryRunPreview());
-        setDryRunStatus("Wygenerowano preview Plants Server Update bez pobierania danych z serwera.");
+        setDryRunStatus("Wygenerowano podgląd aktualizacji serwerowej roślin bez pobierania danych z serwera.");
     }
 
     @FXML
     private void previewEppoDryRun() {
         refreshTechnicalState();
         eppoDryRunPreviewArea.setText(buildEppoDryRunPreview());
-        setDryRunStatus("Wygenerowano preview EPPO Server Update bez pobierania danych z serwera.");
+        setDryRunStatus("Wygenerowano podgląd aktualizacji serwerowej EPPO bez pobierania danych z serwera.");
     }
 
     @FXML
     private void previewCountriesDryRun() {
         refreshTechnicalState();
         countriesDryRunPreviewArea.setText(buildCountriesDryRunPreview());
-        setDryRunStatus("Wygenerowano preview wspólnego słownika krajów bez pobierania danych z serwera.");
+        setDryRunStatus("Wygenerowano podgląd aktualizacji wspólnego słownika krajów bez pobierania danych z serwera.");
     }
 
     @FXML
     private void clearPlantsDryRunPreview() {
         resetPlantsDryRunPreview();
         refreshTechnicalState();
-        setDryRunStatus("Wyczyszczono preview Plants Server Update.");
+        setDryRunStatus("Wyczyszczono podgląd aktualizacji serwerowej roślin.");
     }
 
     @FXML
     private void clearEppoDryRunPreview() {
         resetEppoDryRunPreview();
         refreshTechnicalState();
-        setDryRunStatus("Wyczyszczono preview EPPO Server Update.");
+        setDryRunStatus("Wyczyszczono podgląd aktualizacji serwerowej EPPO.");
     }
 
     @FXML
     private void clearCountriesDryRunPreview() {
         resetCountriesDryRunPreview();
         refreshTechnicalState();
-        setDryRunStatus("Wyczyszczono preview wspólnego słownika krajów.");
+        setDryRunStatus("Wyczyszczono podgląd wspólnego słownika krajów.");
     }
 
     private String buildPlantsDryRunPreview() {
@@ -146,17 +146,17 @@ public class UpdatesController {
                 .count();
 
         StringBuilder builder = new StringBuilder();
-        builder.append("Lokalna baza Plants: ").append(plants.size()).append(" rekordów").append(UiTextUtil.NL);
+        builder.append("Lokalna baza roślin: ").append(plants.size()).append(" rekordów").append(UiTextUtil.NL);
         builder.append("Rośliny z wymaganym paszportem: ").append(passportRequiredCount).append(UiTextUtil.NL);
         builder.append("Rośliny z informacyjnym kodem EPPO: ").append(withEppoCount).append(UiTextUtil.NL);
         builder.append("Rośliny bez nazwy gatunku: ").append(missingSpeciesCount).append(UiTextUtil.NL);
-        builder.append("Rośliny bez visibilityStatus: ").append(missingVisibilityCount).append(UiTextUtil.NL);
+        builder.append("Rośliny bez statusu widoczności: ").append(missingVisibilityCount).append(UiTextUtil.NL);
         builder.append("Rośliny oznaczone jako Nieużywany: ").append(unusedCount).append(UiTextUtil.DOUBLE_NL);
         builder.append("Ocena gotowości: ")
                 .append(buildPlantsReadinessStatus(plants.size(), missingSpeciesCount, missingVisibilityCount))
                 .append(UiTextUtil.DOUBLE_NL);
         appendPlantsPreviewSample(builder, plants);
-        builder.append(UiTextUtil.NL).append("To jest tylko lokalny preview gotowości pod przyszły Server Update Plants.");
+        builder.append(UiTextUtil.NL).append("To jest tylko lokalny podgląd gotowości pod przyszłą aktualizację serwerową roślin.");
         return builder.toString();
     }
 
@@ -179,7 +179,7 @@ public class UpdatesController {
                 .append(buildEppoReadinessStatus(codes.size(), missingCodeCount, missingDisplayNameCount))
                 .append(UiTextUtil.DOUBLE_NL);
         appendEppoPreviewSample(builder, codes);
-        builder.append(UiTextUtil.NL).append("To jest tylko lokalny preview gotowości pod przyszły Server Update EPPO.");
+        builder.append(UiTextUtil.NL).append("To jest tylko lokalny podgląd gotowości pod przyszłą aktualizację serwerową EPPO.");
         return builder.toString();
     }
 
@@ -200,14 +200,14 @@ public class UpdatesController {
                 .append(buildCountriesReadinessStatus(entries.size(), missingCountryCount, missingCodeCount, duplicateCodeCount))
                 .append(UiTextUtil.DOUBLE_NL);
         appendCountriesPreviewSample(builder, entries, customEntries);
-        builder.append(UiTextUtil.NL).append("To jest tylko lokalny preview gotowości pod przyszły Server Update wspólnego słownika krajów.");
+        builder.append(UiTextUtil.NL).append("To jest tylko lokalny podgląd gotowości pod przyszłą aktualizację serwerową wspólnego słownika krajów.");
         return builder.toString();
     }
 
     private void appendPlantsPreviewSample(StringBuilder builder, List<com.egen.fitogen.model.Plant> plants) {
         builder.append("Próbka pierwszych rekordów:").append(UiTextUtil.NL);
         if (plants.isEmpty()) {
-            builder.append("- Brak lokalnych rekordów Plants.").append(UiTextUtil.NL);
+            builder.append("- Brak lokalnych rekordów roślin.").append(UiTextUtil.NL);
             return;
         }
 
@@ -266,19 +266,19 @@ public class UpdatesController {
 
     private void resetPlantsDryRunPreview() {
         if (plantsDryRunPreviewArea != null) {
-            plantsDryRunPreviewArea.setText(UiTextUtil.buildEmptyPreviewText("Plants Server Update", "Użyj przycisku preview, aby zobaczyć lokalne podsumowanie gotowości."));
+            plantsDryRunPreviewArea.setText(UiTextUtil.buildEmptyPreviewText("Aktualizacja serwerowa roślin", "Użyj przycisku podglądu, aby zobaczyć lokalne podsumowanie gotowości."));
         }
     }
 
     private void resetEppoDryRunPreview() {
         if (eppoDryRunPreviewArea != null) {
-            eppoDryRunPreviewArea.setText(UiTextUtil.buildEmptyPreviewText("EPPO Server Update", "Użyj przycisku preview, aby zobaczyć lokalne podsumowanie gotowości."));
+            eppoDryRunPreviewArea.setText(UiTextUtil.buildEmptyPreviewText("Aktualizacja serwerowa EPPO", "Użyj przycisku podglądu, aby zobaczyć lokalne podsumowanie gotowości."));
         }
     }
 
     private void resetCountriesDryRunPreview() {
         if (countriesDryRunPreviewArea != null) {
-            countriesDryRunPreviewArea.setText(UiTextUtil.buildEmptyPreviewText("wspólnego słownika krajów", "Użyj przycisku preview, aby zobaczyć lokalne podsumowanie gotowości."));
+            countriesDryRunPreviewArea.setText(UiTextUtil.buildEmptyPreviewText("wspólnego słownika krajów", "Użyj przycisku podglądu, aby zobaczyć lokalne podsumowanie gotowości."));
         }
     }
 
@@ -294,9 +294,9 @@ public class UpdatesController {
         }
 
         if (lastBackupAt == null || lastBackupAt.isBlank()) {
-            lastBackupInfoLabel.setText("Brak informacji o wykonanym backupie.");
+            lastBackupInfoLabel.setText("Brak informacji o wykonanej kopii zapasowej.");
         } else {
-            lastBackupInfoLabel.setText("Ostatni zapisany backup: " + lastBackupAt);
+            lastBackupInfoLabel.setText("Ostatnia zapisana kopia zapasowa: " + lastBackupAt);
         }
     }
 
@@ -325,11 +325,11 @@ public class UpdatesController {
         );
 
         StringBuilder builder = new StringBuilder();
-        builder.append("Ten ekran jest zarezerwowany wyłącznie dla aktualizacji aplikacji i przyszłych synchronizacji Server Update. Lokalne importy i eksporty CSV pozostają poza tym modułem.").append(UiTextUtil.DOUBLE_NL);
-        builder.append("Plants: ").append(plantsStatus)
+        builder.append("Ten ekran jest zarezerwowany wyłącznie dla aktualizacji aplikacji i przyszłych synchronizacji serwerowych. Lokalne importy i eksporty CSV pozostają poza tym modułem.").append(UiTextUtil.DOUBLE_NL);
+        builder.append("Rośliny: ").append(plantsStatus)
                 .append(" (rekordy: ").append(plants.size())
                 .append(", braki gatunku: ").append(plantsMissingSpecies)
-                .append(", braki visibilityStatus: ").append(plantsMissingVisibility)
+                .append(", braki statusu widoczności: ").append(plantsMissingVisibility)
                 .append(")").append(UiTextUtil.NL);
         builder.append("EPPO: ").append(eppoStatus)
                 .append(" (rekordy: ").append(eppoCodes.size())
@@ -359,12 +359,12 @@ public class UpdatesController {
             return "brak danych lokalnych do oceny";
         }
         if (missingSpeciesCount > 0) {
-            return "wymaga porządkowania danych przed pełnym Server Update";
+            return "wymaga porządkowania danych przed pełną aktualizacją serwerową";
         }
         if (missingVisibilityCount > 0) {
-            return "częściowo gotowe — warto uzupełnić visibilityStatus";
+            return "częściowo gotowe — warto uzupełnić status widoczności";
         }
-        return "gotowe do bezpiecznego dry-run po stronie lokalnej";
+        return "gotowe do bezpiecznego testu bez zapisu po stronie lokalnej";
     }
 
     private String buildEppoReadinessStatus(long totalCount, long missingCodeCount, long missingDisplayNameCount) {
@@ -374,7 +374,7 @@ public class UpdatesController {
         if (missingCodeCount > 0 || missingDisplayNameCount > 0) {
             return "wymaga porządkowania rekordów referencyjnych";
         }
-        return "gotowe do bezpiecznego dry-run po stronie lokalnej";
+        return "gotowe do bezpiecznego testu bez zapisu po stronie lokalnej";
     }
 
     private String buildCountriesReadinessStatus(long totalCount,
@@ -390,7 +390,7 @@ public class UpdatesController {
         if (duplicateCodeCount > 0) {
             return "częściowo gotowe — sprawdź duplikaty kodów kraju";
         }
-        return "gotowe do bezpiecznego dry-run po stronie lokalnej";
+        return "gotowe do bezpiecznego testu bez zapisu po stronie lokalnej";
     }
 
     private long countDuplicateCountryCodes(List<CountryDirectory.CountryEntry> entries) {

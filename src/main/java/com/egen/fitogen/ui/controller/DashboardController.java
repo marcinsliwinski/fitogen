@@ -87,8 +87,8 @@ public class DashboardController {
     private void fillSystemState(List<Document> documents, List<PlantBatch> batches) {
         String lastBackupAt = appSettingsService.getLastBackupAt();
         String backupText = lastBackupAt == null || lastBackupAt.isBlank()
-                ? "Brak wykonanego backupu"
-                : "Ostatni backup: " + lastBackupAt;
+                ? "Brak wykonanej kopii zapasowej"
+                : "Ostatnia kopia zapasowa: " + lastBackupAt;
         backupStatusValueLabel.setText(backupText);
 
         issuerStatusValueLabel.setText(

@@ -62,7 +62,7 @@
 
                 <HBox spacing="16">
                     <VBox spacing="6" HBox.hgrow="ALWAYS">
-                        <Label text="Backup" styleClass="stat-title"/>
+                        <Label text="Kopia zapasowa" styleClass="stat-title"/>
                         <Label fx:id="backupStatusValueLabel" wrapText="true"/>
                     </VBox>
 
@@ -87,7 +87,7 @@
 
             <VBox fx:id="issuerIncompleteBox" styleClass="content-card" spacing="12" visible="false">
                 <Label text="Dane firmy / podmiotu wymagają uzupełnienia" styleClass="section-title" style="-fx-font-size: 18px;"/>
-                <Label text="Profil szkółki / wystawcy jest niekompletny. Uzupełnij dane podmiotu w ustawieniach, aby dashboard i kolejne moduły mogły korzystać z pełnych danych." wrapText="true"/>
+                <Label text="Profil szkółki / wystawcy jest niekompletny. Uzupełnij dane podmiotu w ustawieniach, aby pulpit i kolejne moduły mogły korzystać z pełnych danych." wrapText="true"/>
                 <HBox spacing="10">
                     <Button fx:id="completeIssuerButton"
                             text="Uzupełnij w ustawieniach"

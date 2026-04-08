@@ -44,7 +44,7 @@
 
             <VBox styleClass="content-card" spacing="12">
                 <Label text="Najczęstsze pytania" styleClass="section-title"/>
-                <Label text="Gdzie zmienić numerację? → Ustawienia → Numerator" wrapText="true"/>
+                <Label text="Gdzie zmienić numerację? → Ustawienia → Numeracja" wrapText="true"/>
                 <Label text="Jak ustawić użytkownika domyślnego? → Ustawienia → Użytkownicy" wrapText="true"/>
                 <Label text="Jak dodać nową partię z dokumentu? → W dropdownie partii wybierz „Dodaj nową partię…”" wrapText="true"/>
                 <Label text="Dlaczego nie mogę edytować anulowanego dokumentu lub partii? → Rekord anulowany jest blokowany do edycji biznesowo." wrapText="true"/>

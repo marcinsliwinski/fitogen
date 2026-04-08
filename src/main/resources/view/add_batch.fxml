@@ -17,22 +17,22 @@
 
     <GridPane hgap="10" vgap="10">
 
-        <Label text="Batch number" GridPane.rowIndex="0"/>
+        <Label text="Numer partii" GridPane.rowIndex="0"/>
         <TextField fx:id="batchNo"
                    GridPane.rowIndex="0"
                    GridPane.columnIndex="1"/>
 
-        <Label text="Qty" GridPane.rowIndex="1"/>
+        <Label text="Ilość" GridPane.rowIndex="1"/>
         <TextField fx:id="qty"
                    GridPane.rowIndex="1"
                    GridPane.columnIndex="1"/>
 
-        <Label text="Country" GridPane.rowIndex="2"/>
+        <Label text="Kraj" GridPane.rowIndex="2"/>
         <TextField fx:id="country"
                    GridPane.rowIndex="2"
                    GridPane.columnIndex="1"/>
 
-        <Label text="Plant" GridPane.rowIndex="3"/>
+        <Label text="Roślina" GridPane.rowIndex="3"/>
         <ComboBox fx:id="plantBox"
                   GridPane.rowIndex="3"
                   GridPane.columnIndex="1"/>

@@ -394,7 +394,7 @@ public class SettingsController {
         auditLogSortedData = new SortedList<>(auditLogFilteredData);
         auditLogSortedData.comparatorProperty().bind(auditLogTable.comparatorProperty());
         auditLogTable.setItems(auditLogSortedData);
-        auditLogTable.setPlaceholder(new Label("Brak wpisów Audit Log do wyświetlenia."));
+        auditLogTable.setPlaceholder(new Label("Brak wpisów dziennika audytu do wyświetlenia."));
         auditLogTable.setColumnResizePolicy(TableView.UNCONSTRAINED_RESIZE_POLICY);
         auditLogTable.setEditable(false);
         auditLogTable.getSortOrder().clear();
@@ -1568,23 +1568,23 @@ public class SettingsController {
         String lastBackupPath = safe(appSettingsService.getLastBackupPath());
 
         if (lastBackupAt.isBlank()) {
-            backupStatusLabel.setText("Backup nie został jeszcze wykonany.");
+            backupStatusLabel.setText("Kopia zapasowa nie została jeszcze wykonana.");
             return;
         }
 
         if (lastBackupPath.isBlank()) {
-            backupStatusLabel.setText("Ostatni backup: " + lastBackupAt);
+            backupStatusLabel.setText("Ostatnia kopia zapasowa: " + lastBackupAt);
             return;
         }
 
-        backupStatusLabel.setText(UiTextUtil.buildPathMessage("Ostatni backup: " + lastBackupAt, "Lokalizacja: " + lastBackupPath));
+        backupStatusLabel.setText(UiTextUtil.buildPathMessage("Ostatnia kopia zapasowa: " + lastBackupAt, "Lokalizacja: " + lastBackupPath));
     }
 
     @FXML
     private void createBackup() {
         try {
             DirectoryChooser chooser = new DirectoryChooser();
-            chooser.setTitle("Wybierz katalog dla backupu");
+            chooser.setTitle("Wybierz katalog dla kopii zapasowej");
             Window window = getOwningWindow();
             File selectedDirectory = chooser.showDialog(window);
             if (selectedDirectory == null) {
@@ -1599,17 +1599,17 @@ public class SettingsController {
                         "APP_SETTINGS",
                         null,
                         "UPDATE",
-                        "Utworzono backup bazy danych w lokalizacji " + backupPath
+                        "Utworzono kopię zapasową bazy danych w lokalizacji " + backupPath
                 );
             }
             refreshBackupStatus();
-            DialogUtil.showSuccess("Backup został utworzony:\n" + backupPath);
+            DialogUtil.showSuccess("Kopia zapasowa została utworzona:\n" + backupPath);
         } catch (IllegalArgumentException | IllegalStateException e) {
             backupStatusLabel.setText(e.getMessage());
-            DialogUtil.showWarning("Backup", e.getMessage());
+            DialogUtil.showWarning("Kopia zapasowa", e.getMessage());
         } catch (Exception e) {
             e.printStackTrace();
-            backupStatusLabel.setText("Nie udało się utworzyć backupu.");
+            backupStatusLabel.setText("Nie udało się utworzyć kopii zapasowej.");
             DialogUtil.showError("Błąd backupu", "Nie udało się utworzyć backupu bazy danych.");
         }
     }
@@ -1799,7 +1799,7 @@ public class SettingsController {
                 : UiTextUtil.buildQuotedFilterSuffix("Filtr", keyword);
 
         auditLogStatusLabel.setText(
-                "Liczba wpisów audit log: " + totalEntries
+                "Liczba wpisów dziennika audytu: " + totalEntries
                         + ". Widoczne po filtrze: " + visibleEntries
                         + ". Tabela działa w trybie tylko do odczytu."
                         + filterSuffix
@@ -1896,9 +1896,9 @@ public class SettingsController {
         } catch (Exception e) {
             e.printStackTrace();
             if (auditLogStatusLabel != null) {
-                auditLogStatusLabel.setText("Nie udało się odświeżyć Audit Log.");
+                auditLogStatusLabel.setText("Nie udało się odświeżyć dziennika audytu.");
             }
-            DialogUtil.showError("Audit Log", "Nie udało się odczytać wpisów Audit Log.");
+            DialogUtil.showError("Dziennik audytu", "Nie udało się odczytać wpisów dziennika audytu.");
         }
     }
 
@@ -1922,10 +1922,10 @@ public class SettingsController {
             documentsCsvColumnsLabel.setText(documentCsvImportService.getSupportedColumnsSummary() + " " + documentCsvExportService.getSupportedColumnsSummary());
         }
         if (plantsCsvStatusLabel != null) {
-            plantsCsvStatusLabel.setText("Wybierz plik CSV, aby zobaczyć preview importu Plants, albo zapisz aktualny eksport do pliku.");
+            plantsCsvStatusLabel.setText("Wybierz plik CSV, aby zobaczyć podgląd importu roślin, albo zapisz aktualny eksport do pliku.");
         }
         if (contrahentsCsvStatusLabel != null) {
-            contrahentsCsvStatusLabel.setText("Wybierz plik CSV, aby zobaczyć preview importu Contrahents, albo zapisz aktualny eksport do pliku.");
+            contrahentsCsvStatusLabel.setText("Wybierz plik CSV, aby zobaczyć podgląd importu kontrahentów, albo zapisz aktualny eksport do pliku.");
         }
         if (documentsCsvStatusLabel != null) {
             documentsCsvStatusLabel.setText("Wybierz plik CSV, aby zobaczyć podgląd importu CSV dokumentów, albo zapisz aktualny eksport do pliku.");
@@ -1948,26 +1948,26 @@ public class SettingsController {
             plantsCsvPreviewArea.setText(buildPlantsPreviewText(result));
         } catch (Exception e) {
             e.printStackTrace();
-            plantsCsvStatusLabel.setText("Nie udało się przygotować preview importu Plants.");
-            DialogUtil.showError("Preview importu Plants CSV", "Nie udało się odczytać ani przeanalizować pliku CSV roślin.");
+            plantsCsvStatusLabel.setText("Nie udało się przygotować podglądu importu roślin.");
+            DialogUtil.showError("Podgląd importu CSV roślin", "Nie udało się odczytać ani przeanalizować pliku CSV roślin.");
         }
     }
 
     @FXML
     private void exportPlantsCsv() {
-        Path selectedPath = chooseCsvToSave("Eksportuj Plants do CSV", "plants-export.csv");
+        Path selectedPath = chooseCsvToSave("Eksportuj rośliny do CSV", "rosliny-eksport.csv");
         if (selectedPath == null) {
             return;
         }
 
         try {
             Path exported = plantCsvExportService.export(selectedPath);
-            plantsCsvStatusLabel.setText("Eksport Plants zakończony powodzeniem: " + exported + ". Format pozostaje lokalnym standardem Settings -> Import / Eksport CSV.");
-            DialogUtil.showSuccess("Plants zostały wyeksportowane do pliku:\n" + exported);
+            plantsCsvStatusLabel.setText("Eksport roślin zakończony powodzeniem: " + exported + ". Format pozostaje lokalnym standardem Ustawienia -> Import / Eksport CSV.");
+            DialogUtil.showSuccess("Rośliny zostały wyeksportowane do pliku:\n" + exported);
         } catch (Exception e) {
             e.printStackTrace();
-            plantsCsvStatusLabel.setText("Nie udało się wyeksportować Plants do CSV.");
-            DialogUtil.showError("Eksport Plants CSV", "Nie udało się wyeksportować roślin do pliku CSV.");
+            plantsCsvStatusLabel.setText("Nie udało się wyeksportować roślin do CSV.");
+            DialogUtil.showError("Eksport CSV roślin", "Nie udało się wyeksportować roślin do pliku CSV.");
         }
     }
 
@@ -1984,26 +1984,26 @@ public class SettingsController {
             contrahentsCsvPreviewArea.setText(buildContrahentsPreviewText(result));
         } catch (Exception e) {
             e.printStackTrace();
-            contrahentsCsvStatusLabel.setText("Nie udało się przygotować preview importu Contrahents.");
-            DialogUtil.showError("Preview importu Contrahents CSV", "Nie udało się odczytać ani przeanalizować pliku CSV kontrahentów.");
+            contrahentsCsvStatusLabel.setText("Nie udało się przygotować podglądu importu kontrahentów.");
+            DialogUtil.showError("Podgląd importu CSV kontrahentów", "Nie udało się odczytać ani przeanalizować pliku CSV kontrahentów.");
         }
     }
 
     @FXML
     private void exportContrahentsCsv() {
-        Path selectedPath = chooseCsvToSave("Eksportuj Contrahents do CSV", "contrahents-export.csv");
+        Path selectedPath = chooseCsvToSave("Eksportuj kontrahentów do CSV", "kontrahenci-eksport.csv");
         if (selectedPath == null) {
             return;
         }
 
         try {
             Path exported = contrahentCsvExportService.export(selectedPath);
-            contrahentsCsvStatusLabel.setText("Eksport Contrahents zakończony powodzeniem: " + exported + ". Format pozostaje lokalnym standardem Settings -> Import / Eksport CSV.");
-            DialogUtil.showSuccess("Contrahents zostali wyeksportowani do pliku:\n" + exported);
+            contrahentsCsvStatusLabel.setText("Eksport kontrahentów zakończony powodzeniem: " + exported + ". Format pozostaje lokalnym standardem Ustawienia -> Import / Eksport CSV.");
+            DialogUtil.showSuccess("Kontrahenci zostali wyeksportowani do pliku:\n" + exported);
         } catch (Exception e) {
             e.printStackTrace();
-            contrahentsCsvStatusLabel.setText("Nie udało się wyeksportować Contrahents do CSV.");
-            DialogUtil.showError("Eksport Contrahents CSV", "Nie udało się wyeksportować kontrahentów do pliku CSV.");
+            contrahentsCsvStatusLabel.setText("Nie udało się wyeksportować kontrahentów do CSV.");
+            DialogUtil.showError("Eksport CSV kontrahentów", "Nie udało się wyeksportować kontrahentów do pliku CSV.");
         }
     }
 
@@ -2035,7 +2035,7 @@ public class SettingsController {
 
         try {
             Path exported = documentCsvExportService.export(selectedPath);
-            documentsCsvStatusLabel.setText("Eksport dokumentów CSV zakończony powodzeniem: " + exported + ". Format pozostaje lokalnym standardem Settings -> Import / Eksport CSV.");
+            documentsCsvStatusLabel.setText("Eksport dokumentów CSV zakończony powodzeniem: " + exported + ". Format pozostaje lokalnym standardem Ustawienia -> Import / Eksport CSV.");
             DialogUtil.showSuccess("Dokumenty zostały wyeksportowane do pliku:\n" + exported);
         } catch (Exception e) {
             e.printStackTrace();
@@ -2049,7 +2049,7 @@ public class SettingsController {
     private void clearPlantsCsvPreview() {
         resetPlantsCsvPreview();
         if (plantsCsvStatusLabel != null) {
-            plantsCsvStatusLabel.setText("Preview Plants zostało wyczyszczone. Wybierz plik CSV, aby uruchomić analizę ponownie.");
+            plantsCsvStatusLabel.setText("Podgląd importu roślin został wyczyszczony. Wybierz plik CSV, aby uruchomić analizę ponownie.");
         }
     }
 
@@ -2057,7 +2057,7 @@ public class SettingsController {
     private void clearContrahentsCsvPreview() {
         resetContrahentsCsvPreview();
         if (contrahentsCsvStatusLabel != null) {
-            contrahentsCsvStatusLabel.setText("Preview Contrahents zostało wyczyszczone. Wybierz plik CSV, aby uruchomić analizę ponownie.");
+            contrahentsCsvStatusLabel.setText("Podgląd importu kontrahentów został wyczyszczony. Wybierz plik CSV, aby uruchomić analizę ponownie.");
         }
     }
 
@@ -2106,7 +2106,7 @@ public class SettingsController {
 
 
     private String buildPlantsPreviewStatus(com.egen.fitogen.dto.PlantImportPreviewResult result) {
-        return "Plants CSV — łącznie: " + result.getTotalRowsCount()
+        return "CSV roślin — łącznie: " + result.getTotalRowsCount()
                 + ", nowych: " + result.getNewRowsCount()
                 + ", istniejących: " + result.getMatchingExistingCount()
                 + ", duplikatów w pliku: " + result.getDuplicateInFileCount()
@@ -2115,7 +2115,7 @@ public class SettingsController {
     }
 
     private String buildContrahentsPreviewStatus(com.egen.fitogen.dto.ContrahentImportPreviewResult result) {
-        return "Contrahents CSV — łącznie: " + result.getTotalRowsCount()
+        return "CSV kontrahentów — łącznie: " + result.getTotalRowsCount()
                 + ", nowych: " + result.getNewRowsCount()
                 + ", istniejących: " + result.getMatchingExistingCount()
                 + ", duplikatów w pliku: " + result.getDuplicateInFileCount()
@@ -2136,7 +2136,7 @@ public class SettingsController {
     private void resetPlantsCsvPreview() {
         if (plantsCsvPreviewArea != null) {
             plantsCsvPreviewArea.setText(UiTextUtil.buildEmptyPreviewText(
-                    "Plants",
+                    "CSV roślin",
                     "Po uruchomieniu analizy zobaczysz tutaj podsumowanie pliku, nagłówki oraz próbkę wierszy."
             ));
         }
@@ -2145,7 +2145,7 @@ public class SettingsController {
     private void resetContrahentsCsvPreview() {
         if (contrahentsCsvPreviewArea != null) {
             contrahentsCsvPreviewArea.setText(UiTextUtil.buildEmptyPreviewText(
-                    "Contrahents",
+                    "CSV kontrahentów",
                     "Po uruchomieniu analizy zobaczysz tutaj podsumowanie pliku, nagłówki oraz próbkę wierszy."
             ));
         }
@@ -2383,7 +2383,7 @@ public class SettingsController {
         if (result.getDocumentCount() == 0) {
             return "brak nowych dokumentów do importu";
         }
-        return "gotowy do bezpiecznego importu preview";
+        return "gotowy do bezpiecznego podglądu importu";
     }
 
     private String buildDocumentsImportRecommendation(com.egen.fitogen.dto.DocumentImportPreviewResult result) {
@@ -2399,7 +2399,7 @@ public class SettingsController {
         if (result.getDocumentCount() == 0) {
             return "Plik wygląda poprawnie, ale nie wnosi nowych numerów dokumentów względem aktualnej bazy.";
         }
-        return "Format wygląda spójnie z lokalnym standardem CSV dokumentów w Settings.";
+        return "Format wygląda spójnie z lokalnym standardem CSV dokumentów w Ustawieniach.";
     }
 
     private String buildPlantsImportReadiness(com.egen.fitogen.dto.PlantImportPreviewResult result) {
@@ -2415,7 +2415,7 @@ public class SettingsController {
         if (result.getNewRowsCount() == 0) {
             return "brak nowych rekordów do importu";
         }
-        return "gotowy do bezpiecznego importu preview";
+        return "gotowy do bezpiecznego podglądu importu";
     }
 
     private String buildContrahentsImportReadiness(com.egen.fitogen.dto.ContrahentImportPreviewResult result) {
@@ -2431,7 +2431,7 @@ public class SettingsController {
         if (result.getNewRowsCount() == 0) {
             return "brak nowych rekordów do importu";
         }
-        return "gotowy do bezpiecznego importu preview";
+        return "gotowy do bezpiecznego podglądu importu";
     }
 
     private String buildPlantsImportRecommendation(com.egen.fitogen.dto.PlantImportPreviewResult result) {
@@ -2439,7 +2439,7 @@ public class SettingsController {
             return "Sprawdź, czy plik zawiera nagłówek i co najmniej jeden wiersz danych.";
         }
         if (result.getInvalidRowsCount() > 0) {
-            return "Najpierw popraw wiersze błędne, szczególnie brak gatunku i nieprawidłowy visibilityStatus.";
+            return "Najpierw popraw wiersze błędne, szczególnie brak gatunku i nieprawidłowy status widoczności.";
         }
         if (result.getDuplicateInFileCount() > 0) {
             return "Usuń duplikaty w samym pliku CSV, aby import był przewidywalny.";
@@ -2447,7 +2447,7 @@ public class SettingsController {
         if (result.getNewRowsCount() == 0) {
             return "Plik nie wniesie nowych roślin. Zweryfikuj, czy to właściwy eksport lub zestaw danych.";
         }
-        return "Preview wygląda spójnie. Zachowaj ten sam standard kolumn w kolejnych plikach lokalnych CSV.";
+        return "Podgląd wygląda spójnie. Zachowaj ten sam standard kolumn w kolejnych plikach lokalnych CSV.";
     }
 
     private String buildContrahentsImportRecommendation(com.egen.fitogen.dto.ContrahentImportPreviewResult result) {
@@ -2463,7 +2463,7 @@ public class SettingsController {
         if (result.getNewRowsCount() == 0) {
             return "Plik nie wniesie nowych kontrahentów. Zweryfikuj, czy to właściwy zestaw danych.";
         }
-        return "Preview wygląda spójnie. Zachowaj ten sam standard kolumn w kolejnych plikach lokalnych CSV.";
+        return "Podgląd wygląda spójnie. Zachowaj ten sam standard kolumn w kolejnych plikach lokalnych CSV.";
     }
 
     private String fallback(String value, String defaultValue) {
