@@ -37,7 +37,7 @@
                   GridPane.rowIndex="3"
                   GridPane.columnIndex="1"/>
 
-        <Label text="Contrahent" GridPane.rowIndex="4"/>
+        <Label text="Kontrahent" GridPane.rowIndex="4"/>
         <ComboBox fx:id="contrahentBox"
                   GridPane.rowIndex="4"
                   GridPane.columnIndex="1"/>

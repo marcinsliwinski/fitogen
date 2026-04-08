@@ -19,25 +19,25 @@
             </padding>
 
             <VBox spacing="4">
-                <Label text="Pomoc i Quick Start" styleClass="page-title"/>
+                <Label text="Pomoc i szybki start" styleClass="page-title"/>
                 <Label text="Szybkie wdrożenie użytkownika oraz najważniejsze wskazówki pracy z systemem Fito Gen." styleClass="page-subtitle" wrapText="true"/>
             </VBox>
 
             <HBox spacing="16">
                 <VBox styleClass="content-card" spacing="10" HBox.hgrow="ALWAYS">
-                    <Label text="Quick Start" styleClass="section-title"/>
+                    <Label text="Szybki start" styleClass="section-title"/>
                     <Label text="1. Uzupełnij Ustawienia: użytkownicy, typy dokumentów i konfigurację numeratora." wrapText="true"/>
                     <Label text="2. Dodaj rośliny oraz kontrahentów. Dla dostawców zaznacz odpowiednią rolę." wrapText="true"/>
                     <Label text="3. Dodaj partie roślin. Brak źródła pochodzenia oznacza partię wewnętrzną." wrapText="true"/>
                     <Label text="4. Wystaw dokument, korzystając z pozycji dokumentu i wyboru partii po roślinie." wrapText="true"/>
-                    <Label text="5. Użyj Podglądu, Druku lub Eksportu PDF, aby sfinalizować dokument." wrapText="true"/>
+                    <Label text="5. Użyj podglądu, druku lub zapisu PDF, aby sfinalizować dokument." wrapText="true"/>
                 </VBox>
 
                 <VBox styleClass="content-card" spacing="10" HBox.hgrow="ALWAYS">
-                    <Label text="Najczęstszy workflow" styleClass="section-title"/>
+                    <Label text="Najczęstszy przebieg pracy" styleClass="section-title"/>
                     <Label text="Rośliny → Kontrahenci → Partie roślin → Dokumenty → Podgląd / PDF" wrapText="true"/>
                     <Label text="Dwuklik w wiersz tabeli otwiera edycję rekordu w głównych modułach." wrapText="true"/>
-                    <Label text="Dokumenty i partie anulowane pozostają w systemie jako soft delete i są oznaczone statusem." wrapText="true"/>
+                    <Label text="Dokumenty i partie po anulowaniu pozostają w systemie i są wyraźnie oznaczone statusem." wrapText="true"/>
                     <Label text="W formularzu dokumentu wybór partii zależy od wybranej rośliny." wrapText="true"/>
                 </VBox>
             </HBox>

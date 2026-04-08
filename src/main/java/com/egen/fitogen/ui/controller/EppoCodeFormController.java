@@ -23,11 +23,13 @@ import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
+import javafx.scene.control.ListCell;
 import javafx.scene.control.SelectionMode;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
+import javafx.util.StringConverter;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -85,6 +87,7 @@ public class EppoCodeFormController {
     @FXML
     public void initialize() {
         statusBox.getItems().addAll("ACTIVE", "INACTIVE");
+        configureStatusBox();
         statusBox.setValue("ACTIVE");
 
         configureSuggestions();
@@ -362,10 +365,38 @@ public class EppoCodeFormController {
         speciesTable.setColumnResizePolicy(TableView.UNCONSTRAINED_RESIZE_POLICY);
     }
 
+    private void configureStatusBox() {
+        statusBox.setConverter(new StringConverter<>() {
+            @Override
+            public String toString(String value) {
+                return formatStatusForDisplay(value);
+            }
+
+            @Override
+            public String fromString(String value) {
+                return parseStatusFromDisplay(value);
+            }
+        });
+        statusBox.setCellFactory(listView -> new ListCell<>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(empty ? "" : formatStatusForDisplay(item));
+            }
+        });
+        statusBox.setButtonCell(new ListCell<>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(empty ? "" : formatStatusForDisplay(item));
+            }
+        });
+    }
+
     private void configureZoneTable() {
         colZoneCode.setCellValueFactory(cell -> new SimpleStringProperty(nullSafe(cell.getValue().getCode())));
         colZoneDisplay.setCellValueFactory(cell -> new SimpleStringProperty(buildZoneDisplayWithSource(cell.getValue())));
-        colZoneStatus.setCellValueFactory(cell -> new SimpleStringProperty(nullSafe(cell.getValue().getStatus())));
+        colZoneStatus.setCellValueFactory(cell -> new SimpleStringProperty(formatStatusForDisplay(cell.getValue().getStatus())));
         zoneTable.setItems(assignedZoneData);
         zoneTable.getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
         zoneTable.setColumnResizePolicy(TableView.UNCONSTRAINED_RESIZE_POLICY);
@@ -653,7 +684,7 @@ public class EppoCodeFormController {
                 code,
                 normalizeDisplay(zone.getName()),
                 normalizeDisplay(firstNonBlank(zone.getCountryCode(), code)),
-                normalizeDisplay(firstNonBlank(zone.getStatus(), "ACTIVE"))
+                formatStatusForDisplay(firstNonBlank(zone.getStatus(), "ACTIVE"))
         );
         eppoZoneService.save(newZone);
 
@@ -854,6 +885,28 @@ public class EppoCodeFormController {
             return prefix + " / " + name;
         }
         return notBlank(prefix) ? prefix : nullSafe(name);
+    }
+
+    private String formatStatusForDisplay(String status) {
+        String normalized = normalizeDisplay(status).toUpperCase();
+        if ("ACTIVE".equals(normalized)) {
+            return "Aktywny";
+        }
+        if ("INACTIVE".equals(normalized)) {
+            return "Nieaktywny";
+        }
+        return normalized.isBlank() ? "—" : normalizeDisplay(status);
+    }
+
+    private String parseStatusFromDisplay(String value) {
+        String normalized = normalizeDisplay(value).toLowerCase();
+        if (normalized.equals("aktywny")) {
+            return "ACTIVE";
+        }
+        if (normalized.equals("nieaktywny")) {
+            return "INACTIVE";
+        }
+        return normalizeDisplay(value).toUpperCase();
     }
 
     private String buildZoneDisplayWithSource(EppoZone zone) {

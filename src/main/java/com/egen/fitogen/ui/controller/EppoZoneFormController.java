@@ -10,8 +10,10 @@ import com.egen.fitogen.ui.util.ValidationUtil;
 import javafx.fxml.FXML;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
+import javafx.scene.control.ListCell;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
+import javafx.util.StringConverter;
 
 
 public class EppoZoneFormController {
@@ -29,6 +31,7 @@ public class EppoZoneFormController {
     @FXML
     public void initialize() {
         statusBox.getItems().addAll("ACTIVE", "INACTIVE");
+        configureStatusBox();
         statusBox.setValue("ACTIVE");
         countryCodeField.setEditable(false);
 
@@ -95,6 +98,34 @@ public class EppoZoneFormController {
         close();
     }
 
+    private void configureStatusBox() {
+        statusBox.setConverter(new StringConverter<>() {
+            @Override
+            public String toString(String value) {
+                return formatStatusForDisplay(value);
+            }
+
+            @Override
+            public String fromString(String value) {
+                return parseStatusFromDisplay(value);
+            }
+        });
+        statusBox.setCellFactory(listView -> new ListCell<>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(empty ? "" : formatStatusForDisplay(item));
+            }
+        });
+        statusBox.setButtonCell(new ListCell<>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(empty ? "" : formatStatusForDisplay(item));
+            }
+        });
+    }
+
     private void configureCountrySuggestions() {
         ComboBoxAutoComplete.bindEditable(countryField, countryDirectoryService.getCountries());
     }
@@ -127,6 +158,28 @@ public class EppoZoneFormController {
         }
 
         countryHintLabel.setText("Kod kraju został uzupełniony automatycznie ze wspólnego słownika krajów używanego także przez kontrahentów.");
+    }
+
+    private String formatStatusForDisplay(String status) {
+        String normalized = nullSafe(status).trim().toUpperCase();
+        if ("ACTIVE".equals(normalized)) {
+            return "Aktywny";
+        }
+        if ("INACTIVE".equals(normalized)) {
+            return "Nieaktywny";
+        }
+        return normalized.isBlank() ? "—" : nullSafe(status).trim();
+    }
+
+    private String parseStatusFromDisplay(String value) {
+        String normalized = nullSafe(value).trim().toLowerCase();
+        if (normalized.equals("aktywny")) {
+            return "ACTIVE";
+        }
+        if (normalized.equals("nieaktywny")) {
+            return "INACTIVE";
+        }
+        return nullSafe(value).trim().toUpperCase();
     }
 
     private String resolveCountryCode(String countryName, String countryCode, String zoneCode) {

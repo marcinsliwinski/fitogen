@@ -1450,7 +1450,7 @@ public class SettingsController {
         boolean countryPairConsistent = isIssuerCountryPairConsistent(profile);
 
         if (validationIssues.isEmpty() && countryPairConsistent) {
-            issuerStatusLabel.setText("Profil podmiotu jest kompletny i gotowy do użycia w dokumentach, dashboardzie i dalszych modułach.");
+            issuerStatusLabel.setText("Profil podmiotu jest kompletny i gotowy do użycia w dokumentach, pulpicie i dalszych modułach.");
         } else if (validationIssues.isEmpty()) {
             issuerStatusLabel.setText("Profil podmiotu jest prawie kompletny, ale para kraj / kod kraju wymaga ujednolicenia według wspólnego słownika.");
         } else {

@@ -48,12 +48,12 @@ public class PlantBatchService {
     }
 
     public List<PlantBatch> getAllBatches() {
-        logger.info("Fetching all plant batches");
+        logger.info("Pobieranie wszystkich partii roślin");
         return repository.findAll();
     }
 
     public PlantBatch getBatchById(int id) {
-        logger.info("Fetching plant batch by id {}", id);
+        logger.info("Pobieranie partii roślin o identyfikatorze {}", id);
         return repository.findById(id);
     }
 
@@ -68,10 +68,10 @@ public class PlantBatchService {
     }
 
     public void addBatch(PlantBatch batch) {
-        logger.info("Adding new batch: {}", batch != null ? batch.getInteriorBatchNo() : null);
+        logger.info("Dodawanie nowej partii: {}", batch != null ? batch.getInteriorBatchNo() : null);
 
         if (batch == null) {
-            throw new IllegalArgumentException("Plant batch cannot be null.");
+            throw new IllegalArgumentException("Partia roślin nie może być pusta.");
         }
 
         if (numberingService != null
@@ -92,14 +92,14 @@ public class PlantBatchService {
         PlantBatch beforeUpdate = batch == null ? null : repository.findById(batch.getId());
 
         if (batch == null) {
-            throw new IllegalArgumentException("Plant batch cannot be null.");
+            throw new IllegalArgumentException("Partia roślin nie może być pusta.");
         }
 
         if (batch.getStatus() == null) {
             batch.setStatus(PlantBatchStatus.ACTIVE);
         }
 
-        logger.info("Updating batch id {}", batch.getId());
+        logger.info("Aktualizacja partii o identyfikatorze {}", batch.getId());
         repository.update(batch);
         logChange("PlantBatch", batch.getId(), "UPDATE",
                 "Zaktualizowano partię roślin: " + describeBatch(batch)
@@ -107,7 +107,7 @@ public class PlantBatchService {
     }
 
     public void deleteBatch(int id) {
-        logger.info("Cancelling batch id {}", id);
+        logger.info("Anulowanie partii o identyfikatorze {}", id);
 
         List<String> documentNumbers = getDocumentNumbersUsingBatch(id);
         if (!documentNumbers.isEmpty()) {

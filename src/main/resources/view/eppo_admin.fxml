@@ -74,7 +74,7 @@
                     <Label fx:id="selectedCodeLabel" text="Wybrany kod EPPO: —" wrapText="true"/>
                     <Label fx:id="selectedCodeSummaryLabel" text="Podsumowanie wybranego kodu EPPO pojawi się po zaznaczeniu wiersza." wrapText="true"/>
                     <Label fx:id="selectedCodeAssignmentsLabel" text="Przypisane gatunki i kraje / strefy będą pokazane tutaj." wrapText="true"/>
-                    <Label fx:id="selectedCodeLegacyLabel" text="Informacja o legacy fallbacku gatunku pojawi się po zaznaczeniu kodu." wrapText="true"/>
+                    <Label fx:id="selectedCodeLegacyLabel" text="Informacja o zapasowym dopasowaniu gatunku pojawi się po zaznaczeniu kodu." wrapText="true"/>
                 </VBox>
             </VBox>
 

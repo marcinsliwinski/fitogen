@@ -338,7 +338,7 @@
                         <VBox spacing="16" styleClass="content-card">
                             <padding><Insets top="16" right="16" bottom="16" left="16"/></padding>
                             <Label text="Dane szkółki / wystawcy" styleClass="stat-title"/>
-                            <Label text="Te dane będą wykorzystywane w dokumentach, backupie systemowym i na dashboardzie stanu systemu." wrapText="true" styleClass="page-subtitle"/>
+                            <Label text="Te dane będą wykorzystywane w dokumentach, kopii zapasowej systemu i na pulpicie stanu systemu." wrapText="true" styleClass="page-subtitle"/>
 
                             <GridPane hgap="12" vgap="12">
                                 <columnConstraints>

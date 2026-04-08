@@ -92,7 +92,7 @@ public class PlantService {
         }
 
         if (plant.getSpecies() == null || plant.getSpecies().isBlank()) {
-            throw new IllegalArgumentException("Plant species required");
+            throw new IllegalArgumentException("Gatunek rośliny jest wymagany.");
         }
 
         normalizePlant(plant);

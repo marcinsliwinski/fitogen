@@ -141,7 +141,7 @@ public class EppoAdminController {
         colCodeLatinName.setCellValueFactory(cell ->
                 new SimpleStringProperty(buildCodeLatinName(cell.getValue()))
         );
-        colStatus.setCellValueFactory(new PropertyValueFactory<>("status"));
+        colStatus.setCellValueFactory(cell -> new SimpleStringProperty(formatStatusForDisplay(cell.getValue().getStatus())));
     }
 
     private void configureRecordTable() {
@@ -154,7 +154,7 @@ public class EppoAdminController {
         colRecordSpeciesName.setCellValueFactory(new PropertyValueFactory<>("speciesName"));
         colRecordSpeciesLatinName.setCellValueFactory(new PropertyValueFactory<>("speciesLatinName"));
         colRecordCountry.setCellValueFactory(new PropertyValueFactory<>("country"));
-        colRecordStatus.setCellValueFactory(new PropertyValueFactory<>("status"));
+        colRecordStatus.setCellValueFactory(cell -> new SimpleStringProperty(formatStatusForDisplay(cell.getValue().getStatus())));
 
         if (recordTable != null) {
             recordTable.setColumnResizePolicy(TableView.UNCONSTRAINED_RESIZE_POLICY);
@@ -195,6 +195,20 @@ public class EppoAdminController {
                 }
             }
         });
+    }
+
+    private String formatStatusForDisplay(String status) {
+        if (status == null || status.trim().isBlank()) {
+            return "—";
+        }
+        String normalized = status.trim().toUpperCase();
+        if ("ACTIVE".equals(normalized)) {
+            return "Aktywny";
+        }
+        if ("INACTIVE".equals(normalized)) {
+            return "Nieaktywny";
+        }
+        return status.trim();
     }
 
     private boolean isInactiveStatus(String status) {
@@ -656,7 +670,7 @@ public class EppoAdminController {
         if (selectedCode == null) {
             selectedCodeSummaryLabel.setText("Wybierz kod EPPO, aby zobaczyć jego kontekst.");
             selectedCodeAssignmentsLabel.setText("Przypisania gatunków i krajów / stref pojawią się tutaj.");
-            selectedCodeLegacyLabel.setText("Legacy fallback: —");
+            selectedCodeLegacyLabel.setText("Zapasowe dopasowanie gatunku: —");
             return;
         }
 
@@ -694,7 +708,7 @@ public class EppoAdminController {
 
     private String buildLegacySpeciesStatus(EppoCode selectedCode) {
         if (selectedCode == null) {
-            return "Legacy fallback: —";
+            return "Zapasowe dopasowanie gatunku: —";
         }
 
         List<EppoCodeSpeciesLink> explicitLinks = eppoCodeSpeciesLinkService == null
@@ -717,25 +731,25 @@ public class EppoAdminController {
         boolean legacyFallbackActive = hasLegacySpecies && !containsSpeciesSignature(explicitLinks, legacySpeciesName, legacyLatinName);
 
         if (hasExplicitLinks && !legacyFallbackActive) {
-            return "Legacy fallback: nieużywany";
+            return "Zapasowe dopasowanie gatunku: nieużywane";
         }
 
         if (hasExplicitLinks) {
-            return "Legacy fallback: aktywny równolegle • "
+            return "Zapasowe dopasowanie gatunku: aktywne równolegle • "
                     + buildSpeciesDisplay(legacySpeciesName, legacyLatinName)
                     + " • Właściwe przypisania: " + explicitLinks.size();
         }
 
         if (legacyFallbackActive) {
-            return "Legacy fallback: aktywny • "
+            return "Zapasowe dopasowanie gatunku: aktywne • "
                     + buildSpeciesDisplay(legacySpeciesName, legacyLatinName);
         }
 
         if (hasLegacySpecies) {
-            return "Legacy fallback: obecny w danych, ale pokryty przypisaniami";
+            return "Zapasowe dopasowanie gatunku: obecne w danych, ale pokryte przypisaniami";
         }
 
-        return "Legacy fallback: brak";
+        return "Zapasowe dopasowanie gatunku: brak";
     }
 
     private boolean containsSpeciesSignature(List<EppoCodeSpeciesLink> speciesLinks,
