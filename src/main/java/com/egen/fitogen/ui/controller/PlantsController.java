@@ -6,19 +6,23 @@ import com.egen.fitogen.service.AppSettingsService;
 import com.egen.fitogen.service.PlantService;
 import com.egen.fitogen.ui.util.DialogUtil;
 import com.egen.fitogen.ui.util.ModalViewUtil;
+import com.egen.fitogen.ui.util.UiTextUtil;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
 import javafx.collections.transformation.SortedList;
 import javafx.fxml.FXML;
+import javafx.scene.control.Button;
+import javafx.scene.control.Control;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableView;
 import javafx.scene.control.TableRow;
+import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
+import javafx.scene.control.Tooltip;
 import javafx.scene.control.cell.PropertyValueFactory;
-import com.egen.fitogen.ui.util.UiTextUtil;
+import javafx.scene.input.MouseButton;
 
 public class PlantsController {
 
@@ -35,6 +39,10 @@ public class PlantsController {
     @FXML private Label catalogModeInfoLabel;
     @FXML private Label filterStatusLabel;
     @FXML private Label filterSummaryLabel;
+    @FXML private Button clearFiltersButton;
+    @FXML private Button addButton;
+    @FXML private Button editButton;
+    @FXML private Button deleteButton;
 
     private final PlantService plantService = AppContext.getPlantService();
     private final AppSettingsService appSettingsService = AppContext.getAppSettingsService();
@@ -46,6 +54,7 @@ public class PlantsController {
     public void initialize() {
         configureColumns();
         configureTableBehavior();
+        configureActionButtons();
         configureRowFactory();
         configureSearch();
         refresh();
@@ -64,32 +73,69 @@ public class PlantsController {
         colVisibility.setCellValueFactory(new PropertyValueFactory<>("visibilityStatus"));
     }
 
-
-
     private void configureTableBehavior() {
         if (table == null) {
             return;
         }
 
         table.setColumnResizePolicy(TableView.UNCONSTRAINED_RESIZE_POLICY);
-        table.setPlaceholder(new Label("Brak roślin do wyświetlenia."));
+        updateTablePlaceholder();
     }
-    private void configureRowFactory() {
-        table.setRowFactory(tv -> new TableRow<>() {
-            @Override
-            protected void updateItem(Plant item, boolean empty) {
-                super.updateItem(item, empty);
-                getStyleClass().removeAll("inactive-row");
 
-                if (empty || item == null) {
-                    setStyle("");
-                    return;
-                }
-
-                if (isUnusedPlant(item)) {
-                    getStyleClass().add("inactive-row");
-                }
+    private void configureActionButtons() {
+        if (table != null) {
+            if (editButton != null) {
+                editButton.disableProperty().bind(table.getSelectionModel().selectedItemProperty().isNull());
             }
+            if (deleteButton != null) {
+                deleteButton.disableProperty().bind(table.getSelectionModel().selectedItemProperty().isNull());
+            }
+        }
+
+        if (searchField != null) {
+            installTooltip(searchField, "Wyszukaj roślinę po gatunku, odmianie, podkładce, nazwie łacińskiej, kodzie EPPO, wymaganiu paszportu lub statusie.");
+        }
+        installTooltip(clearFiltersButton, "Usuń wpisaną frazę i pokaż całą listę roślin zgodnie z bieżącym trybem bazy.");
+        installTooltip(addButton, "Otwórz formularz dodawania nowej rośliny.");
+        installTooltip(editButton, "Edytuj wybraną roślinę z listy.");
+        installTooltip(deleteButton, "Usuń wybraną roślinę po potwierdzeniu.");
+    }
+
+    private void configureRowFactory() {
+        if (table == null) {
+            return;
+        }
+
+        table.setRowFactory(tv -> {
+            Tooltip tooltip = new Tooltip();
+            TableRow<Plant> row = new TableRow<>() {
+                @Override
+                protected void updateItem(Plant item, boolean empty) {
+                    super.updateItem(item, empty);
+                    getStyleClass().removeAll("inactive-row");
+
+                    if (empty || item == null) {
+                        setStyle("");
+                        setTooltip(null);
+                        return;
+                    }
+
+                    if (isUnusedPlant(item)) {
+                        getStyleClass().add("inactive-row");
+                    }
+
+                    tooltip.setText(buildPlantSummary(item));
+                    setTooltip(tooltip);
+                }
+            };
+
+            row.setOnMouseClicked(event -> {
+                if (event.getButton() == MouseButton.PRIMARY && event.getClickCount() == 2 && !row.isEmpty()) {
+                    table.getSelectionModel().select(row.getItem());
+                    editPlant();
+                }
+            });
+            return row;
         });
     }
 
@@ -98,6 +144,9 @@ public class PlantsController {
 
         if (searchField != null) {
             searchField.textProperty().addListener((obs, oldVal, newVal) -> applyFilters());
+            if (clearFiltersButton != null) {
+                clearFiltersButton.disableProperty().bind(searchField.textProperty().isEmpty());
+            }
         }
         if (table != null) {
             table.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> updateFilterSummary());
@@ -109,7 +158,7 @@ public class PlantsController {
     }
 
     private void applyFilters() {
-        String keyword = searchField.getText() == null ? "" : searchField.getText().trim().toLowerCase();
+        String keyword = searchField == null || searchField.getText() == null ? "" : searchField.getText().trim().toLowerCase();
         boolean fullCatalogEnabled = appSettingsService.isPlantFullCatalogEnabled();
 
         filteredData.setPredicate(plant -> {
@@ -134,9 +183,9 @@ public class PlantsController {
                     || safeContains(plant.getVisibilityStatus(), keyword);
         });
 
+        updateTablePlaceholder();
         updateFilterSummary();
     }
-
 
     private void updateFilterSummary() {
         if (filterStatusLabel == null || filterSummaryLabel == null || filteredData == null) {
@@ -176,6 +225,18 @@ public class PlantsController {
         filterSummaryLabel.setText(buildPlantSummary(selected));
     }
 
+    private void updateTablePlaceholder() {
+        if (table == null) {
+            return;
+        }
+
+        String keyword = searchField == null || searchField.getText() == null ? "" : searchField.getText().trim();
+        String message = keyword.isBlank()
+                ? "Brak roślin do wyświetlenia."
+                : "Brak roślin spełniających bieżące filtry.";
+        table.setPlaceholder(new Label(message));
+    }
+
     private String buildPlantSummary(Plant plant) {
         return "Podgląd rośliny: " + buildPlantLabel(plant)
                 + ", nazwa łacińska " + firstNonBlank(safe(plant.getLatinSpeciesName()).trim(), "—")
@@ -196,6 +257,7 @@ public class PlantsController {
         }
         return "";
     }
+
     private boolean isUnusedPlant(Plant plant) {
         return plant.getVisibilityStatus() != null
                 && plant.getVisibilityStatus().trim().equalsIgnoreCase("Nieużywany");
@@ -208,6 +270,7 @@ public class PlantsController {
     private void refresh() {
         masterData.setAll(plantService.getAllPlants());
         updateCatalogModeInfo();
+        updateTablePlaceholder();
         applyFilters();
     }
 
@@ -254,6 +317,12 @@ public class PlantsController {
 
     private String safe(String value) {
         return value == null ? "" : value;
+    }
+
+    private void installTooltip(Control control, String text) {
+        if (control != null && text != null && !text.isBlank()) {
+            control.setTooltip(new Tooltip(text));
+        }
     }
 
     @FXML

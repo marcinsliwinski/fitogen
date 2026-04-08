@@ -5,18 +5,23 @@ import com.egen.fitogen.model.Contrahent;
 import com.egen.fitogen.service.ContrahentService;
 import com.egen.fitogen.ui.util.DialogUtil;
 import com.egen.fitogen.ui.util.ModalViewUtil;
+import com.egen.fitogen.ui.util.UiTextUtil;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
 import javafx.collections.transformation.SortedList;
 import javafx.fxml.FXML;
+import javafx.scene.control.Button;
+import javafx.scene.control.Control;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
+import javafx.scene.control.Tooltip;
 import javafx.scene.control.cell.PropertyValueFactory;
-import com.egen.fitogen.ui.util.UiTextUtil;
+import javafx.scene.input.MouseButton;
 
 public class ContrahentController {
 
@@ -29,6 +34,10 @@ public class ContrahentController {
     @FXML private TextField searchField;
     @FXML private Label filterStatusLabel;
     @FXML private Label filterSummaryLabel;
+    @FXML private Button clearFiltersButton;
+    @FXML private Button addButton;
+    @FXML private Button editButton;
+    @FXML private Button deleteButton;
 
     private final ContrahentService contrahentService = AppContext.getContrahentService();
 
@@ -39,6 +48,8 @@ public class ContrahentController {
     public void initialize() {
         configureColumns();
         configureTableBehavior();
+        configureActionButtons();
+        configureRowFactory();
         configureSearch();
         refresh();
     }
@@ -57,7 +68,57 @@ public class ContrahentController {
         }
 
         table.setColumnResizePolicy(TableView.UNCONSTRAINED_RESIZE_POLICY);
-        table.setPlaceholder(new Label("Brak kontrahentów do wyświetlenia."));
+        updateTablePlaceholder();
+    }
+
+    private void configureActionButtons() {
+        if (table != null) {
+            if (editButton != null) {
+                editButton.disableProperty().bind(table.getSelectionModel().selectedItemProperty().isNull());
+            }
+            if (deleteButton != null) {
+                deleteButton.disableProperty().bind(table.getSelectionModel().selectedItemProperty().isNull());
+            }
+        }
+
+        if (searchField != null) {
+            installTooltip(searchField, "Wyszukaj kontrahenta po nazwie, kraju, kodzie kraju, mieście, adresie lub numerze fitosanitarnym.");
+        }
+        installTooltip(clearFiltersButton, "Usuń wpisaną frazę i pokaż pełną listę kontrahentów.");
+        installTooltip(addButton, "Otwórz formularz dodawania nowego kontrahenta.");
+        installTooltip(editButton, "Edytuj wybranego kontrahenta z listy.");
+        installTooltip(deleteButton, "Usuń wybranego kontrahenta po potwierdzeniu.");
+    }
+
+    private void configureRowFactory() {
+        if (table == null) {
+            return;
+        }
+
+        table.setRowFactory(tv -> {
+            Tooltip tooltip = new Tooltip();
+            TableRow<Contrahent> row = new TableRow<>() {
+                @Override
+                protected void updateItem(Contrahent item, boolean empty) {
+                    super.updateItem(item, empty);
+                    if (empty || item == null) {
+                        setTooltip(null);
+                        return;
+                    }
+
+                    tooltip.setText(buildContrahentSummary(item));
+                    setTooltip(tooltip);
+                }
+            };
+
+            row.setOnMouseClicked(event -> {
+                if (event.getButton() == MouseButton.PRIMARY && event.getClickCount() == 2 && !row.isEmpty()) {
+                    table.getSelectionModel().select(row.getItem());
+                    editContrahent();
+                }
+            });
+            return row;
+        });
     }
 
     private void configureSearch() {
@@ -65,6 +126,9 @@ public class ContrahentController {
 
         if (searchField != null) {
             searchField.textProperty().addListener((obs, oldVal, newVal) -> applyFilters());
+            if (clearFiltersButton != null) {
+                clearFiltersButton.disableProperty().bind(searchField.textProperty().isEmpty());
+            }
         }
         if (table != null) {
             table.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> updateFilterSummary());
@@ -98,6 +162,7 @@ public class ContrahentController {
                     || safeContains(contrahent.getPhytosanitaryNumber(), keyword);
         });
 
+        updateTablePlaceholder();
         updateFilterSummary();
         if (table != null) {
             table.sort();
@@ -136,6 +201,18 @@ public class ContrahentController {
         }
 
         filterSummaryLabel.setText(buildContrahentSummary(selected));
+    }
+
+    private void updateTablePlaceholder() {
+        if (table == null) {
+            return;
+        }
+
+        String keyword = searchField == null || searchField.getText() == null ? "" : searchField.getText().trim();
+        String message = keyword.isBlank()
+                ? "Brak kontrahentów do wyświetlenia."
+                : "Brak kontrahentów spełniających bieżący filtr.";
+        table.setPlaceholder(new Label(message));
     }
 
     private String buildContrahentSummary(Contrahent contrahent) {
@@ -180,7 +257,14 @@ public class ContrahentController {
 
     private void refresh() {
         masterData.setAll(contrahentService.getAllContrahents());
+        updateTablePlaceholder();
         applyFilters();
+    }
+
+    private void installTooltip(Control control, String text) {
+        if (control != null && text != null && !text.isBlank()) {
+            control.setTooltip(new Tooltip(text));
+        }
     }
 
     @FXML

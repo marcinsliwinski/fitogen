@@ -12,24 +12,28 @@ import com.egen.fitogen.repository.PlantRepository;
 import com.egen.fitogen.service.PlantBatchService;
 import com.egen.fitogen.ui.util.DialogUtil;
 import com.egen.fitogen.ui.util.ModalViewUtil;
+import com.egen.fitogen.ui.util.UiTextUtil;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
 import javafx.collections.transformation.SortedList;
 import javafx.fxml.FXML;
+import javafx.scene.control.Button;
+import javafx.scene.control.Control;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
+import javafx.scene.control.Tooltip;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.input.MouseButton;
 
 import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import com.egen.fitogen.ui.util.UiTextUtil;
 
 public class PlantBatchController {
 
@@ -45,6 +49,10 @@ public class PlantBatchController {
     @FXML private TextField searchField;
     @FXML private Label filterStatusLabel;
     @FXML private Label filterSummaryLabel;
+    @FXML private Button clearFiltersButton;
+    @FXML private Button addButton;
+    @FXML private Button editButton;
+    @FXML private Button deleteButton;
 
     private final PlantBatchService plantBatchService = AppContext.getPlantBatchService();
     private final PlantRepository plantRepository = new SqlitePlantRepository();
@@ -59,6 +67,7 @@ public class PlantBatchController {
     public void initialize() {
         configureColumns();
         configureTableBehavior();
+        configureActionButtons();
         configureRowFactory();
         configureSearch();
         refresh();
@@ -83,35 +92,71 @@ public class PlantBatchController {
         );
     }
 
-
     private void configureTableBehavior() {
         if (table == null) {
             return;
         }
 
         table.setColumnResizePolicy(TableView.UNCONSTRAINED_RESIZE_POLICY);
-        table.setPlaceholder(new Label("Brak partii roślin do wyświetlenia."));
+        updateTablePlaceholder();
+    }
+
+    private void configureActionButtons() {
+        if (table != null) {
+            if (editButton != null) {
+                editButton.disableProperty().bind(table.getSelectionModel().selectedItemProperty().isNull());
+            }
+            if (deleteButton != null) {
+                deleteButton.disableProperty().bind(table.getSelectionModel().selectedItemProperty().isNull());
+            }
+        }
+
+        if (searchField != null) {
+            installTooltip(searchField, "Wyszukaj partię po roślinie, numerze partii, źródle pochodzenia, statusie, kodzie EPPO lub innych danych dodatkowych.");
+        }
+        installTooltip(clearFiltersButton, "Usuń wpisaną frazę i pokaż pełną listę partii roślin.");
+        installTooltip(addButton, "Otwórz formularz dodawania nowej partii roślin.");
+        installTooltip(editButton, "Edytuj wybraną partię roślin z listy.");
+        installTooltip(deleteButton, "Anuluj wybraną partię roślin po potwierdzeniu.");
     }
 
     private void configureRowFactory() {
-        table.setRowFactory(tv -> new TableRow<>() {
-            @Override
-            protected void updateItem(PlantBatch item, boolean empty) {
-                super.updateItem(item, empty);
+        if (table == null) {
+            return;
+        }
 
-                getStyleClass().remove("cancelled-row");
+        table.setRowFactory(tv -> {
+            Tooltip tooltip = new Tooltip();
+            TableRow<PlantBatch> row = new TableRow<>() {
+                @Override
+                protected void updateItem(PlantBatch item, boolean empty) {
+                    super.updateItem(item, empty);
+                    getStyleClass().remove("cancelled-row");
 
-                if (empty || item == null) {
-                    setStyle("");
-                    return;
+                    if (empty || item == null) {
+                        setStyle("");
+                        setTooltip(null);
+                        return;
+                    }
+
+                    if (item.getStatus() == PlantBatchStatus.CANCELLED) {
+                        getStyleClass().add("cancelled-row");
+                    } else {
+                        setStyle("");
+                    }
+
+                    tooltip.setText(buildBatchSummary(item));
+                    setTooltip(tooltip);
                 }
+            };
 
-                if (item.getStatus() == PlantBatchStatus.CANCELLED) {
-                    getStyleClass().add("cancelled-row");
-                } else {
-                    setStyle("");
+            row.setOnMouseClicked(event -> {
+                if (event.getButton() == MouseButton.PRIMARY && event.getClickCount() == 2 && !row.isEmpty()) {
+                    table.getSelectionModel().select(row.getItem());
+                    editBatch();
                 }
-            }
+            });
+            return row;
         });
     }
 
@@ -120,6 +165,9 @@ public class PlantBatchController {
 
         if (searchField != null) {
             searchField.textProperty().addListener((obs, oldVal, newVal) -> applyFilters());
+            if (clearFiltersButton != null) {
+                clearFiltersButton.disableProperty().bind(searchField.textProperty().isEmpty());
+            }
         }
         if (table != null) {
             table.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> updateFilterSummary());
@@ -159,6 +207,7 @@ public class PlantBatchController {
                     || contains(formatDate(batch.getCreationDate()), keyword);
         });
 
+        updateTablePlaceholder();
         updateFilterSummary();
     }
 
@@ -200,6 +249,18 @@ public class PlantBatchController {
         filterSummaryLabel.setText(buildBatchSummary(selected));
     }
 
+    private void updateTablePlaceholder() {
+        if (table == null) {
+            return;
+        }
+
+        String keyword = searchField == null || searchField.getText() == null ? "" : searchField.getText().trim();
+        String message = keyword.isBlank()
+                ? "Brak partii roślin do wyświetlenia."
+                : "Brak partii roślin spełniających bieżący filtr.";
+        table.setPlaceholder(new Label(message));
+    }
+
     private String buildBatchSummary(PlantBatch batch) {
         return "Podgląd partii: roślina " + safe(buildPlantLabel(batch.getPlantId()))
                 + ", nr wewnętrzny " + safe(batch.getInteriorBatchNo())
@@ -231,7 +292,6 @@ public class PlantBatchController {
         return "wybrana partia";
     }
 
-
     private String safe(String value) {
         return value == null || value.isBlank() ? "—" : value;
     }
@@ -248,6 +308,7 @@ public class PlantBatchController {
         loadPlantNames();
         loadContrahentNames();
         masterData.setAll(plantBatchService.getAllBatches());
+        updateTablePlaceholder();
         applyFilters();
     }
 
@@ -313,6 +374,12 @@ public class PlantBatchController {
             case ACTIVE -> "Aktywna";
             case CANCELLED -> "Anulowana";
         };
+    }
+
+    private void installTooltip(Control control, String text) {
+        if (control != null && text != null && !text.isBlank()) {
+            control.setTooltip(new Tooltip(text));
+        }
     }
 
     @FXML
