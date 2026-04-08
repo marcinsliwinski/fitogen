@@ -8,6 +8,7 @@ import com.egen.fitogen.service.EppoCodeService;
 import com.egen.fitogen.service.PlantService;
 import com.egen.fitogen.ui.util.DialogUtil;
 import com.egen.fitogen.ui.util.ValidationUtil;
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
@@ -53,6 +54,10 @@ public class PlantFormController {
     private PlantService plantService;
     private Plant plant;
     private boolean syncingSpeciesFields;
+    private String initialSnapshot = "";
+    private boolean saveCompleted;
+    private boolean closeConfirmed;
+    private boolean closeGuardInstalled;
 
     @FXML
     public void initialize() {
@@ -68,6 +73,11 @@ public class PlantFormController {
         configureSpeciesSynchronization();
         refreshPassportRequirementPresentation();
         refreshResolvedEppoCodePresentation();
+
+        Platform.runLater(() -> {
+            installWindowCloseGuard();
+            markCurrentStateAsClean();
+        });
     }
 
     public void setPlantService(PlantService plantService) {
@@ -88,6 +98,7 @@ public class PlantFormController {
 
         refreshPassportRequirementPresentation();
         refreshResolvedEppoCodePresentation();
+        markCurrentStateAsClean();
     }
 
     @FXML
@@ -131,6 +142,8 @@ public class PlantFormController {
                 DialogUtil.showSuccess("Roślina została zaktualizowana.");
             }
 
+            saveCompleted = true;
+            closeConfirmed = true;
             close();
 
         } catch (IllegalArgumentException e) {
@@ -502,7 +515,70 @@ public class PlantFormController {
     }
 
     private void close() {
-        Stage stage = (Stage) speciesField.getScene().getWindow();
-        stage.close();
+        if (!canCloseWindow()) {
+            return;
+        }
+
+        Stage stage = resolveStage();
+        if (stage != null) {
+            closeConfirmed = true;
+            stage.close();
+        }
+    }
+
+    private boolean canCloseWindow() {
+        if (closeConfirmed || saveCompleted || !hasUnsavedChanges()) {
+            return true;
+        }
+        return DialogUtil.confirmDiscardChanges(plant == null ? "rośliny" : "edycji rośliny");
+    }
+
+    private boolean hasUnsavedChanges() {
+        return !java.util.Objects.equals(initialSnapshot, buildFormSnapshot());
+    }
+
+    private void markCurrentStateAsClean() {
+        initialSnapshot = buildFormSnapshot();
+        saveCompleted = false;
+        closeConfirmed = false;
+    }
+
+    private String buildFormSnapshot() {
+        return String.join("|",
+                normalizeText(getComboValue(speciesField)),
+                normalizeText(getComboValue(varietyField)),
+                normalizeText(getComboValue(rootstockField)),
+                normalizeText(getComboValue(latinSpeciesNameField)),
+                String.valueOf(resolveCurrentPassportRequirement()),
+                normalizeText(visibilityStatusBox == null ? null : visibilityStatusBox.getValue())
+        );
+    }
+
+    private void installWindowCloseGuard() {
+        Stage stage = resolveStage();
+        if (stage == null || closeGuardInstalled) {
+            return;
+        }
+
+        stage.setOnCloseRequest(event -> {
+            if (closeConfirmed || saveCompleted || !hasUnsavedChanges()) {
+                return;
+            }
+
+            if (!DialogUtil.confirmDiscardChanges(plant == null ? "rośliny" : "edycji rośliny")) {
+                event.consume();
+                return;
+            }
+
+            closeConfirmed = true;
+        });
+        closeGuardInstalled = true;
+    }
+
+    private Stage resolveStage() {
+        if (speciesField != null && speciesField.getScene() != null && speciesField.getScene().getWindow() instanceof Stage stage) {
+            return stage;
+        }
+        return null;
     }
 }

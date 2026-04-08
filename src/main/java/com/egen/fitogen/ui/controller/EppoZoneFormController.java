@@ -7,6 +7,7 @@ import com.egen.fitogen.service.EppoZoneService;
 import com.egen.fitogen.ui.util.ComboBoxAutoComplete;
 import com.egen.fitogen.ui.util.DialogUtil;
 import com.egen.fitogen.ui.util.ValidationUtil;
+import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
@@ -27,6 +28,10 @@ public class EppoZoneFormController {
     private final CountryDirectoryService countryDirectoryService = AppContext.getCountryDirectoryService();
 
     private EppoZone eppoZone;
+    private String initialSnapshot = "";
+    private boolean saveCompleted;
+    private boolean closeConfirmed;
+    private boolean closeGuardInstalled;
 
     @FXML
     public void initialize() {
@@ -38,6 +43,11 @@ public class EppoZoneFormController {
         configureCountrySuggestions();
         configureCountryAutoFill();
         updateCountryHint();
+
+        Platform.runLater(() -> {
+            installWindowCloseGuard();
+            markCurrentStateAsClean();
+        });
     }
 
     public void setEppoZone(EppoZone eppoZone) {
@@ -57,6 +67,7 @@ public class EppoZoneFormController {
         );
 
         updateCountryHint();
+        markCurrentStateAsClean();
     }
 
     @FXML
@@ -83,6 +94,8 @@ public class EppoZoneFormController {
                 DialogUtil.showSuccess("Kraj EPPO został zaktualizowany.");
             }
 
+            saveCompleted = true;
+            closeConfirmed = true;
             close();
 
         } catch (IllegalArgumentException e) {
@@ -205,7 +218,67 @@ public class EppoZoneFormController {
     }
 
     private void close() {
-        Stage stage = (Stage) countryField.getScene().getWindow();
-        stage.close();
+        if (!canCloseWindow()) {
+            return;
+        }
+
+        Stage stage = resolveStage();
+        if (stage != null) {
+            closeConfirmed = true;
+            stage.close();
+        }
+    }
+
+    private boolean canCloseWindow() {
+        if (closeConfirmed || saveCompleted || !hasUnsavedChanges()) {
+            return true;
+        }
+        return DialogUtil.confirmDiscardChanges(eppoZone == null ? "kraju EPPO" : "edycji kraju EPPO");
+    }
+
+    private boolean hasUnsavedChanges() {
+        return !java.util.Objects.equals(initialSnapshot, buildFormSnapshot());
+    }
+
+    private void markCurrentStateAsClean() {
+        initialSnapshot = buildFormSnapshot();
+        saveCompleted = false;
+        closeConfirmed = false;
+    }
+
+    private String buildFormSnapshot() {
+        return String.join("|",
+                nullSafe(ComboBoxAutoComplete.getCommittedValue(countryField)).trim(),
+                nullSafe(countryCodeField == null ? null : countryCodeField.getText()).trim(),
+                nullSafe(statusBox == null ? null : statusBox.getValue()).trim()
+        );
+    }
+
+    private void installWindowCloseGuard() {
+        Stage stage = resolveStage();
+        if (stage == null || closeGuardInstalled) {
+            return;
+        }
+
+        stage.setOnCloseRequest(event -> {
+            if (closeConfirmed || saveCompleted || !hasUnsavedChanges()) {
+                return;
+            }
+
+            if (!DialogUtil.confirmDiscardChanges(eppoZone == null ? "kraju EPPO" : "edycji kraju EPPO")) {
+                event.consume();
+                return;
+            }
+
+            closeConfirmed = true;
+        });
+        closeGuardInstalled = true;
+    }
+
+    private Stage resolveStage() {
+        if (countryField != null && countryField.getScene() != null && countryField.getScene().getWindow() instanceof Stage stage) {
+            return stage;
+        }
+        return null;
     }
 }

@@ -6,6 +6,7 @@ import com.egen.fitogen.service.ContrahentService;
 import com.egen.fitogen.service.CountryDirectoryService;
 import com.egen.fitogen.ui.util.DialogUtil;
 import com.egen.fitogen.ui.util.ValidationUtil;
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.scene.control.CheckBox;
@@ -35,6 +36,10 @@ public class ContrahentFormController {
 
     private Contrahent contrahent;
     private boolean updatingCountryFields;
+    private String initialSnapshot = "";
+    private boolean saveCompleted;
+    private boolean closeConfirmed;
+    private boolean closeGuardInstalled;
 
     @FXML
     public void initialize() {
@@ -54,6 +59,11 @@ public class ContrahentFormController {
 
         countryField.valueProperty().addListener((obs, oldVal, newVal) -> syncCodeFromCountry());
         countryCodeField.valueProperty().addListener((obs, oldVal, newVal) -> syncCountryFromCode());
+
+        Platform.runLater(() -> {
+            installWindowCloseGuard();
+            markCurrentStateAsClean();
+        });
     }
 
     public void setContrahent(Contrahent contrahent) {
@@ -68,6 +78,7 @@ public class ContrahentFormController {
         phytosanitaryNumberField.setText(contrahent.getPhytosanitaryNumber());
         supplierCheckBox.setSelected(contrahent.isSupplier());
         clientCheckBox.setSelected(contrahent.isClient());
+        markCurrentStateAsClean();
     }
 
     @FXML
@@ -94,6 +105,8 @@ public class ContrahentFormController {
                 DialogUtil.showSuccess("Kontrahent został zaktualizowany.");
             }
 
+            saveCompleted = true;
+            closeConfirmed = true;
             close();
         } catch (IllegalArgumentException e) {
             DialogUtil.showWarning("Błędne dane", e.getMessage());
@@ -262,10 +275,75 @@ public class ContrahentFormController {
     }
 
     private void close() {
+        if (!canCloseWindow()) {
+            return;
+        }
+
         Stage stage = resolveStage();
         if (stage != null) {
+            closeConfirmed = true;
             stage.close();
         }
+    }
+
+    private boolean canCloseWindow() {
+        if (closeConfirmed || saveCompleted || !hasUnsavedChanges()) {
+            return true;
+        }
+        return DialogUtil.confirmDiscardChanges(contrahent == null ? "kontrahenta" : "edycji kontrahenta");
+    }
+
+    private boolean hasUnsavedChanges() {
+        return !java.util.Objects.equals(initialSnapshot, buildFormSnapshot());
+    }
+
+    private void markCurrentStateAsClean() {
+        initialSnapshot = buildFormSnapshot();
+        saveCompleted = false;
+        closeConfirmed = false;
+    }
+
+    private String buildFormSnapshot() {
+        return String.join("|",
+                normalizeText(nameField == null ? null : nameField.getText()),
+                normalizeText(getComboValue(countryField)),
+                normalizeText(getComboValue(countryCodeField)),
+                normalizeText(postalCodeField == null ? null : postalCodeField.getText()),
+                normalizeText(cityField == null ? null : cityField.getText()),
+                normalizeText(streetField == null ? null : streetField.getText()),
+                normalizeText(phytosanitaryNumberField == null ? null : phytosanitaryNumberField.getText()),
+                String.valueOf(supplierCheckBox != null && supplierCheckBox.isSelected()),
+                String.valueOf(clientCheckBox != null && clientCheckBox.isSelected())
+        );
+    }
+
+    private String normalizeText(String value) {
+        if (value == null) {
+            return "";
+        }
+        String normalized = value.trim().replaceAll("\\s+", " ");
+        return normalized.isBlank() ? "" : normalized;
+    }
+
+    private void installWindowCloseGuard() {
+        Stage stage = resolveStage();
+        if (stage == null || closeGuardInstalled) {
+            return;
+        }
+
+        stage.setOnCloseRequest(event -> {
+            if (closeConfirmed || saveCompleted || !hasUnsavedChanges()) {
+                return;
+            }
+
+            if (!DialogUtil.confirmDiscardChanges(contrahent == null ? "kontrahenta" : "edycji kontrahenta")) {
+                event.consume();
+                return;
+            }
+
+            closeConfirmed = true;
+        });
+        closeGuardInstalled = true;
     }
 
     private Stage resolveStage() {

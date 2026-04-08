@@ -15,6 +15,7 @@ import com.egen.fitogen.service.PlantService;
 import com.egen.fitogen.ui.util.ComboBoxAutoComplete;
 import com.egen.fitogen.ui.util.CountryDirectory;
 import com.egen.fitogen.ui.util.DialogUtil;
+import javafx.application.Platform;
 import com.egen.fitogen.ui.util.ValidationUtil;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
@@ -83,6 +84,10 @@ public class EppoCodeFormController {
     private Map<String, String> originalZoneAuditSnapshot = new LinkedHashMap<>();
 
     private EppoCode eppoCode;
+    private String initialSnapshot = "";
+    private boolean saveCompleted;
+    private boolean closeConfirmed;
+    private boolean closeGuardInstalled;
 
     @FXML
     public void initialize() {
@@ -98,6 +103,11 @@ public class EppoCodeFormController {
         updateZoneSummary();
         updateSpeciesActionState();
         updateZoneActionState();
+
+        Platform.runLater(() -> {
+            installWindowCloseGuard();
+            markCurrentStateAsClean();
+        });
     }
 
     public void setEppoCode(EppoCode eppoCode) {
@@ -136,6 +146,11 @@ public class EppoCodeFormController {
         updateZoneSummary();
         updateSpeciesActionState();
         updateZoneActionState();
+
+        Platform.runLater(() -> {
+            installWindowCloseGuard();
+            markCurrentStateAsClean();
+        });
     }
 
     @FXML
@@ -289,6 +304,8 @@ public class EppoCodeFormController {
                 DialogUtil.showSuccess("Kod EPPO został zaktualizowany razem z przypisanymi gatunkami i krajami.");
             }
 
+            saveCompleted = true;
+            closeConfirmed = true;
             close();
         } catch (IllegalArgumentException e) {
             DialogUtil.showWarning("Błędne dane", e.getMessage());
@@ -984,8 +1001,71 @@ public class EppoCodeFormController {
     }
 
     private void close() {
-        Stage stage = (Stage) codeField.getScene().getWindow();
-        stage.close();
+        if (!canCloseWindow()) {
+            return;
+        }
+
+        Stage stage = resolveStage();
+        if (stage != null) {
+            closeConfirmed = true;
+            stage.close();
+        }
+    }
+
+    private boolean canCloseWindow() {
+        if (closeConfirmed || saveCompleted || !hasUnsavedChanges()) {
+            return true;
+        }
+        return DialogUtil.confirmDiscardChanges(eppoCode == null ? "kodu EPPO" : "edycji kodu EPPO");
+    }
+
+    private boolean hasUnsavedChanges() {
+        return !java.util.Objects.equals(initialSnapshot, buildFormSnapshot());
+    }
+
+    private void markCurrentStateAsClean() {
+        initialSnapshot = buildFormSnapshot();
+        saveCompleted = false;
+        closeConfirmed = false;
+    }
+
+    private String buildFormSnapshot() {
+        return String.join("|",
+                nullSafe(codeField == null ? null : codeField.getText()).trim(),
+                nullSafe(polishNameField == null ? null : polishNameField.getText()).trim(),
+                nullSafe(latinNameField == null ? null : latinNameField.getText()).trim(),
+                nullSafe(statusBox == null ? null : statusBox.getValue()).trim(),
+                snapshotSpeciesLinks(assignedSpeciesData).toString(),
+                snapshotZones(assignedZoneData).toString()
+        );
+    }
+
+    private void installWindowCloseGuard() {
+        Stage stage = resolveStage();
+        if (stage == null || closeGuardInstalled) {
+            return;
+        }
+
+        stage.setOnCloseRequest(event -> {
+            if (closeConfirmed || saveCompleted || !hasUnsavedChanges()) {
+                return;
+            }
+
+            if (!DialogUtil.confirmDiscardChanges(eppoCode == null ? "kodu EPPO" : "edycji kodu EPPO")) {
+                event.consume();
+                return;
+            }
+
+            closeConfirmed = true;
+        });
+        closeGuardInstalled = true;
+    }
+
+    private Stage resolveStage() {
+        if (codeField != null && codeField.getScene() != null && codeField.getScene().getWindow() instanceof Stage stage) {
+            return stage;
+        }
+        return null;
     }
 
     private record ParsedSpecies(String speciesName, String latinSpeciesName) {}

@@ -18,6 +18,7 @@ import com.egen.fitogen.service.EppoCodePlantLinkService;
 import com.egen.fitogen.service.EppoCodeZoneLinkService;
 import com.egen.fitogen.service.PlantBatchService;
 import com.egen.fitogen.ui.util.DialogUtil;
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.scene.Node;
@@ -27,6 +28,7 @@ import javafx.scene.control.ComboBox;
 import javafx.scene.control.DatePicker;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
+import javafx.stage.Stage;
 
 import java.time.LocalDate;
 import java.util.Comparator;
@@ -71,6 +73,10 @@ public class PlantBatchFormController {
     private PlantBatchStatus currentStatus = PlantBatchStatus.ACTIVE;
     private Plant preselectedPlant;
     private Runnable onSaveSuccess;
+    private String initialSnapshot = "";
+    private boolean saveCompleted;
+    private boolean closeConfirmed;
+    private boolean closeGuardInstalled;
 
     private final PassportAdvisoryService passportAdvisoryService = AppContext.getPassportAdvisoryService();
 
@@ -134,6 +140,11 @@ public class PlantBatchFormController {
         refreshOriginDerivedFields();
         refreshPlantDerivedFields();
         refreshInteriorBatchPreview();
+
+        Platform.runLater(() -> {
+            installWindowCloseGuard();
+            markCurrentStateAsClean();
+        });
     }
 
     public void setPlantBatch(PlantBatch plantBatch) {
@@ -169,6 +180,8 @@ public class PlantBatchFormController {
         if (currentStatus == PlantBatchStatus.CANCELLED) {
             applyCancelledMode();
         }
+
+        markCurrentStateAsClean();
     }
 
     @FXML
@@ -203,6 +216,8 @@ public class PlantBatchFormController {
                 }
             }
 
+            saveCompleted = true;
+            closeConfirmed = true;
             close();
         } catch (Exception e) {
             e.printStackTrace();
@@ -215,9 +230,14 @@ public class PlantBatchFormController {
 
     @FXML
     private void close() {
-        Node owner = cancelButton != null ? cancelButton : (saveButton != null ? saveButton : plantComboBox);
-        if (owner != null && owner.getScene() != null && owner.getScene().getWindow() != null) {
-            owner.getScene().getWindow().hide();
+        if (!canCloseWindow()) {
+            return;
+        }
+
+        Stage stage = resolveStage();
+        if (stage != null) {
+            closeConfirmed = true;
+            stage.close();
         }
     }
 
@@ -228,6 +248,10 @@ public class PlantBatchFormController {
         }
         refreshPlantDerivedFields();
         refreshInteriorBatchPreview();
+
+        if (editingBatchId == null) {
+            markCurrentStateAsClean();
+        }
     }
 
     public void setOnSaveSuccess(Runnable onSaveSuccess) {
@@ -685,5 +709,72 @@ public class PlantBatchFormController {
 
     private boolean isBlank(String value) {
         return value == null || value.trim().isBlank();
+    }
+
+    private boolean canCloseWindow() {
+        if (closeConfirmed || saveCompleted || !hasUnsavedChanges()) {
+            return true;
+        }
+        return DialogUtil.confirmDiscardChanges(editingBatchId == null ? "partii roślin" : "edycji partii roślin");
+    }
+
+    private boolean hasUnsavedChanges() {
+        return !java.util.Objects.equals(initialSnapshot, buildFormSnapshot());
+    }
+
+    private void markCurrentStateAsClean() {
+        initialSnapshot = buildFormSnapshot();
+        saveCompleted = false;
+        closeConfirmed = false;
+    }
+
+    private String buildFormSnapshot() {
+        Plant selectedPlant = plantComboBox == null ? null : plantComboBox.getValue();
+        Contrahent selectedSource = sourceOriginComboBox == null ? null : sourceOriginComboBox.getValue();
+
+        return String.join("|",
+                String.valueOf(selectedPlant == null ? 0 : selectedPlant.getId()),
+                String.valueOf(internalSourceCheckBox != null && internalSourceCheckBox.isSelected()),
+                String.valueOf(selectedSource == null ? 0 : selectedSource.getId()),
+                safeUpper(interiorBatchNoField == null ? null : interiorBatchNoField.getText()),
+                safeUpper(exteriorBatchNoField == null ? null : exteriorBatchNoField.getText()),
+                safeUpper(qtyField == null ? null : qtyField.getText()),
+                String.valueOf(creationDatePicker == null ? null : creationDatePicker.getValue()),
+                safeUpper(manufacturerCountryCodeField == null ? null : manufacturerCountryCodeField.getText()),
+                safeUpper(fitoQualificationCategoryField == null ? null : fitoQualificationCategoryField.getText()),
+                safeUpper(eppoCodeField == null ? null : eppoCodeField.getText()),
+                safeUpper(zpZoneField == null ? null : zpZoneField.getText()),
+                safeUpper(commentsArea == null ? null : commentsArea.getText()),
+                String.valueOf(currentStatus)
+        );
+    }
+
+    private void installWindowCloseGuard() {
+        Stage stage = resolveStage();
+        if (stage == null || closeGuardInstalled) {
+            return;
+        }
+
+        stage.setOnCloseRequest(event -> {
+            if (closeConfirmed || saveCompleted || !hasUnsavedChanges()) {
+                return;
+            }
+
+            if (!DialogUtil.confirmDiscardChanges(editingBatchId == null ? "partii roślin" : "edycji partii roślin")) {
+                event.consume();
+                return;
+            }
+
+            closeConfirmed = true;
+        });
+        closeGuardInstalled = true;
+    }
+
+    private Stage resolveStage() {
+        Node owner = cancelButton != null ? cancelButton : (saveButton != null ? saveButton : plantComboBox);
+        if (owner != null && owner.getScene() != null && owner.getScene().getWindow() instanceof Stage stage) {
+            return stage;
+        }
+        return null;
     }
 }

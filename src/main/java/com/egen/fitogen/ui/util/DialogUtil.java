@@ -28,6 +28,24 @@ public final class DialogUtil {
         return result.isPresent() && result.get() == ButtonType.OK;
     }
 
+    public static boolean confirmDiscardChanges(String formLabel) {
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        alert.setTitle("Niezapisane zmiany");
+        alert.setHeaderText("Zamknąć formularz bez zapisu?");
+        alert.setContentText(buildDiscardChangesMessage(formLabel));
+
+        Optional<ButtonType> result = alert.showAndWait();
+        return result.isPresent() && result.get() == ButtonType.OK;
+    }
+
+    private static String buildDiscardChangesMessage(String formLabel) {
+        String normalized = normalizeEntityName(formLabel);
+        if (normalized.equals("wybrany rekord")) {
+            return "W formularzu są niezapisane zmiany. Czy chcesz zamknąć okno bez zapisywania?";
+        }
+        return "W formularzu „" + normalized + "” są niezapisane zmiany. Czy chcesz zamknąć okno bez zapisywania?";
+    }
+
     private static String buildEntityCaption(String entityLabel, String entityName) {
         String normalizedLabel = normalizeEntityName(entityLabel);
         String normalizedName = normalizeEntityName(entityName);
