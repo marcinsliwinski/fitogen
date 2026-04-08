@@ -87,6 +87,20 @@ public final class UiTextUtil {
     }
 
     public static String buildEmptyPreviewText(String entityLabel, String details) {
-        return "Brak preview importu " + entityLabel + "." + DOUBLE_NL + details;
+        return "Podgląd nie został jeszcze wygenerowany."
+                + DOUBLE_NL
+                + "Sekcja: " + entityLabel
+                + DOUBLE_NL
+                + details;
+    }
+
+    public static void appendPreviewLimitNote(StringBuilder builder, int shownRows, int totalRows) {
+        if (builder == null || shownRows <= 0 || totalRows <= shownRows) {
+            return;
+        }
+
+        appendEmptyLine(builder);
+        appendParagraph(builder, "Pokazano pierwsze " + shownRows + " z " + totalRows + " wierszy."
+                + " Pełna analiza pozostaje w podsumowaniu i sekcji najważniejszych uwag.");
     }
 }

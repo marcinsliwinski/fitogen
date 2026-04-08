@@ -1928,7 +1928,7 @@ public class SettingsController {
             contrahentsCsvStatusLabel.setText("Wybierz plik CSV, aby zobaczyć podgląd importu kontrahentów, albo zapisz aktualny eksport do pliku.");
         }
         if (documentsCsvStatusLabel != null) {
-            documentsCsvStatusLabel.setText("Wybierz plik CSV, aby zobaczyć podgląd importu CSV dokumentów, albo zapisz aktualny eksport do pliku.");
+            documentsCsvStatusLabel.setText("Wybierz plik CSV, aby zobaczyć podgląd importu dokumentów, albo zapisz aktualny eksport do pliku.");
         }
         resetPlantsCsvPreview();
         resetContrahentsCsvPreview();
@@ -2021,21 +2021,21 @@ public class SettingsController {
             documentsCsvPreviewArea.setText(buildDocumentsPreviewText(result));
         } catch (Exception e) {
             e.printStackTrace();
-            documentsCsvStatusLabel.setText("Nie udało się przygotować podglądu importu CSV dokumentów.");
+            documentsCsvStatusLabel.setText("Nie udało się przygotować podglądu importu dokumentów.");
             DialogUtil.showError("Podgląd importu CSV dokumentów", "Nie udało się odczytać ani przeanalizować pliku CSV dokumentów.");
         }
     }
 
     @FXML
     private void exportDocumentsCsv() {
-        Path selectedPath = chooseCsvToSave("Eksportuj dokumenty do CSV", "documents-export.csv");
+        Path selectedPath = chooseCsvToSave("Eksportuj dokumenty do CSV", "dokumenty-eksport.csv");
         if (selectedPath == null) {
             return;
         }
 
         try {
             Path exported = documentCsvExportService.export(selectedPath);
-            documentsCsvStatusLabel.setText("Eksport dokumentów CSV zakończony powodzeniem: " + exported + ". Format pozostaje lokalnym standardem Ustawienia -> Import / Eksport CSV.");
+            documentsCsvStatusLabel.setText("Eksport dokumentów zakończony powodzeniem: " + exported + ". Format pozostaje lokalnym standardem Ustawienia -> Import / Eksport CSV.");
             DialogUtil.showSuccess("Dokumenty zostały wyeksportowane do pliku:\n" + exported);
         } catch (Exception e) {
             e.printStackTrace();
@@ -2065,7 +2065,7 @@ public class SettingsController {
     private void clearDocumentsCsvPreview() {
         resetDocumentsCsvPreview();
         if (documentsCsvStatusLabel != null) {
-            documentsCsvStatusLabel.setText("Podgląd importu CSV dokumentów został wyczyszczony. Wybierz plik CSV, aby uruchomić analizę ponownie.");
+            documentsCsvStatusLabel.setText("Podgląd importu dokumentów został wyczyszczony. Wybierz plik CSV, aby uruchomić analizę ponownie.");
         }
     }
 
@@ -2124,7 +2124,7 @@ public class SettingsController {
     }
 
     private String buildDocumentsPreviewStatus(com.egen.fitogen.dto.DocumentImportPreviewResult result) {
-        return "Dokumenty CSV — łącznie wierszy: " + result.getTotalRowsCount()
+        return "CSV dokumentów — łącznie wierszy: " + result.getTotalRowsCount()
                 + ", nowych wierszy: " + result.getNewRowsCount()
                 + ", istniejących numerów: " + result.getMatchingExistingCount()
                 + ", duplikatów w pliku: " + result.getDuplicateInFileCount()
@@ -2199,6 +2199,7 @@ public class SettingsController {
             builder.append(UiTextUtil.NL);
         }
 
+        UiTextUtil.appendPreviewLimitNote(builder, previewLimit, result.getRows().size());
         appendPlantIssuesSection(builder, result);
         return builder.toString();
     }
@@ -2242,6 +2243,7 @@ public class SettingsController {
             builder.append(UiTextUtil.NL);
         }
 
+        UiTextUtil.appendPreviewLimitNote(builder, previewLimit, result.getRows().size());
         appendContrahentIssuesSection(builder, result);
         return builder.toString();
     }
@@ -2345,6 +2347,7 @@ public class SettingsController {
             builder.append(UiTextUtil.NL);
         }
 
+        UiTextUtil.appendPreviewLimitNote(builder, previewLimit, result.getRows().size());
         appendDocumentIssuesSection(builder, result);
         return builder.toString();
     }
