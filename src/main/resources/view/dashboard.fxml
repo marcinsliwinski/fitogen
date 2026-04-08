@@ -105,7 +105,7 @@
 
                 <VBox styleClass="content-card" spacing="12" HBox.hgrow="ALWAYS">
                     <Label text="Najnowsze partie roślin" styleClass="section-title" style="-fx-font-size: 18px;"/>
-                    <Label text="Kliknij pozycję, aby otworzyć podgląd i edycję partii." styleClass="page-subtitle"/>
+                    <Label text="Kliknij pozycję, aby otworzyć partię." styleClass="page-subtitle"/>
                     <VBox fx:id="recentBatchesBox" spacing="8"/>
                 </VBox>
             </HBox>

@@ -12,10 +12,13 @@ import javafx.fxml.FXML;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.Node;
+import javafx.scene.control.TextField;
+import javafx.scene.control.Tooltip;
 import javafx.stage.Stage;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.function.Supplier;
 
@@ -46,6 +49,16 @@ public class ContrahentFormController {
         configureEditableCombo(countryField);
         configureEditableCombo(countryCodeField);
 
+        installTextTrimSupport(nameField);
+        installTextTrimSupport(postalCodeField);
+        installTextTrimSupport(cityField);
+        installTextTrimSupport(streetField);
+        installTextTrimSupport(phytosanitaryNumberField);
+        installComboTrimSupport(countryField);
+        installComboTrimSupport(countryCodeField);
+        installUppercaseEditorSupport(countryCodeField);
+        installFieldTooltips();
+
         attachAutocomplete(countryField, countryDirectoryService::getCountries);
         attachAutocomplete(countryCodeField, countryDirectoryService::getCodes);
 
@@ -71,7 +84,7 @@ public class ContrahentFormController {
 
         nameField.setText(contrahent.getName());
         setComboValue(countryField, contrahent.getCountry());
-        setComboValue(countryCodeField, contrahent.getCountryCode());
+        setComboValue(countryCodeField, normalizeCountryCode(contrahent.getCountryCode()));
         postalCodeField.setText(contrahent.getPostalCode());
         cityField.setText(contrahent.getCity());
         streetField.setText(contrahent.getStreet());
@@ -89,7 +102,7 @@ public class ContrahentFormController {
             Contrahent entity = contrahent != null ? contrahent : new Contrahent();
             entity.setName(name);
             entity.setCountry(ValidationUtil.optionalText(getComboValue(countryField)));
-            entity.setCountryCode(ValidationUtil.optionalText(getComboValue(countryCodeField)));
+            entity.setCountryCode(ValidationUtil.optionalText(normalizeCountryCode(getComboValue(countryCodeField))));
             entity.setPostalCode(ValidationUtil.optionalText(postalCodeField.getText()));
             entity.setCity(ValidationUtil.optionalText(cityField.getText()));
             entity.setStreet(ValidationUtil.optionalText(streetField.getText()));
@@ -149,7 +162,7 @@ public class ContrahentFormController {
             return;
         }
 
-        String code = getComboValue(countryCodeField);
+        String code = normalizeCountryCode(getComboValue(countryCodeField));
         if (code == null || code.isBlank()) {
             return;
         }
@@ -171,6 +184,62 @@ public class ContrahentFormController {
     private void configureEditableCombo(ComboBox<String> comboBox) {
         comboBox.setEditable(true);
         comboBox.setMaxWidth(Double.MAX_VALUE);
+    }
+
+    private void installFieldTooltips() {
+        setTooltip(nameField, "Pole wymagane. Najlepiej wpisywać pełną nazwę kontrahenta tak, jak ma pojawiać się na dokumentach.");
+        setTooltip(countryField, "Możesz wpisać własną nazwę kraju albo skorzystać ze wspólnego słownika krajów.");
+        setTooltip(countryCodeField, "Kod kraju jest synchronizowany ze słownikiem krajów. Wpis ręczny zostanie zapisany wielkimi literami.");
+        setTooltip(postalCodeField, "Pole opcjonalne. Możesz wpisać kod pocztowy używany na dokumentach i etykietach.");
+        setTooltip(cityField, "Pole opcjonalne. Ułatwia identyfikację adresu kontrahenta.");
+        setTooltip(streetField, "Pole opcjonalne. Możesz wpisać ulicę i numer, jeśli mają pojawiać się w danych kontrahenta.");
+        setTooltip(phytosanitaryNumberField, "Pole opcjonalne. Wpisz numer fitosanitarny, jeśli kontrahent go posiada i ma być widoczny na dokumentach.");
+        setTooltip(supplierCheckBox, "Zaznacz, jeśli kontrahent występuje jako dostawca partii roślin.");
+        setTooltip(clientCheckBox, "Zaznacz, jeśli kontrahent występuje jako odbiorca lub klient na dokumentach.");
+    }
+
+    private void installTextTrimSupport(TextField field) {
+        if (field == null) {
+            return;
+        }
+
+        field.focusedProperty().addListener((obs, oldValue, focused) -> {
+            if (!focused) {
+                field.setText(normalizeText(field.getText()));
+            }
+        });
+    }
+
+    private void installComboTrimSupport(ComboBox<String> comboBox) {
+        if (comboBox == null || comboBox.getEditor() == null) {
+            return;
+        }
+
+        comboBox.getEditor().focusedProperty().addListener((obs, oldValue, focused) -> {
+            if (!focused) {
+                comboBox.getEditor().setText(normalizeText(comboBox.getEditor().getText()));
+            }
+        });
+    }
+
+    private void installUppercaseEditorSupport(ComboBox<String> comboBox) {
+        if (comboBox == null || comboBox.getEditor() == null) {
+            return;
+        }
+
+        comboBox.getEditor().textProperty().addListener((obs, oldValue, newValue) -> {
+            String normalized = normalizeCountryCode(newValue);
+            if (!Objects.equals(newValue, normalized)) {
+                comboBox.getEditor().setText(normalized);
+                comboBox.getEditor().positionCaret(normalized.length());
+            }
+        });
+    }
+
+    private void setTooltip(javafx.scene.control.Control control, String text) {
+        if (control != null && text != null && !text.isBlank()) {
+            control.setTooltip(new Tooltip(text));
+        }
     }
 
     private void attachAutocomplete(ComboBox<String> comboBox, Supplier<List<String>> sourceSupplier) {
@@ -268,6 +337,9 @@ public class ContrahentFormController {
 
     private void setComboValue(ComboBox<String> comboBox, String value) {
         String normalized = value == null ? "" : value.trim();
+        if (comboBox == countryCodeField) {
+            normalized = normalizeCountryCode(normalized);
+        }
         comboBox.setValue(normalized);
         if (comboBox.isEditable() && comboBox.getEditor() != null) {
             comboBox.getEditor().setText(normalized);
@@ -307,7 +379,7 @@ public class ContrahentFormController {
         return String.join("|",
                 normalizeText(nameField == null ? null : nameField.getText()),
                 normalizeText(getComboValue(countryField)),
-                normalizeText(getComboValue(countryCodeField)),
+                normalizeCountryCode(getComboValue(countryCodeField)),
                 normalizeText(postalCodeField == null ? null : postalCodeField.getText()),
                 normalizeText(cityField == null ? null : cityField.getText()),
                 normalizeText(streetField == null ? null : streetField.getText()),
@@ -315,6 +387,11 @@ public class ContrahentFormController {
                 String.valueOf(supplierCheckBox != null && supplierCheckBox.isSelected()),
                 String.valueOf(clientCheckBox != null && clientCheckBox.isSelected())
         );
+    }
+
+    private String normalizeCountryCode(String value) {
+        String normalized = normalizeText(value);
+        return normalized.isBlank() ? "" : normalized.toUpperCase(Locale.ROOT);
     }
 
     private String normalizeText(String value) {

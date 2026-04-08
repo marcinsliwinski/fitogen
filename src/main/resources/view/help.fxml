@@ -35,7 +35,7 @@
 
                 <VBox styleClass="content-card" spacing="10" HBox.hgrow="ALWAYS">
                     <Label text="Najczęstszy przebieg pracy" styleClass="section-title"/>
-                    <Label text="Rośliny → Kontrahenci → Partie roślin → Dokumenty → Podgląd / druk / zapis PDF" wrapText="true"/>
+                    <Label text="Rośliny → Kontrahenci → Partie roślin → Dokumenty → Podgląd / PDF" wrapText="true"/>
                     <Label text="Dwuklik w wiersz tabeli otwiera edycję rekordu w głównych modułach." wrapText="true"/>
                     <Label text="Dokumenty i partie po anulowaniu pozostają w systemie i są wyraźnie oznaczone statusem." wrapText="true"/>
                     <Label text="W formularzu dokumentu wybór partii zależy od wybranej rośliny." wrapText="true"/>
@@ -47,7 +47,7 @@
                 <Label text="Gdzie zmienić numerację? → Ustawienia → Numeracja" wrapText="true"/>
                 <Label text="Jak ustawić użytkownika domyślnego? → Ustawienia → Użytkownicy" wrapText="true"/>
                 <Label text="Jak dodać nową partię z dokumentu? → W dropdownie partii wybierz „Dodaj nową partię…”" wrapText="true"/>
-                <Label text="Dlaczego nie mogę edytować anulowanego dokumentu lub partii? → Rekord anulowany pozostaje w systemie, ale jest zablokowany do dalszej edycji." wrapText="true"/>
+                <Label text="Dlaczego nie mogę edytować anulowanego dokumentu lub partii? → Rekord anulowany jest blokowany do edycji biznesowo." wrapText="true"/>
             </VBox>
 
             <VBox styleClass="content-card" spacing="12">

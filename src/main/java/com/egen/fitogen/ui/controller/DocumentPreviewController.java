@@ -94,7 +94,7 @@ public class DocumentPreviewController {
             applyPreview(preview);
         } catch (Exception e) {
             e.printStackTrace();
-            DialogUtil.showError("Błąd podglądu", "Nie udało się załadować podglądu dokumentu. Sprawdź, czy dokument nadal istnieje i spróbuj ponownie.");
+            DialogUtil.showError("Błąd podglądu", "Nie udało się załadować podglądu dokumentu.");
             close();
         }
     }
@@ -195,12 +195,12 @@ public class DocumentPreviewController {
     @FXML
     private void exportPdf() {
         if (currentPreview == null) {
-            DialogUtil.showWarning("Brak danych", "Nie załadowano danych dokumentu do zapisu PDF.");
+            DialogUtil.showWarning("Brak danych", "Nie załadowano danych dokumentu do eksportu.");
             return;
         }
 
         FileChooser chooser = new FileChooser();
-        chooser.setTitle("Zapisz dokument jako plik PDF");
+        chooser.setTitle("Zapisz dokument jako PDF");
         chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Plik PDF", "*.pdf"));
         chooser.setInitialFileName(buildPdfFileName(currentPreview));
 
@@ -211,10 +211,10 @@ public class DocumentPreviewController {
 
         try {
             documentPdfService.export(currentPreview, selectedFile);
-            DialogUtil.showSuccess(buildPdfSaveSuccessMessage(selectedFile));
+            DialogUtil.showSuccess("Dokument został zapisany jako PDF:\n" + selectedFile.getAbsolutePath());
         } catch (Exception e) {
             e.printStackTrace();
-            DialogUtil.showError("Błąd zapisu PDF", "Nie udało się zapisać dokumentu jako pliku PDF.");
+            DialogUtil.showError("Błąd eksportu", "Nie udało się zapisać dokumentu jako PDF.");
         }
     }
 
@@ -222,12 +222,12 @@ public class DocumentPreviewController {
     private String buildPreviewSummary(DocumentPreviewDTO preview) {
         int itemsCount = preview.getItems() == null ? 0 : preview.getItems().size();
         StringBuilder builder = new StringBuilder();
-        builder.append("Status: ").append(valueOrDash(preview.getStatusLabel())).append(". ");
-        builder.append("Typ dokumentu: ").append(valueOrDash(preview.getDocumentType())).append(". ");
-        builder.append("Pozycje: ").append(itemsCount).append(". ");
-        builder.append("Łączna ilość: ").append(preview.getTotalQty()).append('.');
+        builder.append("Status: ").append(valueOrDash(preview.getStatusLabel()));
+        builder.append(" | Typ: ").append(valueOrDash(preview.getDocumentType()));
+        builder.append(" | Pozycje: ").append(itemsCount);
+        builder.append(" | Łączna ilość: ").append(preview.getTotalQty());
         if (preview.isCancelled()) {
-            builder.append(" Dokument jest anulowany.");
+            builder.append(" | Ostrzeżenie: dokument jest anulowany");
         }
         return builder.toString();
     }
@@ -311,10 +311,6 @@ public class DocumentPreviewController {
             number = "dokument";
         }
         return number + ".pdf";
-    }
-
-    private String buildPdfSaveSuccessMessage(File selectedFile) {
-        return "Zapis pliku PDF zakończył się powodzeniem:\n" + selectedFile.getAbsolutePath();
     }
 
     private double computeNodeWidth(Node node) {

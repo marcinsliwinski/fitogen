@@ -251,17 +251,13 @@ public class DocumentController {
         String contrahent = safe(getContrahentName(document.getContrahentId()));
         String issueDate = document.getIssueDate() == null ? "—" : document.getIssueDate().toString();
         String comments = safe(document.getComments());
+        String commentsSuffix = comments.isBlank() ? "" : " Uwagi: " + comments;
 
-        StringBuilder builder = new StringBuilder();
-        builder.append("Dokument „").append(number.isBlank() ? "—" : number).append("”. ");
-        builder.append("Typ: ").append(type.isBlank() ? "—" : type).append(". ");
-        builder.append("Klient: ").append(contrahent.isBlank() ? "—" : contrahent).append(". ");
-        builder.append("Data wystawienia: ").append(issueDate).append(". ");
-        builder.append("Status: ").append(formatStatus(document.getStatus())).append('.');
-        if (!comments.isBlank()) {
-            builder.append(" Uwagi: ").append(comments);
-        }
-        return builder.toString();
+        return "Dokument „" + number + "” | Typ: " + (type.isBlank() ? "—" : type)
+                + " | Klient: " + (contrahent.isBlank() ? "—" : contrahent)
+                + " | Data wystawienia: " + issueDate
+                + " | Status: " + formatStatus(document.getStatus())
+                + commentsSuffix;
     }
 
     private String safe(String value) {
@@ -319,26 +315,26 @@ public class DocumentController {
 
     @FXML
     private void previewDocument() {
-        Document selected = getSelectedDocumentForAction("otwarcia podglądu");
+        Document selected = getSelectedDocumentForAction("podglądu");
         if (selected == null) {
             return;
         }
-        openDocumentPreview(selected, "Podgląd dokumentu");
+        openDocumentPreview(selected);
     }
 
     @FXML
     private void printDocument() {
-        Document selected = getSelectedDocumentForAction("otwarcia podglądu do wydruku");
+        Document selected = getSelectedDocumentForAction("drukowania");
         if (selected == null) {
             return;
         }
-        openDocumentPreview(selected, "Podgląd dokumentu do wydruku");
+        openDocumentPreview(selected);
     }
 
-    private void openDocumentPreview(Document selected, String windowTitle) {
+    private void openDocumentPreview(Document selected) {
         ModalViewUtil.openModal(
                 "/view/document_preview.fxml",
-                windowTitle,
+                "Podgląd dokumentu",
                 980, 760,
                 920, 700,
                 (DocumentPreviewController controller) -> controller.setDocumentId(selected.getId())

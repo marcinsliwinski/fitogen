@@ -28,10 +28,13 @@ import javafx.scene.control.ComboBox;
 import javafx.scene.control.DatePicker;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
+import javafx.scene.control.TextFormatter;
+import javafx.scene.control.Tooltip;
 import javafx.stage.Stage;
 
 import java.time.LocalDate;
 import java.util.Comparator;
+import java.util.Objects;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -88,6 +91,9 @@ public class PlantBatchFormController {
         if (interiorBatchNoField != null) {
             interiorBatchNoField.setDisable(true);
         }
+
+        configureInputPresentation();
+        installFieldTooltips();
 
         configureInfoArea(eppoLinkedCodesInfoArea);
         configureInfoArea(eppoProtectedZonesInfoArea);
@@ -560,6 +566,84 @@ public class PlantBatchFormController {
         return sb.toString();
     }
 
+    private void configureInputPresentation() {
+        installTrimSupport(exteriorBatchNoField);
+        installTrimSupport(fitoQualificationCategoryField);
+        installTrimSupport(commentsArea);
+        installUppercaseSupport(manufacturerCountryCodeField);
+        installUppercaseSupport(eppoCodeField);
+        installUppercaseSupport(zpZoneField);
+
+        if (qtyField != null) {
+            qtyField.setTextFormatter(new TextFormatter<String>(change ->
+                    change.getControlNewText().matches("\\d*") ? change : null
+            ));
+        }
+    }
+
+    private void installFieldTooltips() {
+        setTooltip(plantComboBox, "Pole wymagane. Wybór rośliny wpływa na sugestie EPPO, paszport i numer partii wewnętrznej.");
+        setTooltip(internalSourceCheckBox, "Zaznacz, jeśli partia pochodzi z własnej szkółki. Wtedy źródło pochodzenia nie jest wymagane.");
+        setTooltip(sourceOriginComboBox, "Wybierz dostawcę partii, jeśli partia nie jest wewnętrzna.");
+        setTooltip(interiorBatchNoField, "Numer partii wewnętrznej jest podglądem nadawanym automatycznie dla partii własnych.");
+        setTooltip(exteriorBatchNoField, "Pole opcjonalne. Uzupełnij numer partii od dostawcy, jeśli został nadany zewnętrznie.");
+        setTooltip(qtyField, "Pole wymagane. Wpisz ilość jako liczbę całkowitą większą od zera.");
+        setTooltip(creationDatePicker, "Data utworzenia partii wpływa na numerację i historię zmian.");
+        setTooltip(manufacturerCountryCodeField, "Wpisz kod kraju pochodzenia, np. PL. Pole jest automatycznie uzupełniane dla partii wewnętrznych i zapisywane wielkimi literami.");
+        setTooltip(fitoQualificationCategoryField, "Pole opcjonalne. Uzupełnij kategorię kwalifikacji, jeśli jest wymagana dla danej partii.");
+        setTooltip(eppoCodeField, "Kod EPPO może zostać zasugerowany na podstawie wybranej rośliny i słowników EPPO.");
+        setTooltip(zpZoneField, "Pole strefy chronionej ZP. Możesz wpisać wartość ręcznie albo skorzystać z podpowiedzi poniżej.");
+        setTooltip(eppoLinkedCodesInfoArea, "Informacja tylko do odczytu. Pokazuje powiązane kody EPPO dla wybranej rośliny.");
+        setTooltip(eppoProtectedZonesInfoArea, "Informacja tylko do odczytu. Pokazuje strefy chronione przypisane do powiązanych kodów EPPO.");
+        setTooltip(eppoZpSuggestionInfoArea, "Informacja tylko do odczytu. Podpowiada strefę ZP na podstawie rośliny i kraju pochodzenia.");
+        setTooltip(passportAdvisoryInfoArea, "Informacja tylko do odczytu. Pokazuje zalecenia paszportowe wynikające z rośliny i słowników EPPO.");
+        setTooltip(commentsArea, "Pole opcjonalne na uwagi operacyjne dotyczące partii roślin.");
+    }
+
+    private void installTrimSupport(TextField field) {
+        if (field == null) {
+            return;
+        }
+
+        field.focusedProperty().addListener((obs, oldValue, focused) -> {
+            if (!focused) {
+                field.setText(normalizeSpaces(field.getText()));
+            }
+        });
+    }
+
+    private void installTrimSupport(TextArea area) {
+        if (area == null) {
+            return;
+        }
+
+        area.focusedProperty().addListener((obs, oldValue, focused) -> {
+            if (!focused) {
+                area.setText(normalizeSpaces(area.getText()));
+            }
+        });
+    }
+
+    private void installUppercaseSupport(TextField field) {
+        if (field == null) {
+            return;
+        }
+
+        field.textProperty().addListener((obs, oldValue, newValue) -> {
+            String normalized = normalizeUppercase(newValue);
+            if (!Objects.equals(newValue, normalized)) {
+                field.setText(normalized);
+                field.positionCaret(normalized.length());
+            }
+        });
+    }
+
+    private void setTooltip(javafx.scene.control.Control control, String text) {
+        if (control != null && text != null && !text.isBlank()) {
+            control.setTooltip(new Tooltip(text));
+        }
+    }
+
     private void configureInfoArea(TextArea area) {
         if (area == null) {
             return;
@@ -601,7 +685,7 @@ public class PlantBatchFormController {
         }
 
         if (exteriorBatchNoField != null) {
-            batch.setExteriorBatchNo(exteriorBatchNoField.getText());
+            batch.setExteriorBatchNo(normalizeSpaces(exteriorBatchNoField.getText()));
         }
 
         if (creationDatePicker != null) {
@@ -646,21 +730,21 @@ public class PlantBatchFormController {
     private PlantBatch buildBatchFromForm() {
         PlantBatch batch = new PlantBatch();
         batch.setPlantId(plantComboBox.getValue().getId());
-        batch.setInteriorBatchNo(interiorBatchNoField.getText());
-        batch.setExteriorBatchNo(exteriorBatchNoField.getText());
+        batch.setInteriorBatchNo(normalizeUppercase(interiorBatchNoField.getText()));
+        batch.setExteriorBatchNo(normalizeSpaces(exteriorBatchNoField.getText()));
         batch.setQty(Integer.parseInt(qtyField.getText().trim()));
         batch.setCreationDate(creationDatePicker.getValue());
-        batch.setManufacturerCountryCode(manufacturerCountryCodeField.getText());
-        batch.setFitoQualificationCategory(fitoQualificationCategoryField.getText());
-        batch.setEppoCode(eppoCodeField.getText());
-        batch.setZpZone(zpZoneField.getText());
+        batch.setManufacturerCountryCode(normalizeUppercase(manufacturerCountryCodeField.getText()));
+        batch.setFitoQualificationCategory(normalizeSpaces(fitoQualificationCategoryField.getText()));
+        batch.setEppoCode(normalizeUppercase(eppoCodeField.getText()));
+        batch.setZpZone(normalizeUppercase(zpZoneField.getText()));
         batch.setInternalSource(internalSourceCheckBox.isSelected());
         batch.setContrahentId(
                 internalSourceCheckBox.isSelected()
                         ? 0
                         : sourceOriginComboBox.getValue().getId()
         );
-        batch.setComments(commentsArea.getText());
+        batch.setComments(normalizeSpaces(commentsArea.getText()));
         batch.setStatus(currentStatus);
         return batch;
     }
@@ -705,6 +789,19 @@ public class PlantBatchFormController {
 
     private String safeUpper(String value) {
         return value == null ? "" : value.trim().toUpperCase();
+    }
+
+    private String normalizeUppercase(String value) {
+        return normalizeSpaces(value).toUpperCase();
+    }
+
+    private String normalizeSpaces(String value) {
+        if (value == null) {
+            return "";
+        }
+
+        String normalized = value.trim().replaceAll("\s+", " ");
+        return normalized.isBlank() ? "" : normalized;
     }
 
     private boolean isBlank(String value) {

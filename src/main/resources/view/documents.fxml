@@ -9,7 +9,6 @@
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.VBox?>
-<?import javafx.scene.control.Tooltip?>
 
 <VBox spacing="14"
       xmlns:fx="http://javafx.com/fxml"
@@ -46,16 +45,8 @@
         <Region HBox.hgrow="ALWAYS"/>
         <Button text="Dodaj" onAction="#addDocument"/>
         <Button text="Edytuj" onAction="#editDocument"/>
-        <Button text="Podgląd" onAction="#previewDocument" styleClass="button-secondary">
-            <tooltip>
-                <Tooltip text="Otwiera podgląd dokumentu bez przechodzenia do edycji."/>
-            </tooltip>
-        </Button>
-        <Button text="Drukuj" onAction="#printDocument" styleClass="button-secondary">
-            <tooltip>
-                <Tooltip text="Otwiera podgląd dokumentu z opcjami Drukuj i Zapisz PDF."/>
-            </tooltip>
-        </Button>
+        <Button text="Podgląd" onAction="#previewDocument" styleClass="button-secondary"/>
+        <Button text="Drukuj" onAction="#printDocument" styleClass="button-secondary"/>
         <Button text="Anuluj" onAction="#deleteDocument" styleClass="button-danger"/>
     </HBox>
 

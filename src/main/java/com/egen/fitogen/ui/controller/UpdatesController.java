@@ -165,7 +165,6 @@ public class UpdatesController {
                 .append(buildPlantsReadinessStatus(plants.size(), missingSpeciesCount, missingVisibilityCount))
                 .append(UiTextUtil.DOUBLE_NL);
         appendPlantsPreviewSample(builder, plants);
-        UiTextUtil.appendPreviewLimitNote(builder, Math.min(plants.size(), 8), plants.size());
         builder.append(UiTextUtil.NL).append("To jest tylko lokalny podgląd gotowości pod przyszłą aktualizację serwerową roślin.");
         return builder.toString();
     }
@@ -189,7 +188,6 @@ public class UpdatesController {
                 .append(buildEppoReadinessStatus(codes.size(), missingCodeCount, missingDisplayNameCount))
                 .append(UiTextUtil.DOUBLE_NL);
         appendEppoPreviewSample(builder, codes);
-        UiTextUtil.appendPreviewLimitNote(builder, Math.min(codes.size(), 8), codes.size());
         builder.append(UiTextUtil.NL).append("To jest tylko lokalny podgląd gotowości pod przyszłą aktualizację serwerową EPPO.");
         return builder.toString();
     }
@@ -211,7 +209,6 @@ public class UpdatesController {
                 .append(buildCountriesReadinessStatus(entries.size(), missingCountryCount, missingCodeCount, duplicateCodeCount))
                 .append(UiTextUtil.DOUBLE_NL);
         appendCountriesPreviewSample(builder, entries, customEntries);
-        UiTextUtil.appendPreviewLimitNote(builder, Math.min(entries.size(), 10), entries.size());
         builder.append(UiTextUtil.NL).append("To jest tylko lokalny podgląd gotowości pod przyszłą aktualizację serwerową wspólnego słownika krajów.");
         return builder.toString();
     }
@@ -228,9 +225,9 @@ public class UpdatesController {
             com.egen.fitogen.model.Plant plant = plants.get(i);
             builder.append("- ")
                     .append(buildPlantDisplay(plant))
-                    .append(" — status: ").append(valueOrDash(plant.getVisibilityStatus()))
-                    .append("; paszport: ").append(plant.isPassportRequired() ? "TAK" : "NIE")
-                    .append("; kod EPPO: ").append(valueOrDash(plant.getEppoCode()))
+                    .append(" | status=").append(valueOrDash(plant.getVisibilityStatus()))
+                    .append(" | paszport=").append(plant.isPassportRequired() ? "TAK" : "NIE")
+                    .append(" | EPPO=").append(valueOrDash(plant.getEppoCode()))
                     .append(UiTextUtil.NL);
         }
     }
@@ -247,9 +244,9 @@ public class UpdatesController {
             com.egen.fitogen.model.EppoCode code = codes.get(i);
             builder.append("- ")
                     .append(valueOrDash(code.getCode()))
-                    .append(" — nazwa: ").append(valueOrDash(code.getDisplaySpeciesName()))
-                    .append("; łacina: ").append(valueOrDash(code.getDisplayLatinSpeciesName()))
-                    .append("; status: ").append(formatEppoStatusForPreview(code.getStatus()))
+                    .append(" | nazwa=").append(valueOrDash(code.getDisplaySpeciesName()))
+                    .append(" | łacina=").append(valueOrDash(code.getDisplayLatinSpeciesName()))
+                    .append(" | status=").append(formatEppoStatusForPreview(code.getStatus()))
                     .append(UiTextUtil.NL);
         }
     }
@@ -270,7 +267,7 @@ public class UpdatesController {
                     .append(valueOrDash(entry.country()))
                     .append(" (").append(valueOrDash(entry.countryCode())).append(")");
             if (containsCustomEntry(customEntries, entry)) {
-                builder.append(" — wpis własny użytkownika");
+                builder.append(" | wpis własny");
             }
             builder.append(UiTextUtil.NL);
         }

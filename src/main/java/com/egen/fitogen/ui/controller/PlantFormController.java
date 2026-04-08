@@ -15,6 +15,7 @@ import javafx.fxml.FXML;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
+import javafx.scene.control.Tooltip;
 import javafx.stage.Stage;
 
 import java.util.ArrayList;
@@ -69,6 +70,12 @@ public class PlantFormController {
         configureEditableCombo(varietyField);
         configureEditableCombo(rootstockField);
         configureEditableCombo(latinSpeciesNameField);
+
+        installComboTrimSupport(speciesField);
+        installComboTrimSupport(varietyField);
+        installComboTrimSupport(rootstockField);
+        installComboTrimSupport(latinSpeciesNameField);
+        installFieldTooltips();
 
         configureSpeciesSynchronization();
         refreshPassportRequirementPresentation();
@@ -184,6 +191,38 @@ public class PlantFormController {
     private void configureEditableCombo(ComboBox<String> comboBox) {
         comboBox.setEditable(true);
         comboBox.setMaxWidth(Double.MAX_VALUE);
+    }
+
+    private void installFieldTooltips() {
+        setTooltip(speciesField, "Pole wymagane. Możesz wpisać własny gatunek albo wybrać jedną z podpowiedzi.");
+        setTooltip(varietyField, "Pole opcjonalne. Uzupełnij odmianę, jeśli chcesz ją rozróżniać na liście roślin.");
+        setTooltip(rootstockField, "Pole opcjonalne. Przydaje się przy roślinach szczepionych i przy numeracji partii.");
+        setTooltip(latinSpeciesNameField, "Pole opcjonalne. Wpis łaciński pomaga w automatycznym dopasowaniu kodu EPPO.");
+        setTooltip(eppoCodeInfoLabel, "Informacja jest wyliczana automatycznie na podstawie gatunku lub nazwy łacińskiej.");
+        setTooltip(passportRequiredBox, "Wymaganie paszportu możesz ustawić ręcznie albo pozostawić zgodnie z ustawieniami systemu i słowników EPPO.");
+        setTooltip(passportRequirementInfoLabel, "To pole wyjaśnia, czy dla tej rośliny paszport wynika z ustawień globalnych czy z decyzji w formularzu.");
+        setTooltip(visibilityStatusBox, "Status wpływa na widoczność rośliny w codziennej pracy. „Nieużywany” ukrywa ją z głównych przepływów bez usuwania danych.");
+    }
+
+    private void installComboTrimSupport(ComboBox<String> comboBox) {
+        if (comboBox == null || comboBox.getEditor() == null) {
+            return;
+        }
+
+        comboBox.getEditor().focusedProperty().addListener((obs, oldValue, focused) -> {
+            if (focused) {
+                return;
+            }
+
+            String normalized = normalizeText(comboBox.getEditor().getText());
+            comboBox.getEditor().setText(normalized == null ? "" : normalized);
+        });
+    }
+
+    private void setTooltip(javafx.scene.control.Control control, String text) {
+        if (control != null && text != null && !text.isBlank()) {
+            control.setTooltip(new Tooltip(text));
+        }
     }
 
     private void configureSpeciesSynchronization() {
