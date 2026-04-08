@@ -40,7 +40,7 @@ public class DocumentPdfService {
             Font normalFont = FontFactory.getFont(FontFactory.HELVETICA, 10);
             Font smallBold = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 10);
 
-            pdf.add(new Paragraph("Fito Gen — Podgląd dokumentu", smallBold));
+            pdf.add(new Paragraph("Fito Gen Essentials — Podgląd dokumentu", smallBold));
             Paragraph title = new Paragraph(
                     safe(preview.getDocumentType()) + "  " + safe(preview.getDocumentNumber()),
                     titleFont

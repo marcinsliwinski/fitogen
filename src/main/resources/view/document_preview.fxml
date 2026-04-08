@@ -14,6 +14,7 @@
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.VBox?>
+<?import javafx.scene.control.Tooltip?>
 
 <BorderPane xmlns:fx="http://javafx.com/fxml"
             fx:controller="com.egen.fitogen.ui.controller.DocumentPreviewController"
@@ -23,7 +24,7 @@
         <HBox alignment="CENTER_LEFT" spacing="10" styleClass="content-card">
             <Label text="Podgląd dokumentu" styleClass="page-title"/>
             <Region HBox.hgrow="ALWAYS"/>
-            <Label fx:id="cancelledBadge" text="ANULOWANY" styleClass="preview-cancelled-badge" visible="false"/>
+            <Label fx:id="cancelledBadge" text="Dokument anulowany" styleClass="preview-cancelled-badge" visible="false"/>
         </HBox>
     </top>
 
@@ -36,7 +37,7 @@
                     </padding>
 
                     <VBox spacing="6">
-                        <Label text="Fito Gen" styleClass="preview-title"/>
+                        <Label text="Fito Gen Essentials" styleClass="preview-title"/>
                         <Label text="Podgląd dokumentu" styleClass="page-subtitle"/>
                         <Label fx:id="previewSummaryLabel" wrapText="true" styleClass="page-subtitle"/>
                     </VBox>
@@ -132,8 +133,16 @@
     <bottom>
         <HBox spacing="10" alignment="CENTER_RIGHT" styleClass="content-card">
             <Button text="Zamknij" onAction="#close" styleClass="button-secondary"/>
-            <Button text="PDF" onAction="#exportPdf" styleClass="button-secondary"/>
-            <Button text="Drukuj" onAction="#printDocument"/>
+            <Button text="Zapisz PDF" onAction="#exportPdf" styleClass="button-secondary">
+                <tooltip>
+                    <Tooltip text="Zapisuje bieżący podgląd dokumentu jako plik PDF."/>
+                </tooltip>
+            </Button>
+            <Button text="Drukuj" onAction="#printDocument">
+                <tooltip>
+                    <Tooltip text="Otwiera systemowe okno drukowania dla bieżącego podglądu dokumentu."/>
+                </tooltip>
+            </Button>
         </HBox>
     </bottom>
 </BorderPane>
