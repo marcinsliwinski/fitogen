@@ -27,15 +27,19 @@ import java.io.File;
 
 public class DocumentPreviewController {
 
+    private static final double TABLE_ROW_HEIGHT = 36;
+    private static final double TABLE_HEADER_HEIGHT = 34;
+    private static final double TABLE_MIN_HEIGHT = 180;
+    private static final double TABLE_MAX_HEIGHT = 360;
+
     @FXML private VBox printableRoot;
-    @FXML private Label documentNumberLabel;
-    @FXML private Label documentTypeLabel;
+    @FXML private Label documentTypeTitleLabel;
+    @FXML private Label documentNumberTitleLabel;
+    @FXML private Label previewSummaryLabel;
     @FXML private Label statusLabel;
     @FXML private Label issueDateLabel;
     @FXML private Label createdByLabel;
-    @FXML private Label contrahentNameLabel;
-    @FXML private Label contrahentAddressLabel;
-    @FXML private Label previewSummaryLabel;
+    @FXML private Label totalQtyLabel;
     @FXML private Label issuerNameLabel;
     @FXML private Label issuerAddressLabel;
     @FXML private Label issuerPhytosanitaryNumberLabel;
@@ -72,6 +76,8 @@ public class DocumentPreviewController {
         if (itemsTable != null) {
             itemsTable.setColumnResizePolicy(TableView.UNCONSTRAINED_RESIZE_POLICY);
             itemsTable.setPlaceholder(new Label("Brak pozycji dokumentu do wyświetlenia."));
+            itemsTable.setFixedCellSize(TABLE_ROW_HEIGHT);
+            itemsTable.setFocusTraversable(false);
         }
         if (warningArea != null) {
             warningArea.setEditable(false);
@@ -102,51 +108,43 @@ public class DocumentPreviewController {
     private void applyPreview(DocumentPreviewDTO preview) {
         currentPreview = preview;
 
-        documentNumberLabel.setText(valueOrDash(preview.getDocumentNumber()));
-        documentTypeLabel.setText(valueOrDash(preview.getDocumentType()));
+        documentTypeTitleLabel.setText(valueOrDash(preview.getDocumentType()));
+        documentNumberTitleLabel.setText(buildDocumentNumberTitle(preview));
         statusLabel.setText(valueOrDash(preview.getStatusLabel()));
         issueDateLabel.setText(valueOrDash(preview.getIssueDateLabel()));
         createdByLabel.setText(valueOrDash(preview.getCreatedBy()));
-        contrahentNameLabel.setText(valueOrDash(preview.getContrahentName()));
-        contrahentAddressLabel.setText(valueOrDash(preview.getContrahentAddress()));
+        totalQtyLabel.setText(String.valueOf(preview.getTotalQty()));
         commentsLabel.setText(valueOrDash(preview.getComments()));
         commentsSection.setVisible(preview.getComments() != null && !preview.getComments().isBlank());
         cancelledBadge.setVisible(preview.isCancelled());
         itemsTable.setItems(FXCollections.observableArrayList(preview.getItems()));
+        updateItemsTableHeight(preview);
 
-        if (previewSummaryLabel != null) {
-            previewSummaryLabel.setText(buildPreviewSummary(preview));
+        previewSummaryLabel.setText(buildPreviewSummary(preview));
+        issuerNameLabel.setText(valueOrDash(preview.getIssuerName()));
+        issuerAddressLabel.setText(joinPreviewLines(preview.getIssuerAddressLine1(), preview.getIssuerAddressLine2()));
+        issuerPhytosanitaryNumberLabel.setText(buildPhytosanitaryLabel(preview.getIssuerPhytosanitaryNumber()));
+        customerNameLabel.setText(valueOrDash(preview.getCustomerName()));
+        customerAddressLabel.setText(joinPreviewLines(preview.getCustomerAddressLine1(), preview.getCustomerAddressLine2()));
+        customerPhytosanitaryNumberLabel.setText(buildPhytosanitaryLabel(preview.getCustomerPhytosanitaryNumber()));
+        warningSummaryLabel.setText("Uwagi operacyjne do weryfikacji");
+        warningArea.setText(buildOperationalWarningsText(preview));
+        eppoInfoSummaryLabel.setText("Informacje EPPO i paszportowe");
+        eppoInfoArea.setText(buildEppoInfoText(preview));
+    }
+
+    private void updateItemsTableHeight(DocumentPreviewDTO preview) {
+        if (itemsTable == null) {
+            return;
         }
-        if (issuerNameLabel != null) {
-            issuerNameLabel.setText(valueOrDash(preview.getIssuerName()));
-        }
-        if (issuerAddressLabel != null) {
-            issuerAddressLabel.setText(joinPreviewLines(preview.getIssuerAddressLine1(), preview.getIssuerAddressLine2()));
-        }
-        if (issuerPhytosanitaryNumberLabel != null) {
-            issuerPhytosanitaryNumberLabel.setText(buildPhytosanitaryLabel(preview.getIssuerPhytosanitaryNumber()));
-        }
-        if (customerNameLabel != null) {
-            customerNameLabel.setText(valueOrDash(preview.getCustomerName()));
-        }
-        if (customerAddressLabel != null) {
-            customerAddressLabel.setText(joinPreviewLines(preview.getCustomerAddressLine1(), preview.getCustomerAddressLine2()));
-        }
-        if (customerPhytosanitaryNumberLabel != null) {
-            customerPhytosanitaryNumberLabel.setText(buildPhytosanitaryLabel(preview.getCustomerPhytosanitaryNumber()));
-        }
-        if (warningSummaryLabel != null) {
-            warningSummaryLabel.setText("Ostrzeżenia i uwagi operacyjne");
-        }
-        if (warningArea != null) {
-            warningArea.setText(buildOperationalWarningsText(preview));
-        }
-        if (eppoInfoSummaryLabel != null) {
-            eppoInfoSummaryLabel.setText("Informacje EPPO i paszportowe");
-        }
-        if (eppoInfoArea != null) {
-            eppoInfoArea.setText(buildEppoInfoText(preview));
-        }
+
+        int itemsCount = preview.getItems() == null ? 0 : preview.getItems().size();
+        double preferredHeight = TABLE_HEADER_HEIGHT + Math.max(1, itemsCount) * TABLE_ROW_HEIGHT + 12;
+        preferredHeight = Math.max(TABLE_MIN_HEIGHT, Math.min(TABLE_MAX_HEIGHT, preferredHeight));
+
+        itemsTable.setPrefHeight(preferredHeight);
+        itemsTable.setMinHeight(preferredHeight);
+        itemsTable.setMaxHeight(preferredHeight);
     }
 
     @FXML
@@ -170,9 +168,14 @@ public class DocumentPreviewController {
             nodeToPrint.layout();
 
             double nodeWidth = computeNodeWidth(nodeToPrint);
+            double nodeHeight = computeNodeHeight(nodeToPrint);
             PageLayout pageLayout = job.getJobSettings().getPageLayout();
             double printableWidth = pageLayout.getPrintableWidth();
-            double scale = nodeWidth <= 0 ? 1 : Math.min(1, printableWidth / nodeWidth);
+            double printableHeight = pageLayout.getPrintableHeight();
+
+            double widthScale = nodeWidth <= 0 ? 1 : printableWidth / nodeWidth;
+            double heightScale = nodeHeight <= 0 ? 1 : printableHeight / nodeHeight;
+            double scale = Math.min(1, Math.min(widthScale, heightScale));
 
             nodeToPrint.setScaleX(scale);
             nodeToPrint.setScaleY(scale);
@@ -218,16 +221,21 @@ public class DocumentPreviewController {
         }
     }
 
+    private String buildDocumentNumberTitle(DocumentPreviewDTO preview) {
+        String number = safe(preview.getDocumentNumber());
+        if (number.isBlank()) {
+            return "Numer dokumentu: —";
+        }
+        return "Numer dokumentu: " + number;
+    }
 
     private String buildPreviewSummary(DocumentPreviewDTO preview) {
-        int itemsCount = preview.getItems() == null ? 0 : preview.getItems().size();
         StringBuilder builder = new StringBuilder();
-        builder.append("Status: ").append(valueOrDash(preview.getStatusLabel()));
-        builder.append(" | Typ: ").append(valueOrDash(preview.getDocumentType()));
-        builder.append(" | Pozycje: ").append(itemsCount);
-        builder.append(" | Łączna ilość: ").append(preview.getTotalQty());
+        builder.append("Klient: ").append(valueOrDash(preview.getCustomerName()));
+        builder.append(" • Data wystawienia: ").append(valueOrDash(preview.getIssueDateLabel()));
+        builder.append(" • Status: ").append(valueOrDash(preview.getStatusLabel()));
         if (preview.isCancelled()) {
-            builder.append(" | Ostrzeżenie: dokument jest anulowany");
+            builder.append(" • Dokument anulowany");
         }
         return builder.toString();
     }
@@ -252,7 +260,6 @@ public class DocumentPreviewController {
         return safeLine1 + UiTextUtil.NL + safeLine2;
     }
 
-
     private String buildOperationalWarningsText(DocumentPreviewDTO preview) {
         int itemsCount = preview.getItems() == null ? 0 : preview.getItems().size();
         long passportRequiredCount = preview.getItems() == null
@@ -265,7 +272,7 @@ public class DocumentPreviewController {
         if (preview.isCancelled()) {
             UiTextUtil.appendParagraph(builder, "Dokument został anulowany. Traktuj go wyłącznie jako zapis historyczny i nie używaj go do bieżącej obsługi operacyjnej.");
         } else {
-            UiTextUtil.appendParagraph(builder, "Dokument ma status aktywny.");
+            UiTextUtil.appendParagraph(builder, "Układ wydruku i PDF odpowiada sekcji drukowalnej powyżej. Przed finalnym użyciem sprawdź tylko dane biznesowe.");
         }
 
         UiTextUtil.appendLabelValue(builder, "Pozycje dokumentu", itemsCount);
@@ -274,7 +281,7 @@ public class DocumentPreviewController {
         UiTextUtil.appendEmptyLine(builder);
 
         if (passportRequiredCount > 0) {
-            UiTextUtil.appendParagraph(builder, "Uwaga: co najmniej jedna pozycja wymaga paszportu. Zweryfikuj finalne oznaczenia i komplet danych przed wydrukiem lub eksportem PDF.");
+            UiTextUtil.appendParagraph(builder, "Co najmniej jedna pozycja wymaga paszportu. Zweryfikuj oznaczenia i komplet danych przed wydrukiem lub eksportem PDF.");
         }
 
         if (safe(preview.getCustomerPhytosanitaryNumber()).isBlank()) {
@@ -284,14 +291,14 @@ public class DocumentPreviewController {
         if (itemsCount == 0) {
             builder.append("Dokument nie zawiera pozycji. Taki podgląd traktuj jako niekompletny.");
         } else {
-            builder.append("Podgląd ma charakter informacyjny. Ostateczną walidację pozycji wykonuj w formularzu dokumentu przed zatwierdzeniem operacji.");
+            builder.append("Sekcje informacyjne poniżej nie są częścią wydruku i PDF — służą wyłącznie do weryfikacji w aplikacji.");
         }
         return builder.toString();
     }
 
     private String buildEppoInfoText(DocumentPreviewDTO preview) {
         StringBuilder builder = new StringBuilder();
-        UiTextUtil.appendParagraph(builder, "Ta sekcja ma charakter informacyjny i nie zmienia treści dokumentu.");
+        UiTextUtil.appendParagraph(builder, "Ta sekcja ma charakter informacyjny i nie zmienia treści wydruku dokumentu.");
         UiTextUtil.appendLabelValue(builder, "Klient", valueOrDash(preview.getCustomerName()));
         UiTextUtil.appendLabelValue(builder, "Typ dokumentu", valueOrDash(preview.getDocumentType()));
         UiTextUtil.appendLabelValue(builder, "Status", valueOrDash(preview.getStatusLabel()));
@@ -301,7 +308,7 @@ public class DocumentPreviewController {
         if (preview.isCancelled()) {
             UiTextUtil.appendParagraph(builder, "Ostrzeżenie: dokument został anulowany. Nie używaj go jako aktywnego dokumentu operacyjnego.");
         }
-        builder.append("Uwaga: szczegółowe dopasowanie EPPO dla kraju klienta jest rozwijane w formularzu dokumentu i dalszych etapach modułu referencyjnego.");
+        builder.append("Szczegółowe dopasowanie EPPO dla kraju klienta pozostaje elementem roboczym i nie jest drukowane w finalnym układzie dokumentu.");
         return builder.toString();
     }
 
@@ -322,6 +329,17 @@ public class DocumentPreviewController {
             return region.prefWidth(-1);
         }
         return 800;
+    }
+
+    private double computeNodeHeight(Node node) {
+        double height = node.getBoundsInLocal().getHeight();
+        if (height > 0) {
+            return height;
+        }
+        if (node instanceof Region region) {
+            return region.prefHeight(-1);
+        }
+        return 1120;
     }
 
     @FXML

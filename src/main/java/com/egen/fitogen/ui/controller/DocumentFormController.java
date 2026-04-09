@@ -27,6 +27,7 @@ import com.egen.fitogen.service.EppoCodePlantLinkService;
 import com.egen.fitogen.service.PassportAdvisoryService;
 import com.egen.fitogen.ui.util.DialogUtil;
 import com.egen.fitogen.ui.util.UiTextUtil;
+import com.egen.fitogen.ui.util.WindowSizingUtil;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.ObjectProperty;
@@ -406,7 +407,11 @@ public class DocumentFormController {
 
         javafx.fxml.FXMLLoader loader = new javafx.fxml.FXMLLoader(getClass().getResource("/view/plant_batch_form.fxml"));
         try {
-            javafx.scene.Scene scene = new javafx.scene.Scene(loader.load(), 900, 760);
+            javafx.scene.Scene scene = new javafx.scene.Scene(
+                    loader.load(),
+                    WindowSizingUtil.resolveInitialWidth(960),
+                    WindowSizingUtil.resolveInitialHeight(780)
+            );
             java.net.URL stylesheetUrl = getClass().getResource("/styles/app.css");
             if (stylesheetUrl != null) {
                 scene.getStylesheets().add(stylesheetUrl.toExternalForm());
@@ -416,8 +421,7 @@ public class DocumentFormController {
             stage.setTitle("Dodaj partię roślin");
             stage.setScene(scene);
             stage.initModality(javafx.stage.Modality.APPLICATION_MODAL);
-            stage.setMinWidth(860);
-            stage.setMinHeight(700);
+            WindowSizingUtil.applyStageSize(stage, 960, 780, 860, 700);
 
             PlantBatchFormController controller = loader.getController();
             controller.setPreselectedPlant(row.getPlant());

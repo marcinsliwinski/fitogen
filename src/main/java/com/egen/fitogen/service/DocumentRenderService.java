@@ -17,7 +17,11 @@ import com.egen.fitogen.repository.ContrahentRepository;
 import com.egen.fitogen.repository.PlantBatchRepository;
 import com.egen.fitogen.repository.PlantRepository;
 
+import java.time.format.DateTimeFormatter;
+
 public class DocumentRenderService {
+
+    private static final DateTimeFormatter ISSUE_DATE_FORMATTER = DateTimeFormatter.ofPattern("dd.MM.yyyy");
 
     private final DocumentService documentService;
     private final ContrahentRepository contrahentRepository;
@@ -64,7 +68,7 @@ public class DocumentRenderService {
         preview.setStatusLabel(formatStatus(document.getStatus()));
         preview.setCancelled(document.getStatus() == DocumentStatus.CANCELLED);
         preview.setIssueDate(document.getIssueDate());
-        preview.setIssueDateLabel(document.getIssueDate() != null ? document.getIssueDate().toString() : "");
+        preview.setIssueDateLabel(document.getIssueDate() != null ? document.getIssueDate().format(ISSUE_DATE_FORMATTER) : "");
 
         fillIssuer(preview);
         fillCustomer(preview, document.getContrahentId());

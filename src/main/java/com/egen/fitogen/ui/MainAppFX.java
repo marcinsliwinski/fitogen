@@ -7,6 +7,7 @@ import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
+import com.egen.fitogen.ui.util.WindowSizingUtil;
 
 import java.net.URL;
 import java.nio.file.Files;
@@ -26,9 +27,14 @@ public class MainAppFX extends Application {
         FXMLLoader loader = new FXMLLoader(mainViewUrl);
 
         try {
-            Scene scene = new Scene(loader.load(), 1200, 800);
+            Scene scene = new Scene(
+                    loader.load(),
+                    WindowSizingUtil.resolveInitialWidth(1280),
+                    WindowSizingUtil.resolveInitialHeight(860)
+            );
             stage.setTitle("Fito Gen Essentials");
             stage.setScene(scene);
+            WindowSizingUtil.applyStageSize(stage, 1280, 860, 1100, 760);
             stage.show();
         } catch (Exception e) {
             throw new IllegalStateException("Nie udało się załadować głównego widoku aplikacji: view/main.fxml", e);

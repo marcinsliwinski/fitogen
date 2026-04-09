@@ -357,3 +357,49 @@
 .helper-muted-label {
     -fx-text-fill: #667085;
 }
+
+.preview-sheet-a4 {
+    -fx-effect: dropshadow(gaussian, rgba(15, 23, 42, 0.08), 22, 0.15, 0, 6);
+}
+
+.preview-brand {
+    -fx-font-size: 20px;
+    -fx-font-weight: 700;
+    -fx-text-fill: #1f2933;
+}
+
+.preview-document-type {
+    -fx-font-size: 20px;
+    -fx-font-weight: 700;
+    -fx-text-fill: #24303f;
+}
+
+.preview-document-number {
+    -fx-font-size: 13px;
+    -fx-font-weight: 600;
+    -fx-text-fill: #5f6f82;
+}
+
+.preview-meta-label {
+    -fx-font-size: 12px;
+    -fx-font-weight: 700;
+    -fx-text-fill: #5f6f82;
+}
+
+.preview-meta-value {
+    -fx-font-size: 13px;
+    -fx-text-fill: #24303f;
+}
+
+.preview-party-box {
+    -fx-background-color: #fbfcfd;
+    -fx-border-color: #e6ebf0;
+    -fx-border-radius: 12;
+    -fx-background-radius: 12;
+    -fx-padding: 14;
+}
+
+.signature-line {
+    -fx-border-color: #94a3b8 transparent transparent transparent;
+    -fx-border-width: 1;
+}

@@ -29,7 +29,11 @@ public final class ModalViewUtil {
             }
 
             FXMLLoader loader = new FXMLLoader(resourceUrl);
-            Scene scene = new Scene(loader.load(), width, height);
+            Scene scene = new Scene(
+                    loader.load(),
+                    WindowSizingUtil.resolveInitialWidth(width),
+                    WindowSizingUtil.resolveInitialHeight(height)
+            );
 
             URL stylesheetUrl = ModalViewUtil.class.getResource("/styles/app.css");
             if (stylesheetUrl != null) {
@@ -40,8 +44,7 @@ public final class ModalViewUtil {
             stage.setScene(scene);
             stage.setTitle(title);
             stage.initModality(Modality.APPLICATION_MODAL);
-            stage.setMinWidth(minWidth);
-            stage.setMinHeight(minHeight);
+            WindowSizingUtil.applyStageSize(stage, width, height, minWidth, minHeight);
 
             if (controllerInitializer != null) {
                 @SuppressWarnings("unchecked")
