@@ -1,23 +1,34 @@
 package com.egen.fitogen.service;
 
+import com.egen.fitogen.config.DatabaseConfig;
+import com.egen.fitogen.dto.CsvImportExecutionResult;
+import com.egen.fitogen.dto.DocumentDTO;
 import com.egen.fitogen.dto.DocumentImportPreviewResult;
 import com.egen.fitogen.dto.DocumentImportPreviewRow;
+import com.egen.fitogen.dto.DocumentItemDTO;
 import com.egen.fitogen.model.Contrahent;
 import com.egen.fitogen.model.Document;
 import com.egen.fitogen.model.DocumentStatus;
 import com.egen.fitogen.model.PlantBatch;
+import com.egen.fitogen.model.PlantBatchStatus;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.Reader;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.Statement;
 import java.text.Normalizer;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashSet;
-import java.util.LinkedHashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public class DocumentCsvImportService {
@@ -29,14 +40,17 @@ public class DocumentCsvImportService {
     private final DocumentService documentService;
     private final ContrahentService contrahentService;
     private final PlantBatchService plantBatchService;
+    private final AuditLogService auditLogService;
 
     public DocumentCsvImportService(
             DocumentService documentService,
             ContrahentService contrahentService,
-            PlantBatchService plantBatchService) {
+            PlantBatchService plantBatchService,
+            AuditLogService auditLogService) {
         this.documentService = documentService;
         this.contrahentService = contrahentService;
         this.plantBatchService = plantBatchService;
+        this.auditLogService = auditLogService;
     }
 
     public DocumentImportPreviewResult preview(Path csvPath) {
@@ -68,6 +82,7 @@ public class DocumentCsvImportService {
         int contrahentNameIndex = indexOf(headers, "contrahentname", "nazwaodbiorcy", "kontrahent");
         int contrahentCodeIndex = indexOf(headers, "contrahentcountrycode", "kodkrajukontrahenta");
         int createdByIndex = indexOf(headers, "createdby", "utworzyl");
+        int commentsIndex = indexOf(headers, "comments", "uwagi");
         int lineNoIndex = indexOf(headers, "lineno", "pozycja", "lp");
         int batchNumberIndex = indexOf(headers, "plantbatchnumber", "numerpartii");
         int batchIdIndex = indexOf(headers, "plantbatchid", "idpartii");
@@ -89,13 +104,13 @@ public class DocumentCsvImportService {
 
         Set<String> existingDocumentNumbers = new HashSet<>();
         for (Document document : getExistingDocuments()) {
-            if (document.getDocumentNumber() != null && !document.getDocumentNumber().isBlank()) {
-                existingDocumentNumbers.add(document.getDocumentNumber().trim().toLowerCase());
+            String normalizedNumber = normalizeDocumentNumber(document.getDocumentNumber());
+            if (!normalizedNumber.isBlank()) {
+                existingDocumentNumbers.add(normalizedNumber);
             }
         }
 
         Set<String> seenLines = new HashSet<>();
-        Set<String> newDocumentNumbers = new LinkedHashSet<>();
         List<DocumentImportPreviewRow> rows = new ArrayList<>();
         int newCount = 0;
         int existingCount = 0;
@@ -122,49 +137,76 @@ public class DocumentCsvImportService {
             String contrahentName = valueAt(cells, contrahentNameIndex);
             String contrahentCode = valueAt(cells, contrahentCodeIndex);
             String createdBy = valueAt(cells, createdByIndex);
+            String comments = valueAt(cells, commentsIndex);
             int lineNo = parsePositiveInt(valueAt(cells, lineNoIndex));
             String batchNumber = valueAt(cells, batchNumberIndex);
             String batchId = valueAt(cells, batchIdIndex);
             int qty = parsePositiveInt(valueAt(cells, qtyIndex));
             boolean passportRequired = parseBool(valueAt(cells, passportRequiredIndex));
 
-            String statusText;
+            String rowStatus;
             StringBuilder message = new StringBuilder();
+            String normalizedDocumentNumber = normalizeDocumentNumber(documentNumber);
 
-            if (documentNumber.isBlank() || documentType.isBlank() || issueDate.isBlank() || lineNo <= 0 || qty <= 0) {
-                statusText = STATUS_INVALID;
+            boolean missingRequiredValues = false;
+            missingRequiredValues |= appendMessage(message, documentNumber.isBlank(), "Brak numeru dokumentu.");
+            missingRequiredValues |= appendMessage(message, documentType.isBlank(), "Brak typu dokumentu.");
+            missingRequiredValues |= appendMessage(message, issueDate.isBlank(), "Brak daty wystawienia.");
+            missingRequiredValues |= appendMessage(message, createdBy.isBlank(), "Brak pola „Utworzył”.");
+            missingRequiredValues |= appendMessage(message, contrahentName.isBlank() && contrahentCode.isBlank(), "Brak kontrahenta dokumentu.");
+            missingRequiredValues |= appendMessage(message, batchId.isBlank() && batchNumber.isBlank(), "Brak powiązania z partią roślin.");
+            missingRequiredValues |= appendMessage(message, lineNo <= 0, "Nieprawidłowy numer pozycji.");
+            missingRequiredValues |= appendMessage(message, qty <= 0, "Ilość musi być większa od zera.");
+
+            if (missingRequiredValues) {
+                rowStatus = STATUS_INVALID;
                 invalidCount++;
-                appendMessage(message, documentNumber.isBlank(), "Brak numeru dokumentu.");
-                appendMessage(message, documentType.isBlank(), "Brak typu dokumentu.");
-                appendMessage(message, issueDate.isBlank(), "Brak daty wystawienia.");
-                appendMessage(message, lineNo <= 0, "Nieprawidłowy numer pozycji.");
-                appendMessage(message, qty <= 0, "Ilość musi być większa od zera.");
-            } else if (!isValidDate(issueDate) || !isValidStatus(status) || (batchId.isBlank() && batchNumber.isBlank())) {
-                statusText = STATUS_INVALID;
+            } else if (!isValidDate(issueDate) || !isValidStatus(status)) {
+                rowStatus = STATUS_INVALID;
                 invalidCount++;
                 appendMessage(message, !isValidDate(issueDate), "Nieprawidłowa data wystawienia.");
                 appendMessage(message, !isValidStatus(status), "Nieprawidłowy status dokumentu.");
-                appendMessage(message, batchId.isBlank() && batchNumber.isBlank(), "Brak powiązania z partią roślin.");
+            } else if (existingDocumentNumbers.contains(normalizedDocumentNumber)) {
+                rowStatus = STATUS_MATCHING_EXISTING;
+                existingCount++;
+                appendMessage(message, true, "Numer dokumentu już istnieje w bazie.");
+                appendMessage(message, resolveContrahent(contrahentName, contrahentCode) == null,
+                        "Kontrahent nie został rozpoznany w aktualnej bazie.");
+                PlantBatch resolvedBatch = resolveBatch(batchId, batchNumber);
+                appendMessage(message, resolvedBatch == null,
+                        "Partia roślin nie została rozpoznana w aktualnej bazie.");
+                appendMessage(message, resolvedBatch != null && resolvedBatch.getStatus() == PlantBatchStatus.CANCELLED,
+                        "Partia roślin jest anulowana.");
             } else {
-                String lineKey = documentNumber.trim().toLowerCase() + "|" + lineNo;
+                String lineKey = normalizedDocumentNumber + "|" + lineNo;
                 if (!seenLines.add(lineKey)) {
-                    statusText = STATUS_DUPLICATE_IN_FILE;
+                    rowStatus = STATUS_DUPLICATE_IN_FILE;
                     duplicateCount++;
                     appendMessage(message, true, "Duplikat tej samej pozycji dokumentu w pliku.");
-                } else if (existingDocumentNumbers.contains(documentNumber.trim().toLowerCase())) {
-                    statusText = STATUS_MATCHING_EXISTING;
-                    existingCount++;
-                    appendMessage(message, true, "Numer dokumentu już istnieje w bazie.");
                 } else {
-                    statusText = STATUS_NEW;
-                    newCount++;
-                    newDocumentNumbers.add(documentNumber);
-                }
+                    Contrahent resolvedContrahent = resolveContrahent(contrahentName, contrahentCode);
+                    PlantBatch resolvedBatch = resolveBatch(batchId, batchNumber);
+                    int availableQty = resolvedBatch == null ? 0 : getAvailableQtySafe(resolvedBatch.getId());
 
-                appendMessage(message, !contrahentName.isBlank() && !contrahentExists(contrahentName, contrahentCode),
-                        "Kontrahent nie został rozpoznany w aktualnej bazie.");
-                appendMessage(message, !batchResolvable(batchId, batchNumber),
-                        "Partia roślin nie została rozpoznana w aktualnej bazie.");
+                    if (resolvedContrahent == null
+                            || resolvedBatch == null
+                            || resolvedBatch.getStatus() == PlantBatchStatus.CANCELLED
+                            || qty > availableQty) {
+                        rowStatus = STATUS_INVALID;
+                        invalidCount++;
+                        appendMessage(message, resolvedContrahent == null,
+                                "Kontrahent nie został rozpoznany w aktualnej bazie.");
+                        appendMessage(message, resolvedBatch == null,
+                                "Partia roślin nie została rozpoznana w aktualnej bazie.");
+                        appendMessage(message, resolvedBatch != null && resolvedBatch.getStatus() == PlantBatchStatus.CANCELLED,
+                                "Partia roślin jest anulowana.");
+                        appendMessage(message, resolvedBatch != null && qty > availableQty,
+                                "Ilość przekracza aktualnie dostępny stan partii: " + availableQty + ".");
+                    } else {
+                        rowStatus = STATUS_NEW;
+                        newCount++;
+                    }
+                }
             }
 
             rows.add(new DocumentImportPreviewRow(
@@ -176,12 +218,13 @@ public class DocumentCsvImportService {
                     contrahentName,
                     contrahentCode,
                     createdBy,
+                    comments,
                     lineNo,
                     batchNumber,
                     batchId,
                     qty,
                     passportRequired,
-                    statusText,
+                    rowStatus,
                     message.toString().trim()
             ));
         }
@@ -192,7 +235,7 @@ public class DocumentCsvImportService {
                 headers,
                 rows,
                 rows.size(),
-                newDocumentNumbers.size(),
+                countReadyDocuments(rows),
                 newCount,
                 existingCount,
                 duplicateCount,
@@ -200,8 +243,311 @@ public class DocumentCsvImportService {
         );
     }
 
+    public CsvImportExecutionResult applyPreview(DocumentImportPreviewResult previewResult) {
+        if (previewResult == null) {
+            throw new IllegalArgumentException("Brak podglądu importu dokumentów do wykonania.");
+        }
+
+        Set<String> existingDocumentNumbers = new HashSet<>();
+        for (Document document : getExistingDocuments()) {
+            String normalizedNumber = normalizeDocumentNumber(document.getDocumentNumber());
+            if (!normalizedNumber.isBlank()) {
+                existingDocumentNumbers.add(normalizedNumber);
+            }
+        }
+
+        Map<String, List<DocumentImportPreviewRow>> documentsByKey = groupRowsByDocument(previewResult.getRows());
+        List<String> problems = new ArrayList<>();
+        int addedCount = 0;
+        int skippedCount = 0;
+        int rejectedCount = 0;
+
+        for (List<DocumentImportPreviewRow> documentRows : documentsByKey.values()) {
+            String normalizedDocumentNumber = normalizeDocumentNumber(documentRows.getFirst().getDocumentNumber());
+            String displayDocumentNumber = displayDocumentNumber(documentRows);
+
+            if (!normalizedDocumentNumber.isBlank() && existingDocumentNumbers.contains(normalizedDocumentNumber)) {
+                skippedCount++;
+                continue;
+            }
+
+            if (containsRowStatus(documentRows, STATUS_MATCHING_EXISTING)) {
+                skippedCount++;
+                continue;
+            }
+
+            if (containsRowStatus(documentRows, STATUS_DUPLICATE_IN_FILE) || containsRowStatus(documentRows, STATUS_INVALID)) {
+                rejectedCount++;
+                appendDocumentProblem(problems, displayDocumentNumber, buildRejectedDocumentReason(documentRows));
+                continue;
+            }
+
+            if (!allRowsHaveStatus(documentRows, STATUS_NEW)) {
+                rejectedCount++;
+                appendDocumentProblem(problems, displayDocumentNumber,
+                        "Dokument zawiera pozycje o nieobsługiwanym statusie podglądu importu.");
+                continue;
+            }
+
+            try {
+                DocumentDTO dto = mapRowsToDocument(documentRows);
+                documentService.validateImportedDocument(dto);
+                int documentId = saveDocumentAtomically(dto);
+                existingDocumentNumbers.add(normalizeDocumentNumber(dto.getDocumentNumber()));
+                logImportedDocument(documentId, dto, previewResult.getSourceName());
+                addedCount++;
+            } catch (Exception e) {
+                rejectedCount++;
+                appendDocumentProblem(problems, displayDocumentNumber,
+                        fallbackMessage(e.getMessage(), "Nie udało się zapisać dokumentu do bazy."));
+            }
+        }
+
+        return new CsvImportExecutionResult(
+                previewResult.getSourceName(),
+                previewResult.getTotalRowsCount(),
+                addedCount,
+                skippedCount,
+                rejectedCount,
+                problems
+        );
+    }
+
     public String getSupportedColumnsSummary() {
         return "Obsługiwane kolumny importu: numer dokumentu (documentNumber), typ dokumentu (documentType), data wystawienia (issueDate), status (status), nazwa kontrahenta (contrahentName), kod kraju kontrahenta (contrahentCountryCode), utworzył (createdBy), uwagi (comments), numer pozycji (lineNo), numer partii (plantBatchNumber), identyfikator partii (plantBatchId), ilość (qty), wymagany paszport (passportRequired).";
+    }
+
+    private int countReadyDocuments(List<DocumentImportPreviewRow> rows) {
+        int count = 0;
+        for (Map.Entry<String, List<DocumentImportPreviewRow>> entry : groupRowsByDocument(rows).entrySet()) {
+            String key = entry.getKey();
+            if (key.startsWith("__row__")) {
+                continue;
+            }
+            if (allRowsHaveStatus(entry.getValue(), STATUS_NEW)) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    private Map<String, List<DocumentImportPreviewRow>> groupRowsByDocument(List<DocumentImportPreviewRow> rows) {
+        Map<String, List<DocumentImportPreviewRow>> grouped = new LinkedHashMap<>();
+        if (rows == null) {
+            return grouped;
+        }
+
+        for (DocumentImportPreviewRow row : rows) {
+            String key = normalizeDocumentNumber(row.getDocumentNumber());
+            if (key.isBlank()) {
+                key = "__row__" + row.getRowNumber();
+            }
+            grouped.computeIfAbsent(key, ignored -> new ArrayList<>()).add(row);
+        }
+        return grouped;
+    }
+
+    private DocumentDTO mapRowsToDocument(List<DocumentImportPreviewRow> rows) {
+        List<DocumentImportPreviewRow> sortedRows = new ArrayList<>(rows);
+        sortedRows.sort(Comparator
+                .comparingInt(DocumentImportPreviewRow::getLineNo)
+                .thenComparingInt(DocumentImportPreviewRow::getRowNumber));
+
+        DocumentImportPreviewRow firstRow = sortedRows.getFirst();
+        Contrahent contrahent = resolveContrahent(firstRow.getContrahentName(), firstRow.getContrahentCountryCode());
+        if (contrahent == null) {
+            throw new IllegalArgumentException("Nie udało się jednoznacznie rozpoznać kontrahenta dokumentu.");
+        }
+
+        DocumentDTO dto = new DocumentDTO();
+        dto.setDocumentNumber(valueOrEmpty(firstRow.getDocumentNumber()));
+        dto.setDocumentType(valueOrEmpty(firstRow.getDocumentType()));
+        dto.setIssueDate(LocalDate.parse(valueOrEmpty(firstRow.getIssueDate())));
+        dto.setContrahentId(contrahent.getId());
+        dto.setCreatedBy(valueOrEmpty(firstRow.getCreatedBy()));
+        dto.setComments(valueOrEmpty(firstRow.getComments()));
+        dto.setStatus(resolveDocumentStatus(firstRow.getStatus()));
+
+        List<DocumentItemDTO> items = new ArrayList<>();
+        for (DocumentImportPreviewRow row : sortedRows) {
+            assertConsistentDocumentFields(firstRow, row, contrahent);
+
+            PlantBatch batch = resolveBatch(row.getPlantBatchId(), row.getPlantBatchNumber());
+            if (batch == null) {
+                throw new IllegalArgumentException("Pozycja #" + row.getRowNumber() + ": nie udało się rozpoznać partii roślin.");
+            }
+            if (batch.getStatus() == PlantBatchStatus.CANCELLED) {
+                throw new IllegalArgumentException("Pozycja #" + row.getRowNumber() + ": partia roślin jest anulowana.");
+            }
+
+            DocumentItemDTO itemDTO = new DocumentItemDTO();
+            itemDTO.setPlantBatchId(batch.getId());
+            itemDTO.setQty(row.getQty());
+            itemDTO.setPassportRequired(row.isPassportRequired());
+            items.add(itemDTO);
+        }
+
+        dto.setItems(items);
+        return dto;
+    }
+
+    private void assertConsistentDocumentFields(DocumentImportPreviewRow firstRow,
+                                                DocumentImportPreviewRow nextRow,
+                                                Contrahent expectedContrahent) {
+        if (!normalizeDocumentNumber(firstRow.getDocumentNumber()).equals(normalizeDocumentNumber(nextRow.getDocumentNumber()))) {
+            throw new IllegalArgumentException("Pozycje nie należą do tego samego numeru dokumentu.");
+        }
+        if (!valueOrEmpty(firstRow.getDocumentType()).equalsIgnoreCase(valueOrEmpty(nextRow.getDocumentType()))) {
+            throw new IllegalArgumentException("Ten sam numer dokumentu ma różne typy dokumentu w pliku importu.");
+        }
+        if (!valueOrEmpty(firstRow.getIssueDate()).equals(valueOrEmpty(nextRow.getIssueDate()))) {
+            throw new IllegalArgumentException("Ten sam numer dokumentu ma różne daty wystawienia w pliku importu.");
+        }
+        if (!normalizeStatus(firstRow.getStatus()).equals(normalizeStatus(nextRow.getStatus()))) {
+            throw new IllegalArgumentException("Ten sam numer dokumentu ma różne statusy w pliku importu.");
+        }
+        if (!valueOrEmpty(firstRow.getCreatedBy()).equalsIgnoreCase(valueOrEmpty(nextRow.getCreatedBy()))) {
+            throw new IllegalArgumentException("Ten sam numer dokumentu ma różne wartości pola „Utworzył” w pliku importu.");
+        }
+        if (!valueOrEmpty(firstRow.getComments()).equals(valueOrEmpty(nextRow.getComments()))) {
+            throw new IllegalArgumentException("Ten sam numer dokumentu ma różne uwagi w pliku importu.");
+        }
+
+        Contrahent nextContrahent = resolveContrahent(nextRow.getContrahentName(), nextRow.getContrahentCountryCode());
+        if (nextContrahent == null || nextContrahent.getId() != expectedContrahent.getId()) {
+            throw new IllegalArgumentException("Ten sam numer dokumentu wskazuje różne dane kontrahenta w pliku importu.");
+        }
+    }
+
+    private int saveDocumentAtomically(DocumentDTO dto) {
+        String documentSql = """
+                INSERT INTO documents
+                (document_number, document_type, issue_date, contrahent_id, created_by, comments, status)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                """;
+
+        String itemSql = """
+                INSERT INTO document_items
+                (document_id, plant_batch_id, qty, passport_required)
+                VALUES (?, ?, ?, ?)
+                """;
+
+        Connection conn = null;
+        PreparedStatement documentStmt = null;
+        PreparedStatement itemStmt = null;
+        ResultSet generatedKeys = null;
+
+        try {
+            conn = DatabaseConfig.getConnection();
+            boolean originalAutoCommit = conn.getAutoCommit();
+            conn.setAutoCommit(false);
+
+            try {
+                documentStmt = conn.prepareStatement(documentSql, Statement.RETURN_GENERATED_KEYS);
+                documentStmt.setString(1, dto.getDocumentNumber());
+                documentStmt.setString(2, dto.getDocumentType());
+                documentStmt.setString(3, dto.getIssueDate() == null ? null : dto.getIssueDate().toString());
+                documentStmt.setInt(4, dto.getContrahentId());
+                documentStmt.setString(5, dto.getCreatedBy());
+                documentStmt.setString(6, dto.getComments());
+                documentStmt.setString(7, dto.getStatus() == null ? DocumentStatus.ACTIVE.name() : dto.getStatus().name());
+                documentStmt.executeUpdate();
+
+                generatedKeys = documentStmt.getGeneratedKeys();
+                if (!generatedKeys.next()) {
+                    throw new IllegalStateException("Nie udało się pobrać identyfikatora zapisanego dokumentu.");
+                }
+                int documentId = generatedKeys.getInt(1);
+
+                itemStmt = conn.prepareStatement(itemSql);
+                for (DocumentItemDTO item : dto.getItems()) {
+                    itemStmt.setInt(1, documentId);
+                    itemStmt.setInt(2, item.getPlantBatchId());
+                    itemStmt.setInt(3, item.getQty());
+                    itemStmt.setBoolean(4, item.isPassportRequired());
+                    itemStmt.addBatch();
+                }
+                itemStmt.executeBatch();
+
+                conn.commit();
+                return documentId;
+            } catch (Exception e) {
+                conn.rollback();
+                throw e;
+            } finally {
+                conn.setAutoCommit(originalAutoCommit);
+            }
+        } catch (Exception e) {
+            throw new IllegalStateException(
+                    "Nie udało się zapisać dokumentu „" + fallback(dto.getDocumentNumber(), "[bez numeru]") + "”.",
+                    e
+            );
+        } finally {
+            closeQuietly(generatedKeys);
+            closeQuietly(itemStmt);
+            closeQuietly(documentStmt);
+            closeQuietly(conn);
+        }
+    }
+
+    private void logImportedDocument(int documentId, DocumentDTO dto, String sourceName) {
+        if (auditLogService == null) {
+            return;
+        }
+        auditLogService.log(
+                "DOCUMENT",
+                documentId,
+                "IMPORT",
+                "Zaimportowano dokument nr " + fallback(dto.getDocumentNumber(), "[bez numeru]")
+                        + " z pliku " + fallback(sourceName, "[nieznane źródło]")
+                        + ", pozycji: " + (dto.getItems() == null ? 0 : dto.getItems().size()) + "."
+        );
+    }
+
+    private void appendDocumentProblem(List<String> problems, String documentNumber, String message) {
+        if (problems == null || message == null || message.isBlank() || problems.size() >= 12) {
+            return;
+        }
+        problems.add(documentNumber + " — " + message.trim());
+    }
+
+    private String buildRejectedDocumentReason(List<DocumentImportPreviewRow> rows) {
+        List<String> issues = new ArrayList<>();
+        for (DocumentImportPreviewRow row : rows) {
+            if (row.getMessage() != null && !row.getMessage().isBlank()) {
+                issues.add("#" + row.getRowNumber() + " " + row.getMessage().trim());
+            }
+            if (issues.size() >= 3) {
+                break;
+            }
+        }
+        if (issues.isEmpty()) {
+            return "Dokument zawiera pozycje, które nie przeszły walidacji albo duplikują się w pliku.";
+        }
+        return String.join(" ", issues);
+    }
+
+    private boolean containsRowStatus(List<DocumentImportPreviewRow> rows, String expectedStatus) {
+        for (DocumentImportPreviewRow row : rows) {
+            if (expectedStatus.equals(row.getRowStatus())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean allRowsHaveStatus(List<DocumentImportPreviewRow> rows, String expectedStatus) {
+        for (DocumentImportPreviewRow row : rows) {
+            if (!expectedStatus.equals(row.getRowStatus())) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private String displayDocumentNumber(List<DocumentImportPreviewRow> rows) {
+        String number = rows == null || rows.isEmpty() ? "" : valueOrEmpty(rows.getFirst().getDocumentNumber());
+        return number.isBlank() ? "Dokument [bez numeru]" : "Dokument " + number;
     }
 
     private List<Document> getExistingDocuments() {
@@ -212,37 +558,71 @@ public class DocumentCsvImportService {
         return documents;
     }
 
-    private boolean contrahentExists(String name, String countryCode) {
+    private Contrahent resolveContrahent(String name, String countryCode) {
+        String normalizedName = norm(name);
+        String normalizedCode = norm(countryCode);
+
+        List<Contrahent> matches = new ArrayList<>();
         for (Contrahent contrahent : contrahentService.getAllContrahents()) {
-            boolean sameName = equalsNormalized(contrahent.getName(), name);
-            boolean sameCode = countryCode == null || countryCode.isBlank() || equalsNormalized(contrahent.getCountryCode(), countryCode);
-            if (sameName && sameCode) {
-                return true;
+            boolean nameMatches = normalizedName.isBlank() || norm(contrahent.getName()).equals(normalizedName);
+            boolean codeMatches = normalizedCode.isBlank() || norm(contrahent.getCountryCode()).equals(normalizedCode);
+            if (nameMatches && codeMatches) {
+                matches.add(contrahent);
             }
         }
-        return false;
+
+        if (matches.size() == 1) {
+            return matches.getFirst();
+        }
+        return null;
     }
 
-    private boolean batchResolvable(String batchIdRaw, String batchNumber) {
+    private PlantBatch resolveBatch(String batchIdRaw, String batchNumber) {
+        PlantBatch batchById = null;
         if (batchIdRaw != null && !batchIdRaw.isBlank()) {
             int batchId = parsePositiveInt(batchIdRaw);
-            if (batchId > 0 && plantBatchService.getBatchById(batchId) != null) {
-                return true;
+            if (batchId > 0) {
+                batchById = plantBatchService.getBatchById(batchId);
+                if (batchById == null) {
+                    return null;
+                }
             }
         }
-        if (batchNumber == null || batchNumber.isBlank()) {
-            return false;
-        }
-        for (PlantBatch batch : plantBatchService.getAllBatches()) {
-            if (equalsNormalized(batch.getInteriorBatchNo(), batchNumber) || equalsNormalized(batch.getExteriorBatchNo(), batchNumber)) {
-                return true;
+
+        PlantBatch batchByNumber = null;
+        String normalizedBatchNumber = norm(batchNumber);
+        if (!normalizedBatchNumber.isBlank()) {
+            for (PlantBatch batch : plantBatchService.getAllBatches()) {
+                boolean matches = norm(batch.getInteriorBatchNo()).equals(normalizedBatchNumber)
+                        || norm(batch.getExteriorBatchNo()).equals(normalizedBatchNumber);
+                if (!matches) {
+                    continue;
+                }
+                if (batchByNumber != null && batchByNumber.getId() != batch.getId()) {
+                    return null;
+                }
+                batchByNumber = batch;
+            }
+            if (batchByNumber == null) {
+                return null;
             }
         }
-        return false;
+
+        if (batchById != null && batchByNumber != null && batchById.getId() != batchByNumber.getId()) {
+            return null;
+        }
+        if (batchById != null) {
+            return batchById;
+        }
+        return batchByNumber;
     }
 
-    private boolean equalsNormalized(String left, String right) {
-        return norm(left).equals(norm(right));
+    private int getAvailableQtySafe(int batchId) {
+        try {
+            return documentService.getAvailableQtyForBatch(batchId);
+        } catch (Exception e) {
+            return 0;
+        }
     }
 
     private boolean isValidDate(String value) {
@@ -266,21 +646,30 @@ public class DocumentCsvImportService {
         }
     }
 
+    private DocumentStatus resolveDocumentStatus(String raw) {
+        return DocumentStatus.valueOf(normalizeStatus(raw));
+    }
+
     private String normalizeStatus(String raw) {
         if (raw == null || raw.isBlank()) {
-            return "ACTIVE";
+            return DocumentStatus.ACTIVE.name();
         }
         return raw.trim().toUpperCase();
     }
 
-    private void appendMessage(StringBuilder builder, boolean condition, String text) {
+    private String normalizeDocumentNumber(String raw) {
+        return raw == null ? "" : raw.trim().toLowerCase();
+    }
+
+    private boolean appendMessage(StringBuilder builder, boolean condition, String text) {
         if (!condition) {
-            return;
+            return false;
         }
         if (!builder.isEmpty()) {
             builder.append(' ');
         }
         builder.append(text);
+        return true;
     }
 
     private int indexOf(List<String> headers, String... aliases) {
@@ -306,6 +695,10 @@ public class DocumentCsvImportService {
 
     private String valueAt(List<String> cells, int index) {
         return index < 0 || index >= cells.size() || cells.get(index) == null ? "" : cells.get(index).trim();
+    }
+
+    private String valueOrEmpty(String value) {
+        return value == null ? "" : value.trim();
     }
 
     private int parsePositiveInt(String raw) {
@@ -377,5 +770,23 @@ public class DocumentCsvImportService {
         }
         values.add(current.toString());
         return values;
+    }
+
+    private String fallback(String value, String fallbackValue) {
+        return value == null || value.isBlank() ? fallbackValue : value;
+    }
+
+    private String fallbackMessage(String value, String fallback) {
+        return value == null || value.isBlank() ? fallback : value.trim();
+    }
+
+    private void closeQuietly(AutoCloseable closeable) {
+        if (closeable == null) {
+            return;
+        }
+        try {
+            closeable.close();
+        } catch (Exception ignored) {
+        }
     }
 }

@@ -127,6 +127,7 @@ public class SettingsController {
     @FXML private Label documentsCsvColumnsLabel;
     @FXML private Label documentsCsvStatusLabel;
     @FXML private TextArea documentsCsvPreviewArea;
+    @FXML private Button documentsCsvApplyButton;
 
     @FXML private Label auditLogStatusLabel;
     @FXML private TextField auditLogSearchField;
@@ -150,7 +151,7 @@ public class SettingsController {
     private final PlantCsvExportService plantCsvExportService = new PlantCsvExportService(AppContext.getPlantService());
     private final ContrahentCsvImportService contrahentCsvImportService = new ContrahentCsvImportService(AppContext.getContrahentService(), AppContext.getCountryDirectoryService());
     private final ContrahentCsvExportService contrahentCsvExportService = new ContrahentCsvExportService(AppContext.getContrahentService());
-    private final DocumentCsvImportService documentCsvImportService = new DocumentCsvImportService(AppContext.getDocumentService(), AppContext.getContrahentService(), AppContext.getPlantBatchService());
+    private final DocumentCsvImportService documentCsvImportService = new DocumentCsvImportService(AppContext.getDocumentService(), AppContext.getContrahentService(), AppContext.getPlantBatchService(), AppContext.getAuditLogService());
     private final DocumentCsvExportService documentCsvExportService = new DocumentCsvExportService(new SqliteDocumentRepository(), new SqliteDocumentItemRepository(), AppContext.getContrahentService(), AppContext.getPlantBatchService());
 
     private boolean loading;
@@ -171,6 +172,7 @@ public class SettingsController {
     private SortedList<com.egen.fitogen.model.AuditLogEntry> auditLogSortedData;
     private PlantImportPreviewResult lastPlantsCsvPreviewResult;
     private ContrahentImportPreviewResult lastContrahentsCsvPreviewResult;
+    private com.egen.fitogen.dto.DocumentImportPreviewResult lastDocumentsCsvPreviewResult;
 
     @FXML
     public void initialize() {
@@ -1964,6 +1966,7 @@ public class SettingsController {
         }
         clearPlantsCsvPreviewState();
         clearContrahentsCsvPreviewState();
+        clearDocumentsCsvPreviewState();
         resetPlantsCsvPreview();
         resetContrahentsCsvPreview();
         resetDocumentsCsvPreview();
@@ -2125,12 +2128,49 @@ public class SettingsController {
 
         try {
             var result = documentCsvImportService.preview(selectedPath);
+            lastDocumentsCsvPreviewResult = result;
+            updateDocumentsCsvApplyButtonState();
             documentsCsvStatusLabel.setText(buildDocumentsPreviewStatus(result));
             documentsCsvPreviewArea.setText(buildDocumentsPreviewText(result));
         } catch (Exception e) {
             e.printStackTrace();
+            clearDocumentsCsvPreviewState();
             documentsCsvStatusLabel.setText(buildCsvPreviewErrorStatus("dokumentów"));
             DialogUtil.showError(buildCsvPreviewDialogTitle("dokumentów"), buildCsvPreviewErrorMessage("dokumentów"));
+        }
+    }
+
+    @FXML
+    private void applyDocumentsCsvImport() {
+        if (lastDocumentsCsvPreviewResult == null) {
+            DialogUtil.showWarning("Import CSV dokumentów", "Najpierw przygotuj podgląd importu dokumentów.");
+            return;
+        }
+        if (lastDocumentsCsvPreviewResult.getDocumentCount() <= 0) {
+            DialogUtil.showWarning("Import CSV dokumentów", "Brak nowych dokumentów do importu w ostatnim podglądzie.");
+            updateDocumentsCsvApplyButtonState();
+            return;
+        }
+        if (!DialogUtil.confirmAction(
+                "Import CSV dokumentów",
+                "zaimportować do bazy",
+                buildCsvImportConfirmationTarget("dokumentów", lastDocumentsCsvPreviewResult.getSourceName(), lastDocumentsCsvPreviewResult.getDocumentCount(), lastDocumentsCsvPreviewResult.getMatchingExistingCount(), lastDocumentsCsvPreviewResult.getInvalidRowsCount() + lastDocumentsCsvPreviewResult.getDuplicateInFileCount())
+        )) {
+            return;
+        }
+
+        try {
+            CsvImportExecutionResult executionResult = documentCsvImportService.applyPreview(lastDocumentsCsvPreviewResult);
+            auditLogService.log("DocumentCsvImport", null, "IMPORT", buildDocumentsImportAuditDescription(executionResult));
+            documentsCsvStatusLabel.setText(buildDocumentsImportExecutionStatus(executionResult));
+            documentsCsvPreviewArea.setText(buildDocumentsImportExecutionText(executionResult, buildDocumentsPreviewText(lastDocumentsCsvPreviewResult)));
+            clearDocumentsCsvPreviewState();
+            refreshAuditLog();
+            DialogUtil.showSuccess(buildDocumentsImportSuccessDialogMessage(executionResult));
+        } catch (Exception e) {
+            e.printStackTrace();
+            documentsCsvStatusLabel.setText(buildCsvImportErrorStatus("dokumentów"));
+            DialogUtil.showError("Import CSV dokumentów", "Nie udało się wykonać importu dokumentów do bazy.");
         }
     }
 
@@ -2173,6 +2213,7 @@ public class SettingsController {
 
     @FXML
     private void clearDocumentsCsvPreview() {
+        clearDocumentsCsvPreviewState();
         resetDocumentsCsvPreview();
         if (documentsCsvStatusLabel != null) {
             documentsCsvStatusLabel.setText(buildCsvPreviewClearedStatus("dokumentów"));
@@ -2189,6 +2230,11 @@ public class SettingsController {
         updateContrahentsCsvApplyButtonState();
     }
 
+    private void clearDocumentsCsvPreviewState() {
+        lastDocumentsCsvPreviewResult = null;
+        updateDocumentsCsvApplyButtonState();
+    }
+
     private void updatePlantsCsvApplyButtonState() {
         if (plantsCsvApplyButton != null) {
             plantsCsvApplyButton.setDisable(lastPlantsCsvPreviewResult == null || lastPlantsCsvPreviewResult.getNewRowsCount() <= 0);
@@ -2198,6 +2244,12 @@ public class SettingsController {
     private void updateContrahentsCsvApplyButtonState() {
         if (contrahentsCsvApplyButton != null) {
             contrahentsCsvApplyButton.setDisable(lastContrahentsCsvPreviewResult == null || lastContrahentsCsvPreviewResult.getNewRowsCount() <= 0);
+        }
+    }
+
+    private void updateDocumentsCsvApplyButtonState() {
+        if (documentsCsvApplyButton != null) {
+            documentsCsvApplyButton.setDisable(lastDocumentsCsvPreviewResult == null || lastDocumentsCsvPreviewResult.getDocumentCount() <= 0);
         }
     }
 
@@ -2624,7 +2676,7 @@ public class SettingsController {
         if (result.getDocumentCount() == 0) {
             return "brak nowych dokumentów do importu";
         }
-        return "gotowy do bezpiecznego podglądu importu";
+        return "gotowy do bezpiecznego importu";
     }
 
     private String buildDocumentsImportRecommendation(com.egen.fitogen.dto.DocumentImportPreviewResult result) {
@@ -2632,7 +2684,7 @@ public class SettingsController {
             return "Przygotuj plik z numerem dokumentu, typem, datą i pozycjami dokumentu.";
         }
         if (result.getInvalidRowsCount() > 0) {
-            return "Najpierw popraw błędne daty, pozycje lub brakujące powiązania z partiami.";
+            return "Najpierw popraw błędne dane dokumentu, brakujące powiązania lub niedozwolone partie roślin.";
         }
         if (result.getDuplicateInFileCount() > 0) {
             return "Usuń zduplikowane pozycje tego samego dokumentu przed dalszym użyciem pliku.";
@@ -2640,7 +2692,50 @@ public class SettingsController {
         if (result.getDocumentCount() == 0) {
             return "Plik wygląda poprawnie, ale nie wnosi nowych numerów dokumentów względem aktualnej bazy.";
         }
-        return "Format wygląda spójnie z lokalnym standardem CSV dokumentów w Ustawieniach.";
+        return "Podgląd wygląda spójnie z lokalnym standardem CSV dokumentów i może przejść do świadomego importu.";
+    }
+
+    private String buildDocumentsImportExecutionStatus(CsvImportExecutionResult result) {
+        return "Import CSV dokumentów zakończony — dodano dokumentów: " + result.getAddedCount()
+                + ", pominięto dokumentów: " + result.getSkippedCount()
+                + ", odrzucono dokumentów: " + result.getRejectedCount()
+                + ".";
+    }
+
+    private String buildDocumentsImportSuccessDialogMessage(CsvImportExecutionResult result) {
+        return "Dokumenty zaimportowano do bazy."
+                + UiTextUtil.DOUBLE_NL
+                + "Dodano dokumentów: " + result.getAddedCount()
+                + UiTextUtil.NL
+                + "Pominięto dokumentów: " + result.getSkippedCount()
+                + UiTextUtil.NL
+                + "Odrzucono dokumentów: " + result.getRejectedCount();
+    }
+
+    private String buildDocumentsImportAuditDescription(CsvImportExecutionResult result) {
+        return "Import CSV dokumentów z pliku " + safe(result.getSourceName())
+                + ": dodano dokumentów " + result.getAddedCount()
+                + ", pominięto dokumentów " + result.getSkippedCount()
+                + ", odrzucono dokumentów " + result.getRejectedCount() + ".";
+    }
+
+    private String buildDocumentsImportExecutionText(CsvImportExecutionResult result, String previewText) {
+        StringBuilder builder = new StringBuilder();
+        UiTextUtil.appendSectionHeader(builder, "WYNIK IMPORTU");
+        UiTextUtil.appendSummaryLine(builder, "Sekcja", "CSV dokumentów");
+        UiTextUtil.appendSummaryLine(builder, "Źródło", safe(result.getSourceName()));
+        UiTextUtil.appendSummaryLine(builder, "Łącznie przeanalizowanych wierszy", result.getTotalRowsCount());
+        UiTextUtil.appendSummaryLine(builder, "Dodano dokumentów", result.getAddedCount());
+        UiTextUtil.appendSummaryLine(builder, "Pominięto dokumentów", result.getSkippedCount());
+        UiTextUtil.appendSummaryLine(builder, "Odrzucono dokumentów", result.getRejectedCount());
+        UiTextUtil.appendParagraph(builder, "Import został wykonany atomowo dla każdego numeru dokumentu. Aby ponowić import, wygeneruj nowy podgląd pliku.");
+        UiTextUtil.appendIssuesSection(builder, "PROBLEMY", result.getProblems());
+
+        if (previewText != null && !previewText.isBlank()) {
+            UiTextUtil.appendSectionHeader(builder, "OSTATNI PODGLĄD");
+            builder.append(previewText);
+        }
+        return builder.toString();
     }
 
     private String buildPlantsImportReadiness(com.egen.fitogen.dto.PlantImportPreviewResult result) {
@@ -2656,7 +2751,7 @@ public class SettingsController {
         if (result.getNewRowsCount() == 0) {
             return "brak nowych rekordów do importu";
         }
-        return "gotowy do bezpiecznego podglądu importu";
+        return "gotowy do bezpiecznego importu";
     }
 
     private String buildContrahentsImportReadiness(com.egen.fitogen.dto.ContrahentImportPreviewResult result) {
@@ -2672,7 +2767,7 @@ public class SettingsController {
         if (result.getNewRowsCount() == 0) {
             return "brak nowych rekordów do importu";
         }
-        return "gotowy do bezpiecznego podglądu importu";
+        return "gotowy do bezpiecznego importu";
     }
 
     private String buildPlantsImportRecommendation(com.egen.fitogen.dto.PlantImportPreviewResult result) {

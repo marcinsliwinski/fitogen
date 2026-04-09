@@ -16,6 +16,7 @@ public class DocumentImportPreviewRow {
     private String contrahentName;
     private String contrahentCountryCode;
     private String createdBy;
+    private String comments;
     private int lineNo;
     private String plantBatchNumber;
     private String plantBatchId;

@@ -131,6 +131,22 @@ public class DocumentService {
         return Math.max(0, batch.getQty() - usedQty);
     }
 
+    public void validateImportedDocument(DocumentDTO dto) {
+        if (dto == null) {
+            throw new IllegalArgumentException("Dokument nie może być pusty.");
+        }
+
+        if (dto.getDocumentNumber() == null || dto.getDocumentNumber().isBlank()) {
+            throw new IllegalArgumentException("Numer dokumentu jest wymagany przy imporcie CSV.");
+        }
+
+        if (dto.getStatus() == null) {
+            dto.setStatus(DocumentStatus.ACTIVE);
+        }
+
+        validateDocument(dto, null);
+    }
+
     private void validateDocument(DocumentDTO dto, Integer currentDocumentId) {
         if (dto == null) {
             throw new IllegalArgumentException("Dokument nie może być pusty.");

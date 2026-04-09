@@ -272,6 +272,7 @@
                                 <Label fx:id="documentsCsvStatusLabel" wrapText="true" styleClass="page-subtitle"/>
                                 <HBox spacing="10">
                                     <Button text="Podgląd importu CSV dokumentów" onAction="#previewDocumentsCsvImport"/>
+                                    <Button fx:id="documentsCsvApplyButton" text="Importuj do bazy" onAction="#applyDocumentsCsvImport" disable="true"/>
                                     <Button text="Eksport CSV dokumentów" onAction="#exportDocumentsCsv" styleClass="button-secondary"/>
                                     <Button text="Wyczyść podgląd" onAction="#clearDocumentsCsvPreview" styleClass="button-secondary"/>
                                 </HBox>
