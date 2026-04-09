@@ -2,6 +2,7 @@ package com.egen.fitogen.service;
 
 import com.egen.fitogen.dto.ContrahentImportPreviewResult;
 import com.egen.fitogen.dto.ContrahentImportPreviewRow;
+import com.egen.fitogen.dto.CsvImportExecutionResult;
 import com.egen.fitogen.model.Contrahent;
 
 import java.io.BufferedReader;
@@ -114,6 +115,122 @@ public class ContrahentCsvImportService {
 
     public String getSupportedColumnsSummary() {
         return "Obsługiwane kolumny importu: nazwa (name), kraj (country), kod kraju (countryCode), miasto (city), kod pocztowy (postalCode), numer fitosanitarny (phytosanitaryNumber), dostawca (supplier), odbiorca (client).";
+    }
+
+    public CsvImportExecutionResult applyPreview(ContrahentImportPreviewResult previewResult) {
+        if (previewResult == null) {
+            throw new IllegalArgumentException("Brak podglądu importu kontrahentów do wykonania.");
+        }
+
+        Set<String> existing = new HashSet<>();
+        for (Contrahent contrahent : contrahentService.getAllContrahents()) {
+            existing.add(key(contrahent.getName(), contrahent.getCountryCode()));
+        }
+
+        Set<String> importedInRun = new HashSet<>();
+        List<String> problems = new ArrayList<>();
+        int addedCount = 0;
+        int skippedCount = 0;
+        int rejectedCount = 0;
+
+        for (ContrahentImportPreviewRow row : previewResult.getRows()) {
+            if (STATUS_MATCHING_EXISTING.equals(row.getStatus())) {
+                skippedCount++;
+                continue;
+            }
+            if (STATUS_DUPLICATE_IN_FILE.equals(row.getStatus())) {
+                rejectedCount++;
+                appendProblem(problems, row.getRowNumber(), fallbackMessage(row.getMessage(), "Duplikat rekordu w pliku importu."));
+                continue;
+            }
+            if (STATUS_INVALID.equals(row.getStatus())) {
+                rejectedCount++;
+                appendProblem(problems, row.getRowNumber(), fallbackMessage(row.getMessage(), "Wiersz nie przeszedł walidacji."));
+                continue;
+            }
+            if (!STATUS_NEW.equals(row.getStatus())) {
+                rejectedCount++;
+                appendProblem(problems, row.getRowNumber(), "Nieobsługiwany status wiersza importu: " + fallbackMessage(row.getStatus(), "[brak statusu]"));
+                continue;
+            }
+
+            Contrahent contrahent = mapRowToContrahent(row);
+            String identityKey = key(contrahent.getName(), contrahent.getCountryCode());
+            if (!importedInRun.add(identityKey)) {
+                rejectedCount++;
+                appendProblem(problems, row.getRowNumber(), "Wiersz powiela rekord już zakwalifikowany w tym samym imporcie.");
+                continue;
+            }
+            if (existing.contains(identityKey)) {
+                skippedCount++;
+                appendProblem(problems, row.getRowNumber(), "Rekord został pominięty, bo istnieje już w bazie w momencie wykonywania importu.");
+                continue;
+            }
+
+            try {
+                contrahentService.addContrahent(contrahent);
+                existing.add(identityKey);
+                addedCount++;
+            } catch (Exception e) {
+                rejectedCount++;
+                appendProblem(problems, row.getRowNumber(), fallbackMessage(e.getMessage(), "Nie udało się zapisać rekordu do bazy."));
+            }
+        }
+
+        return new CsvImportExecutionResult(
+                previewResult.getSourceName(),
+                previewResult.getTotalRowsCount(),
+                addedCount,
+                skippedCount,
+                rejectedCount,
+                problems
+        );
+    }
+
+    private Contrahent mapRowToContrahent(ContrahentImportPreviewRow row) {
+        String country = valueOrEmpty(row.getCountry());
+        String countryCode = valueOrEmpty(row.getCountryCode());
+
+        if (!country.isBlank() && countryCode.isBlank()) {
+            String resolvedCode = countryDirectoryService.findCodeByCountry(country);
+            if (resolvedCode != null) {
+                countryCode = resolvedCode;
+            }
+        }
+        if (country.isBlank() && !countryCode.isBlank()) {
+            String resolvedCountry = countryDirectoryService.findCountryByCode(countryCode);
+            if (resolvedCountry != null) {
+                country = resolvedCountry;
+            }
+        }
+
+        return new Contrahent(
+                0,
+                row.getName(),
+                country,
+                countryCode,
+                row.getPostalCode(),
+                row.getCity(),
+                null,
+                row.getPhytosanitaryNumber(),
+                row.isSupplier(),
+                row.isClient()
+        );
+    }
+
+    private void appendProblem(List<String> problems, int rowNumber, String message) {
+        if (problems == null || message == null || message.isBlank() || problems.size() >= 12) {
+            return;
+        }
+        problems.add("#" + rowNumber + " " + message.trim());
+    }
+
+    private String fallbackMessage(String value, String fallback) {
+        return value == null || value.isBlank() ? fallback : value.trim();
+    }
+
+    private String valueOrEmpty(String value) {
+        return value == null ? "" : value.trim();
     }
 
     private int indexOf(List<String> headers, String... aliases) {

@@ -240,6 +240,7 @@
                                 <Label fx:id="plantsCsvStatusLabel" wrapText="true" styleClass="page-subtitle"/>
                                 <HBox spacing="10">
                                     <Button text="Podgląd importu CSV roślin" onAction="#previewPlantsCsvImport"/>
+                                    <Button fx:id="plantsCsvApplyButton" text="Importuj do bazy" onAction="#applyPlantsCsvImport" disable="true"/>
                                     <Button text="Eksport CSV roślin" onAction="#exportPlantsCsv" styleClass="button-secondary"/>
                                     <Button text="Wyczyść podgląd" onAction="#clearPlantsCsvPreview" styleClass="button-secondary"/>
                                 </HBox>
@@ -255,6 +256,7 @@
                                 <Label fx:id="contrahentsCsvStatusLabel" wrapText="true" styleClass="page-subtitle"/>
                                 <HBox spacing="10">
                                     <Button text="Podgląd importu CSV kontrahentów" onAction="#previewContrahentsCsvImport"/>
+                                    <Button fx:id="contrahentsCsvApplyButton" text="Importuj do bazy" onAction="#applyContrahentsCsvImport" disable="true"/>
                                     <Button text="Eksport CSV kontrahentów" onAction="#exportContrahentsCsv" styleClass="button-secondary"/>
                                     <Button text="Wyczyść podgląd" onAction="#clearContrahentsCsvPreview" styleClass="button-secondary"/>
                                 </HBox>

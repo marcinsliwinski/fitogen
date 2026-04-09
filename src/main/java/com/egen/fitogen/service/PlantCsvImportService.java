@@ -1,5 +1,6 @@
 package com.egen.fitogen.service;
 
+import com.egen.fitogen.dto.CsvImportExecutionResult;
 import com.egen.fitogen.dto.PlantImportPreviewResult;
 import com.egen.fitogen.dto.PlantImportPreviewRow;
 import com.egen.fitogen.model.Plant;
@@ -98,6 +99,99 @@ public class PlantCsvImportService {
 
     public String getSupportedColumnsSummary() {
         return "Obsługiwane kolumny importu: gatunek (species), odmiana (variety), podkładka (rootstock), nazwa łacińska (latinSpeciesName), kod EPPO (eppoCode), wymagany paszport (passportRequired), status widoczności (visibilityStatus).";
+    }
+
+    public CsvImportExecutionResult applyPreview(PlantImportPreviewResult previewResult) {
+        if (previewResult == null) {
+            throw new IllegalArgumentException("Brak podglądu importu roślin do wykonania.");
+        }
+
+        Set<String> existing = new HashSet<>();
+        for (Plant plant : plantService.getAllPlants()) {
+            existing.add(key(plant.getSpecies(), plant.getVariety(), plant.getRootstock()));
+        }
+
+        Set<String> importedInRun = new HashSet<>();
+        List<String> problems = new ArrayList<>();
+        int addedCount = 0;
+        int skippedCount = 0;
+        int rejectedCount = 0;
+
+        for (PlantImportPreviewRow row : previewResult.getRows()) {
+            if (STATUS_MATCHING_EXISTING.equals(row.getStatus())) {
+                skippedCount++;
+                continue;
+            }
+            if (STATUS_DUPLICATE_IN_FILE.equals(row.getStatus())) {
+                rejectedCount++;
+                appendProblem(problems, row.getRowNumber(), fallbackMessage(row.getMessage(), "Duplikat rekordu w pliku importu."));
+                continue;
+            }
+            if (STATUS_INVALID.equals(row.getStatus())) {
+                rejectedCount++;
+                appendProblem(problems, row.getRowNumber(), fallbackMessage(row.getMessage(), "Wiersz nie przeszedł walidacji."));
+                continue;
+            }
+            if (!STATUS_NEW.equals(row.getStatus())) {
+                rejectedCount++;
+                appendProblem(problems, row.getRowNumber(), "Nieobsługiwany status wiersza importu: " + fallbackMessage(row.getStatus(), "[brak statusu]"));
+                continue;
+            }
+
+            String identityKey = key(row.getSpecies(), row.getVariety(), row.getRootstock());
+            if (!importedInRun.add(identityKey)) {
+                rejectedCount++;
+                appendProblem(problems, row.getRowNumber(), "Wiersz powiela rekord już zakwalifikowany w tym samym imporcie.");
+                continue;
+            }
+            if (existing.contains(identityKey)) {
+                skippedCount++;
+                appendProblem(problems, row.getRowNumber(), "Rekord został pominięty, bo istnieje już w bazie w momencie wykonywania importu.");
+                continue;
+            }
+
+            try {
+                plantService.addPlant(mapRowToPlant(row));
+                existing.add(identityKey);
+                addedCount++;
+            } catch (Exception e) {
+                rejectedCount++;
+                appendProblem(problems, row.getRowNumber(), fallbackMessage(e.getMessage(), "Nie udało się zapisać rekordu do bazy."));
+            }
+        }
+
+        return new CsvImportExecutionResult(
+                previewResult.getSourceName(),
+                previewResult.getTotalRowsCount(),
+                addedCount,
+                skippedCount,
+                rejectedCount,
+                problems
+        );
+    }
+
+    private Plant mapRowToPlant(PlantImportPreviewRow row) {
+        return new Plant(
+                0,
+                row.getSpecies(),
+                row.getVariety(),
+                row.getRootstock(),
+                row.getLatinSpeciesName(),
+                row.getEppoCode(),
+                row.isPassportRequired(),
+                row.getVisibilityStatus()
+        );
+    }
+
+    private void appendProblem(List<String> problems, int rowNumber, String message) {
+        if (problems == null || message == null || message.isBlank() || problems.size() >= 12) {
+            return;
+        }
+        problems.add("#" + rowNumber + " " + message.trim());
+    }
+
+    private String fallbackMessage(String value, String fallback) {
+        return value == null || value.isBlank() ? fallback : value.trim();
     }
 
     private int indexOf(List<String> headers, String... aliases) {
