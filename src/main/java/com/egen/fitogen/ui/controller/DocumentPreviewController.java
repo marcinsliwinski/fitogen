@@ -17,7 +17,6 @@ import javafx.scene.Node;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableRow;
-import javafx.scene.control.TableCell;
 import javafx.scene.control.TableView;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
@@ -29,8 +28,7 @@ import java.io.File;
 public class DocumentPreviewController {
 
     private static final double TABLE_ROW_HEIGHT = 38;
-    private static final double TABLE_HEADER_HEIGHT = 38;
-    private static final double TABLE_EXTRA_HEIGHT = 32;
+    private static final double TABLE_HEADER_HEIGHT = 36;
 
     @FXML private VBox printableRoot;
     @FXML private Label documentTypeTitleLabel;
@@ -58,47 +56,19 @@ public class DocumentPreviewController {
     private final DocumentRenderService documentRenderService = new DocumentRenderService(AppContext.getDocumentService());
     private final DocumentPdfService documentPdfService = new DocumentPdfService();
 
-    private final ObservableList<DocumentPreviewItemDTO> displayItems = FXCollections.observableArrayList();
-
     private DocumentPreviewDTO currentPreview;
-    private boolean refreshingDisplayItems;
 
     @FXML
     public void initialize() {
         colLp.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().isSummaryRow() ? "" : String.valueOf(cell.getValue().getLp())));
         colPlant.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getPlantName()));
-        colPlant.setCellFactory(column -> new TableCell<>() {
-            @Override
-            protected void updateItem(String item, boolean empty) {
-                super.updateItem(item, empty);
-                getStyleClass().remove("preview-summary-text-cell");
-                if (empty) {
-                    setText(null);
-                    setGraphic(null);
-                    setStyle("-fx-alignment: CENTER_LEFT;");
-                    return;
-                }
-
-                setText(item);
-                setGraphic(null);
-                DocumentPreviewItemDTO rowItem = getTableRow() == null ? null : getTableRow().getItem();
-                if (rowItem != null && rowItem.isSummaryRow()) {
-                    getStyleClass().add("preview-summary-text-cell");
-                    setStyle("-fx-alignment: CENTER;");
-                } else {
-                    setStyle("-fx-alignment: CENTER_LEFT;");
-                }
-            }
-        });
         colBatch.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getBatchNumber()));
         colAge.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getBatchAgeLabel()));
         colCategory.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getBatchCategoryLabel()));
         colQty.setCellValueFactory(cell -> new SimpleIntegerProperty(cell.getValue().getQty()));
 
         colLp.setStyle("-fx-alignment: CENTER;");
-        colBatch.setStyle("-fx-alignment: CENTER;");
         colAge.setStyle("-fx-alignment: CENTER;");
-        colCategory.setStyle("-fx-alignment: CENTER;");
         colQty.setStyle("-fx-alignment: CENTER;");
 
         if (itemsTable != null) {
@@ -106,8 +76,6 @@ public class DocumentPreviewController {
             itemsTable.setPlaceholder(new Label("Brak pozycji dokumentu do wyświetlenia."));
             itemsTable.setFixedCellSize(TABLE_ROW_HEIGHT);
             itemsTable.setFocusTraversable(false);
-            itemsTable.setItems(displayItems);
-            itemsTable.setSortPolicy(this::sortItemsKeepingSummaryLast);
             itemsTable.setRowFactory(table -> new TableRow<>() {
                 @Override
                 protected void updateItem(DocumentPreviewItemDTO item, boolean empty) {
@@ -149,7 +117,7 @@ public class DocumentPreviewController {
         commentsLabel.setText(valueOrDash(preview.getComments()));
         commentsSection.setVisible(preview.getComments() != null && !preview.getComments().isBlank());
         cancelledBadge.setVisible(preview.isCancelled());
-        refreshDisplayItems();
+        itemsTable.setItems(buildDisplayItems(preview));
         updateItemsTableHeight(preview);
 
         issuerPartyNameLabel.setText(valueOrDash(preview.getIssuerName()));
@@ -160,38 +128,18 @@ public class DocumentPreviewController {
         customerPhytosanitaryNumberLabel.setText(buildPhytosanitaryLabel(preview.getCustomerPhytosanitaryNumber()));
     }
 
-    private void refreshDisplayItems() {
-        if (refreshingDisplayItems) {
-            return;
-        }
-        refreshingDisplayItems = true;
-        try {
-            displayItems.setAll(buildDisplayItems(currentPreview, itemsTable == null ? null : itemsTable.getComparator()));
-        } finally {
-            refreshingDisplayItems = false;
-        }
-    }
-
-    private ObservableList<DocumentPreviewItemDTO> buildDisplayItems(DocumentPreviewDTO preview, java.util.Comparator<DocumentPreviewItemDTO> comparator) {
-        ObservableList<DocumentPreviewItemDTO> rows = FXCollections.observableArrayList();
-        if (preview != null && preview.getItems() != null) {
-            rows.addAll(preview.getItems());
-        }
-        if (comparator != null) {
-            FXCollections.sort(rows, comparator);
+    private ObservableList<DocumentPreviewItemDTO> buildDisplayItems(DocumentPreviewDTO preview) {
+        ObservableList<DocumentPreviewItemDTO> displayItems = FXCollections.observableArrayList();
+        if (preview.getItems() != null) {
+            displayItems.addAll(preview.getItems());
         }
 
         DocumentPreviewItemDTO summaryRow = new DocumentPreviewItemDTO();
         summaryRow.setSummaryRow(true);
         summaryRow.setPlantName("Suma:");
-        summaryRow.setQty(preview == null ? 0 : preview.getTotalQty());
-        rows.add(summaryRow);
-        return rows;
-    }
-
-    private boolean sortItemsKeepingSummaryLast(TableView<DocumentPreviewItemDTO> table) {
-        refreshDisplayItems();
-        return true;
+        summaryRow.setQty(preview.getTotalQty());
+        displayItems.add(summaryRow);
+        return displayItems;
     }
 
     private void updateItemsTableHeight(DocumentPreviewDTO preview) {
@@ -200,7 +148,7 @@ public class DocumentPreviewController {
         }
 
         int itemsCount = (preview.getItems() == null ? 0 : preview.getItems().size()) + 1;
-        double preferredHeight = TABLE_HEADER_HEIGHT + Math.max(1, itemsCount) * TABLE_ROW_HEIGHT + TABLE_EXTRA_HEIGHT;
+        double preferredHeight = TABLE_HEADER_HEIGHT + Math.max(1, itemsCount) * TABLE_ROW_HEIGHT + 8;
 
         itemsTable.setPrefHeight(preferredHeight);
         itemsTable.setMinHeight(preferredHeight);

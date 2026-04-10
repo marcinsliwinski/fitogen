@@ -4,160 +4,155 @@ import com.egen.fitogen.config.DatabaseConfig;
 import com.egen.fitogen.database.DatabaseInitializer;
 import com.egen.fitogen.dto.DatabaseProfileInfo;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.FileTime;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.Statement;
-import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 
 public class DatabaseProfileService {
 
+    public List<DatabaseProfileInfo> getAvailableProfiles() {
+        List<DatabaseProfileInfo> result = new ArrayList<>();
+        Path currentPath = DatabaseConfig.getDatabaseFilePath();
+
+        try {
+            if (Files.exists(DatabaseConfig.getProfilesDirectory())) {
+                try (var profiles = Files.list(DatabaseConfig.getProfilesDirectory())) {
+                    profiles.filter(path -> Files.isRegularFile(path) && path.getFileName().toString().toLowerCase().endsWith(".db"))
+                            .sorted(Comparator.comparing(this::lastModifiedSafe).reversed()
+                                    .thenComparing(path -> humanizeLabel(path), String.CASE_INSENSITIVE_ORDER))
+                            .forEach(path -> result.add(buildProfileInfo(path)));
+                }
+            }
+        } catch (IOException e) {
+            throw new IllegalStateException("Nie udało się odczytać listy dostępnych baz danych.", e);
+        }
+
+        boolean currentAlreadyVisible = result.stream()
+                .anyMatch(info -> info.databasePath() != null && info.databasePath().equals(currentPath));
+
+        if (!currentAlreadyVisible && currentPath != null) {
+            result.add(0, buildProfileInfo(currentPath));
+        }
+
+        result.add(DatabaseProfileInfo.newProfileOption());
+        return result;
+    }
+
     public DatabaseProfileInfo getCurrentProfileInfo() {
-        return new DatabaseProfileInfo(
-                DatabaseConfig.getDatabaseFilePath(),
-                DatabaseConfig.getCurrentProfileLabel(),
-                DatabaseConfig.isUsingTestDatabase(),
-                false
-        );
+        return buildProfileInfo(DatabaseConfig.getDatabaseFilePath());
     }
 
-    public DatabaseProfileInfo createOrActivateNewProfile(String profileName) {
-        String normalizedDisplayName = normalizeDisplayName(profileName);
-        Path profilePath = DatabaseConfig.buildNamedProfilePath(normalizedDisplayName);
-        boolean createdNow = Files.notExists(profilePath);
+    public DatabaseProfileInfo activateProfile(DatabaseProfileInfo profileInfo) {
+        if (profileInfo == null || profileInfo.createNewOption() || profileInfo.databasePath() == null) {
+            throw new IllegalArgumentException("Nie wybrano poprawnego profilu bazy danych.");
+        }
 
-        DatabaseConfig.activateDatabase(profilePath, normalizedDisplayName, false);
-        DatabaseInitializer.initDatabase(profilePath);
-        seedNewProfile(profilePath, normalizedDisplayName, createdNow);
-
-        return new DatabaseProfileInfo(profilePath, normalizedDisplayName, false, createdNow);
+        DatabaseConfig.switchDatabase(profileInfo.databasePath());
+        DatabaseInitializer.initDatabase();
+        return getCurrentProfileInfo();
     }
 
-    public DatabaseProfileInfo activateTestProfile() {
-        Path testProfilePath = DatabaseConfig.getTestProfilePath();
-        boolean createdNow = Files.notExists(testProfilePath);
+    public DatabaseProfileInfo createAndActivateProfile(String profileName) {
+        String sanitized = DatabaseConfig.sanitizeProfileName(profileName);
+        Path profilePath = DatabaseConfig.buildNamedProfilePath(sanitized);
+        if (Files.exists(profilePath)) {
+            throw new IllegalArgumentException("Baza danych o tej nazwie już istnieje: " + profilePath.getFileName());
+        }
 
-        DatabaseConfig.activateDatabase(testProfilePath, "Baza testowa", true);
-        DatabaseInitializer.initDatabase(testProfilePath);
-        seedTestProfile(testProfilePath, createdNow);
+        Path createdPath = DatabaseConfig.createDatabaseProfile(sanitized);
+        DatabaseInitializer.initDatabase();
+        seedNewProfile(createdPath, profileName);
+        return getCurrentProfileInfo();
+    }
 
-        return new DatabaseProfileInfo(testProfilePath, "Baza testowa", true, createdNow);
+    public DatabaseProfileInfo restoreAndActivateProfile(Path backupFilePath, String profileName) {
+        Path restoredPath = DatabaseConfig.restoreDatabaseFromBackup(backupFilePath, profileName);
+        DatabaseInitializer.initDatabase();
+        return buildProfileInfo(restoredPath);
     }
 
     public String buildCurrentProfileSummary() {
         DatabaseProfileInfo info = getCurrentProfileInfo();
-        String mode = info.testProfile() ? "Wersja testowa" : "Baza robocza";
-        return info.displayName() + " • " + mode + " • " + info.databasePath();
+        String mode = info.testProfile() ? "Baza testowa" : "Baza robocza";
+        String existence = info.exists() ? "plik dostępny" : "brak pliku";
+        return info.displayName() + " • " + mode + " • " + existence;
     }
 
-    private void seedNewProfile(Path profilePath, String profileName, boolean createdNow) {
-        if (!createdNow) {
-            return;
-        }
+    private DatabaseProfileInfo buildProfileInfo(Path databasePath) {
+        Path normalizedPath = databasePath == null ? null : databasePath.toAbsolutePath().normalize();
+        boolean exists = normalizedPath != null && Files.exists(normalizedPath);
+        boolean current = normalizedPath != null && normalizedPath.equals(DatabaseConfig.getDatabaseFilePath());
+        return new DatabaseProfileInfo(
+                normalizedPath,
+                humanizeLabel(normalizedPath),
+                current,
+                isTestProfile(normalizedPath),
+                false,
+                exists
+        );
+    }
 
-        try (Connection connection = DatabaseConfig.getConnection(profilePath)) {
-            upsertSetting(connection, AppSettingsService.ISSUER_NURSERY_NAME, profileName);
-            insertAuditEntry(connection, "SYSTEM", null, "CREATE", "System", "Założono nową bazę danych profilu: " + profileName + ".");
+    private void seedNewProfile(Path profilePath, String requestedName) {
+        String displayName = requestedName == null || requestedName.trim().isBlank()
+                ? humanizeLabel(profilePath)
+                : requestedName.trim();
+
+        try (Connection connection = DatabaseConfig.getConnection(profilePath);
+             PreparedStatement settingStatement = connection.prepareStatement(
+                     "INSERT INTO app_settings (setting_key, setting_value) VALUES (?, ?) " +
+                             "ON CONFLICT(setting_key) DO UPDATE SET setting_value = excluded.setting_value");
+             PreparedStatement auditStatement = connection.prepareStatement(
+                     "INSERT INTO audit_log (entity_type, entity_id, action_type, actor, description, changed_at) VALUES (?, ?, ?, ?, ?, ?)")
+        ) {
+            settingStatement.setString(1, AppSettingsService.ISSUER_NURSERY_NAME);
+            settingStatement.setString(2, displayName);
+            settingStatement.executeUpdate();
+
+            auditStatement.setString(1, "SYSTEM");
+            auditStatement.setNull(2, java.sql.Types.INTEGER);
+            auditStatement.setString(3, "CREATE");
+            auditStatement.setString(4, "System");
+            auditStatement.setString(5, "Założono nową bazę danych: " + displayName + ".");
+            auditStatement.setString(6, LocalDateTime.now().toString());
+            auditStatement.executeUpdate();
         } catch (Exception e) {
-            throw new IllegalStateException("Nie udało się przygotować nowej bazy danych profilu.", e);
+            throw new IllegalStateException("Nie udało się przygotować nowej bazy danych.", e);
         }
     }
 
-    private void seedTestProfile(Path profilePath, boolean createdNow) {
-        if (!createdNow) {
-            return;
-        }
-
-        try (Connection connection = DatabaseConfig.getConnection(profilePath)) {
-            upsertSetting(connection, AppSettingsService.ISSUER_NURSERY_NAME, "Szkółka testowa eGen Labs");
-            upsertSetting(connection, AppSettingsService.ISSUER_COUNTRY, "Polska");
-            upsertSetting(connection, AppSettingsService.ISSUER_COUNTRY_CODE, "PL");
-            upsertSetting(connection, AppSettingsService.ISSUER_POSTAL_CODE, "41-800");
-            upsertSetting(connection, AppSettingsService.ISSUER_CITY, "Zabrze");
-            upsertSetting(connection, AppSettingsService.ISSUER_STREET, "ul. Testowa 1");
-            upsertSetting(connection, AppSettingsService.ISSUER_PHYTOSANITARY_NUMBER, "PL-TEST-001");
-
-            insertIfTableEmpty(connection,
-                    "plants",
-                    "INSERT INTO plants (species, variety, rootstock, latin_species_name, eppo_code, passport_required, visibility_status) VALUES " +
-                            "('Jabłoń', 'Golden Delicious', 'M26', 'Malus domestica', 'MABSD', 1, 'Używany')," +
-                            "('Wiśnia', 'Łutówka', 'Antypka', 'Prunus cerasus', 'PRNCE', 1, 'Używany')");
-
-            insertIfTableEmpty(connection,
-                    "contrahents",
-                    "INSERT INTO contrahents (name, country, country_code, postal_code, city, street, phytosanitary_number, is_supplier, is_client) VALUES " +
-                            "('Szkółka Klient Test', 'Polska', 'PL', '00-001', 'Warszawa', 'ul. Klonowa 7', 'PL-CLI-001', 0, 1)," +
-                            "('Dostawca Test', 'Polska', 'PL', '60-001', 'Poznań', 'ul. Ogrodowa 3', 'PL-SUP-001', 1, 0)");
-
-            insertIfTableEmpty(connection,
-                    "plant_batches",
-                    "INSERT INTO plant_batches (interior_batch_no, exterior_batch_no, plant_id, qty, creation_date, age, manufacturer_country_code, fito_qualification_category, eppo_code, zp_zone, contrahent_id, is_internal_source, comments, status) VALUES " +
-                            "('BATCH-TEST-001', 'EXT-001', 1, 120, '" + LocalDate.now() + "', '12', 'PL', 'CAC', 'MABSD', 'PL', 2, 1, 'Partia testowa 1', 'ACTIVE')," +
-                            "('BATCH-TEST-002', 'EXT-002', 2, 80, '" + LocalDate.now() + "', '8', 'PL', 'CAC', 'PRNCE', 'PL', 2, 1, 'Partia testowa 2', 'ACTIVE')");
-
-            insertIfTableEmpty(connection,
-                    "documents",
-                    "INSERT INTO documents (document_number, document_type, issue_date, contrahent_id, created_by, comments, status) VALUES " +
-                            "('TEST-DOC-001', 'Dokument dostawcy', '" + LocalDate.now() + "', 1, 'System', 'Dokument demonstracyjny', 'ACTIVE')");
-
-            insertIfTableEmpty(connection,
-                    "document_items",
-                    "INSERT INTO document_items (document_id, plant_batch_id, qty, passport_required) VALUES (1, 1, 25, 1)");
-
-            insertAuditEntry(connection, "SYSTEM", null, "CREATE", "System", "Przygotowano wbudowaną bazę testową z przykładowymi rekordami.");
-        } catch (Exception e) {
-            throw new IllegalStateException("Nie udało się przygotować bazy testowej.", e);
+    private FileTime lastModifiedSafe(Path path) {
+        try {
+            return Files.getLastModifiedTime(path);
+        } catch (IOException e) {
+            return FileTime.fromMillis(0);
         }
     }
 
-    private void insertIfTableEmpty(Connection connection, String tableName, String insertSql) throws Exception {
-        boolean empty = false;
-        try (Statement countStatement = connection.createStatement();
-             ResultSet resultSet = countStatement.executeQuery("SELECT COUNT(*) FROM " + tableName)) {
-            empty = resultSet.next() && resultSet.getInt(1) == 0;
+    private boolean isTestProfile(Path path) {
+        if (path == null || path.getFileName() == null) {
+            return false;
         }
-
-        if (!empty) {
-            return;
-        }
-
-        try (Statement insertStatement = connection.createStatement()) {
-            insertStatement.executeUpdate(insertSql);
-        }
+        return path.getFileName().toString().equalsIgnoreCase(DatabaseConfig.getTestProfilePath().getFileName().toString());
     }
 
-    private void upsertSetting(Connection connection, String key, String value) throws Exception {
-        try (PreparedStatement statement = connection.prepareStatement(
-                "INSERT INTO app_settings (setting_key, setting_value) VALUES (?, ?) " +
-                        "ON CONFLICT(setting_key) DO UPDATE SET setting_value = excluded.setting_value"
-        )) {
-            statement.setString(1, key);
-            statement.setString(2, value);
-            statement.executeUpdate();
+    private String humanizeLabel(Path path) {
+        if (path == null || path.getFileName() == null) {
+            return "Baza danych";
         }
-    }
 
-    private void insertAuditEntry(Connection connection, String entityType, Integer entityId, String actionType, String actor, String description) throws Exception {
-        try (PreparedStatement statement = connection.prepareStatement(
-                "INSERT INTO audit_log (entity_type, entity_id, action_type, actor, description, changed_at) VALUES (?, ?, ?, ?, ?, datetime('now'))"
-        )) {
-            statement.setString(1, entityType);
-            if (entityId == null) {
-                statement.setNull(2, java.sql.Types.INTEGER);
-            } else {
-                statement.setInt(2, entityId);
-            }
-            statement.setString(3, actionType);
-            statement.setString(4, actor);
-            statement.setString(5, description);
-            statement.executeUpdate();
+        String fileName = path.getFileName().toString();
+        String stem = fileName.endsWith(".db") ? fileName.substring(0, fileName.length() - 3) : fileName;
+        String normalized = stem.replace('_', ' ').trim();
+        if (normalized.isBlank()) {
+            return "Baza danych";
         }
-    }
-
-    private String normalizeDisplayName(String profileName) {
-        String normalized = profileName == null ? "" : profileName.trim();
-        return normalized.isBlank() ? "Nowa baza" : normalized;
+        return Character.toUpperCase(normalized.charAt(0)) + normalized.substring(1);
     }
 }

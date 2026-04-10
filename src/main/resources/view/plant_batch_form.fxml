@@ -81,13 +81,6 @@
                         maxWidth="1.7976931348623157E308"
                         GridPane.rowIndex="6"
                         GridPane.columnIndex="1"/>
-
-            <Label text="Wiek:" GridPane.rowIndex="7" GridPane.columnIndex="0"/>
-            <TextField fx:id="ageField"
-                       promptText="Np. 2 lata, 18 mies., 1 rok"
-                       maxWidth="1.7976931348623157E308"
-                       GridPane.rowIndex="7"
-                       GridPane.columnIndex="1"/>
         </GridPane>
     </VBox>
 

@@ -5,10 +5,13 @@ import com.egen.fitogen.config.DatabaseConfig;
 import com.egen.fitogen.service.AppSettingsService;
 import com.egen.fitogen.ui.router.ViewManager;
 import javafx.fxml.FXML;
+import javafx.geometry.Insets;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
 
 public class MainController {
 
@@ -18,26 +21,25 @@ public class MainController {
     private StackPane content;
 
     @FXML
-    private HBox systemNewsBar;
+    private VBox newsFeedBox;
 
-    @FXML
-    private Label systemNewsLabel;
+    private final AppSettingsService appSettingsService = AppContext.getAppSettingsService();
 
-    @FXML
-    private Button systemNewsActionButton;
+    public static void requestRefreshSystemNews() {
+        if (instance != null) {
+            instance.refreshNewsFeed();
+        }
+    }
 
     @FXML
     public void initialize() {
         instance = this;
+        if (newsFeedBox != null) {
+            newsFeedBox.managedProperty().bind(newsFeedBox.visibleProperty());
+        }
         ViewManager.setContainer(content);
         ViewManager.show(ViewManager.DASHBOARD);
-        refreshSystemNews();
-    }
-
-    public static void requestRefreshSystemNews() {
-        if (instance != null) {
-            instance.refreshSystemNews();
-        }
+        refreshNewsFeed();
     }
 
     @FXML
@@ -87,72 +89,69 @@ public class MainController {
 
     private void navigate(String viewKey) {
         ViewManager.show(viewKey);
-        refreshSystemNews();
+        refreshNewsFeed();
     }
 
-    private void refreshSystemNews() {
-        if (systemNewsBar == null || systemNewsLabel == null || systemNewsActionButton == null) {
+    private void refreshNewsFeed() {
+        if (newsFeedBox == null) {
             return;
         }
 
-        String updateMessage = AppContext.getAppSettingsService() == null
-                ? ""
-                : AppContext.getAppSettingsService().getSetting("updates.news_feed_message");
-
-        clearNewsBarStyles();
-
-        if (updateMessage != null && !updateMessage.isBlank()) {
-            applyNewsBar(
-                    updateMessage,
-                    "Aktualizacje",
-                    "news-feed-info",
-                    () -> navigate(ViewManager.UPDATES)
-            );
-            return;
-        }
-
-        AppSettingsService appSettingsService = AppContext.getAppSettingsService();
-        if (DatabaseConfig.isUsingTestDatabase()) {
-            applyNewsBar(
-                    "Pracujesz na wersji testowej. Załóż nowy profil, aby rozpocząć pracę na własnej bazie.",
-                    "Nowa baza",
-                    "news-feed-warning",
-                    () -> {
-                        SettingsController.requestOpenDatabaseManagement();
-                        navigate(ViewManager.SETTINGS);
-                    }
-            );
-            return;
-        }
+        newsFeedBox.getChildren().clear();
 
         if (appSettingsService != null && !appSettingsService.isIssuerProfileComplete()) {
-            applyNewsBar(
-                    "Uzupełnij dane podmiotu, aby dokumenty, preview i PDF korzystały z kompletnych danych szkółki.",
-                    "Uzupełnij dane",
+            newsFeedBox.getChildren().add(buildNewsFeedItem(
+                    "Uzupełnij dane podmiotu",
+                    "Profil szkółki jest niekompletny. Uzupełnij dane podmiotu, aby dokumenty i wydruki korzystały z pełnych danych.",
+                    "Przejdź do danych podmiotu",
                     "news-feed-warning",
                     () -> {
-                        SettingsController.requestOpenIssuerProfile();
+                        SettingsController.requestInitialTab("Dane podmiotu");
                         navigate(ViewManager.SETTINGS);
                     }
-            );
-            return;
+            ));
         }
 
-        systemNewsBar.setManaged(false);
-        systemNewsBar.setVisible(false);
-        systemNewsActionButton.setOnAction(null);
+        if (DatabaseConfig.isTestDatabase(DatabaseConfig.getDatabaseFilePath())) {
+            newsFeedBox.getChildren().add(buildNewsFeedItem(
+                    "Pracujesz na wersji testowej",
+                    "To jest profil testowy bazy danych. Załóż nowy profil roboczy, aby oddzielić dane testowe od produkcyjnych.",
+                    "Załóż nowy profil",
+                    "news-feed-info",
+                    () -> {
+                        SettingsController.requestCreateNewDatabaseFlow();
+                        navigate(ViewManager.SETTINGS);
+                    }
+            ));
+        }
+
+        newsFeedBox.setVisible(!newsFeedBox.getChildren().isEmpty());
     }
 
-    private void applyNewsBar(String message, String actionLabel, String styleClass, Runnable action) {
-        systemNewsLabel.setText(message);
-        systemNewsActionButton.setText(actionLabel);
-        systemNewsActionButton.setOnAction(event -> action.run());
-        systemNewsBar.getStyleClass().add(styleClass);
-        systemNewsBar.setManaged(true);
-        systemNewsBar.setVisible(true);
-    }
+    private HBox buildNewsFeedItem(
+            String title,
+            String message,
+            String actionLabel,
+            String styleClass,
+            Runnable action
+    ) {
+        Label titleLabel = new Label(title);
+        titleLabel.getStyleClass().add("news-feed-title");
 
-    private void clearNewsBarStyles() {
-        systemNewsBar.getStyleClass().removeAll("news-feed-info", "news-feed-warning", "news-feed-success");
+        Label messageLabel = new Label(message);
+        messageLabel.setWrapText(true);
+        messageLabel.getStyleClass().add("news-feed-message");
+
+        VBox textBox = new VBox(4, titleLabel, messageLabel);
+        HBox.setHgrow(textBox, Priority.ALWAYS);
+
+        Button actionButton = new Button(actionLabel);
+        actionButton.getStyleClass().add("button-secondary");
+        actionButton.setOnAction(event -> action.run());
+
+        HBox item = new HBox(16, textBox, actionButton);
+        item.getStyleClass().addAll("news-feed-item", styleClass);
+        item.setPadding(new Insets(14, 16, 14, 16));
+        return item;
     }
 }

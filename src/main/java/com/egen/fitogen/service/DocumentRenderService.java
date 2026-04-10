@@ -137,7 +137,7 @@ public class DocumentRenderService {
             previewItem.setLp(lp++);
             previewItem.setPlantName(plant != null ? safe(plant.toString()) : "");
             previewItem.setBatchNumber(batch != null ? resolveBatchNumber(batch) : "");
-            previewItem.setBatchAgeLabel(batch != null ? resolveBatchAgeLabel(batch, referenceDate) : "");
+            previewItem.setBatchAgeLabel(batch != null ? buildBatchAgeLabel(batch, referenceDate) : "");
             previewItem.setBatchCategoryLabel(batch != null ? safe(batch.getFitoQualificationCategory()) : "");
             previewItem.setQty(item.getQty());
             previewItem.setPassportLabel(item.isPassportRequired() ? "Tak" : "Nie");
@@ -147,19 +147,6 @@ public class DocumentRenderService {
         }
 
         preview.setTotalQty(totalQty);
-    }
-
-    private String resolveBatchAgeLabel(PlantBatch batch, LocalDate referenceDate) {
-        if (batch == null) {
-            return "";
-        }
-
-        String explicitAge = normalizeBatchAgeLabel(safe(batch.getAge()));
-        if (!explicitAge.isBlank()) {
-            return explicitAge;
-        }
-
-        return buildBatchAgeLabel(batch, referenceDate);
     }
 
     private String buildBatchAgeLabel(PlantBatch batch, LocalDate referenceDate) {
@@ -172,7 +159,7 @@ public class DocumentRenderService {
             referenceDate = LocalDate.now();
         }
         if (referenceDate.isBefore(batchDate)) {
-            return "0";
+            return "0 dni";
         }
 
         Period period = Period.between(batchDate, referenceDate);
@@ -186,15 +173,7 @@ public class DocumentRenderService {
             return period.getMonths() + " mies.";
         }
 
-        return String.valueOf(Math.max(0, period.getDays()));
-    }
-
-    private String normalizeBatchAgeLabel(String value) {
-        String safeValue = safe(value);
-        if (safeValue.isBlank()) {
-            return "";
-        }
-        return safeValue.replaceFirst("(?iu)\\s*dni$", "").trim();
+        return Math.max(0, period.getDays()) + " dni";
     }
 
     private String resolveBatchNumber(PlantBatch batch) {

@@ -6,8 +6,8 @@ import javafx.stage.Stage;
 
 public final class WindowSizingUtil {
 
-    private static final double DEFAULT_SCREEN_USAGE = 0.96;
-    private static final double DEFAULT_MIN_SCREEN_USAGE = 0.68;
+    private static final double DEFAULT_SCREEN_USAGE = 0.95;
+    private static final double DEFAULT_MIN_SCREEN_USAGE = 0.74;
 
     private WindowSizingUtil() {
     }

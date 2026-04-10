@@ -4,7 +4,6 @@ import com.egen.fitogen.config.AppContext;
 import com.egen.fitogen.config.DatabaseConfig;
 import com.egen.fitogen.domain.NumberingConfig;
 import com.egen.fitogen.dto.ContrahentImportPreviewResult;
-import com.egen.fitogen.dto.DatabaseProfileInfo;
 import com.egen.fitogen.dto.CsvImportExecutionResult;
 import com.egen.fitogen.dto.PlantImportPreviewResult;
 import com.egen.fitogen.domain.NumberingSectionType;
@@ -13,31 +12,32 @@ import com.egen.fitogen.model.AppUser;
 import com.egen.fitogen.model.Contrahent;
 import com.egen.fitogen.model.DocumentType;
 import com.egen.fitogen.model.IssuerProfile;
+import com.egen.fitogen.dto.DatabaseProfileInfo;
 import com.egen.fitogen.service.AppSettingsService;
 import com.egen.fitogen.service.AppUserService;
 import com.egen.fitogen.service.AuditLogService;
 import com.egen.fitogen.service.BackupService;
+import com.egen.fitogen.service.DatabaseProfileService;
 import com.egen.fitogen.service.ContrahentCsvExportService;
 import com.egen.fitogen.service.ContrahentCsvImportService;
 import com.egen.fitogen.service.CountryDirectoryService;
 import com.egen.fitogen.service.DocumentCsvExportService;
 import com.egen.fitogen.service.DocumentCsvImportService;
 import com.egen.fitogen.service.DocumentTypeService;
-import com.egen.fitogen.service.DatabaseProfileService;
 import com.egen.fitogen.service.NumberingConfigService;
 import com.egen.fitogen.service.PlantCsvExportService;
 import com.egen.fitogen.service.PlantCsvImportService;
 import com.egen.fitogen.ui.util.CountryDirectory;
-import com.egen.fitogen.ui.router.ViewManager;
 import com.egen.fitogen.ui.util.DialogUtil;
+import com.egen.fitogen.ui.router.ViewManager;
 import com.egen.fitogen.ui.util.ValidationUtil;
-import javafx.application.Platform;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
 import javafx.collections.transformation.SortedList;
+import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
@@ -51,12 +51,14 @@ import javafx.scene.control.TabPane;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
+import javafx.scene.control.TextInputDialog;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
 import javafx.stage.Window;
 import javafx.util.StringConverter;
 
 import java.io.File;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -72,12 +74,8 @@ public class SettingsController {
 
     private static final DateTimeFormatter BACKUP_DATE_TIME_FORMATTER =
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-    private static final String BACKUP_TAB_TITLE = "Kopia zapasowa i baza";
-    private static final String ISSUER_TAB_TITLE = "Dane podmiotu";
-
     private static String pendingTabTitle;
-    private static boolean pendingFocusDatabaseProfileField;
-    private static boolean pendingFocusIssuerField;
+    private static boolean pendingCreateDatabaseFlow;
 
     @FXML private TabPane settingsTabPane;
     @FXML private ComboBox<NumberingType> numberingTypeBox;
@@ -93,11 +91,12 @@ public class SettingsController {
     @FXML private TextField currentCounterField;
     @FXML private Label previewLabel;
     @FXML private Label infoLabel;
+    @FXML private ComboBox<DatabaseProfileInfo> databaseProfileBox;
+    @FXML private TextField newDatabaseNameField;
+    @FXML private Label databaseFolderLabel;
     @FXML private Label databasePathLabel;
-    @FXML private Label databaseProfileLabel;
-    @FXML private Label databaseModeLabel;
     @FXML private Label databaseProfileStatusLabel;
-    @FXML private TextField databaseProfileNameField;
+    @FXML private Label databaseMissingStatusLabel;
     @FXML private Label backupStatusLabel;
     @FXML private ListView<DocumentType> documentTypesList;
     @FXML private TextField documentTypeSearchField;
@@ -176,6 +175,7 @@ public class SettingsController {
     private boolean loading;
     private boolean updatingDefaultUserSelection;
     private boolean updatingIssuerCountryFields;
+    private boolean loadingDatabaseProfileSelection;
     private int currentConfigId;
     private DocumentType editingDocumentType;
     private final ObservableList<DocumentType> documentTypeMasterData = FXCollections.observableArrayList();
@@ -193,14 +193,14 @@ public class SettingsController {
     private ContrahentImportPreviewResult lastContrahentsCsvPreviewResult;
     private com.egen.fitogen.dto.DocumentImportPreviewResult lastDocumentsCsvPreviewResult;
 
-    public static void requestOpenDatabaseManagement() {
-        pendingTabTitle = BACKUP_TAB_TITLE;
-        pendingFocusDatabaseProfileField = true;
+
+    public static void requestInitialTab(String tabTitle) {
+        pendingTabTitle = tabTitle;
     }
 
-    public static void requestOpenIssuerProfile() {
-        pendingTabTitle = ISSUER_TAB_TITLE;
-        pendingFocusIssuerField = true;
+    public static void requestCreateNewDatabaseFlow() {
+        pendingTabTitle = "Kopia zapasowa i baza";
+        pendingCreateDatabaseFlow = true;
     }
 
     @FXML
@@ -212,6 +212,7 @@ public class SettingsController {
         configureIssuerCountryControls();
         configureDocumentTypeControls();
         configureAuditLogControls();
+        configureDatabaseProfileControls();
 
         numberingTypeBox.getItems().setAll(NumberingType.values());
         numberingTypeBox.setValue(NumberingType.DOCUMENT);
@@ -230,7 +231,7 @@ public class SettingsController {
         loadAuditLogOverview();
         refreshBackupStatus();
         loadConfig(NumberingType.DOCUMENT);
-        applyPendingTabSelection();
+        applyPendingNavigation();
     }
 
     private void configureUserControls() {
@@ -1617,124 +1618,244 @@ public class SettingsController {
         return builder.toString();
     }
 
-    private void applyPendingTabSelection() {
+    private void applyPendingNavigation() {
         if (settingsTabPane != null && pendingTabTitle != null && !pendingTabTitle.isBlank()) {
             for (Tab tab : settingsTabPane.getTabs()) {
-                if (pendingTabTitle.equalsIgnoreCase(tab.getText())) {
+                if (pendingTabTitle.equals(tab.getText())) {
                     settingsTabPane.getSelectionModel().select(tab);
                     break;
                 }
             }
         }
 
-        boolean focusDatabaseField = pendingFocusDatabaseProfileField;
-        boolean focusIssuer = pendingFocusIssuerField;
+        boolean openCreateFlow = pendingCreateDatabaseFlow;
         pendingTabTitle = null;
-        pendingFocusDatabaseProfileField = false;
-        pendingFocusIssuerField = false;
+        pendingCreateDatabaseFlow = false;
 
-        Platform.runLater(() -> {
-            if (focusDatabaseField && databaseProfileNameField != null) {
-                databaseProfileNameField.requestFocus();
-                databaseProfileNameField.selectAll();
-            } else if (focusIssuer && issuerNameField != null) {
-                issuerNameField.requestFocus();
-                issuerNameField.selectAll();
+        if (openCreateFlow) {
+            Platform.runLater(this::activateCreateNewDatabaseFlow);
+        }
+    }
+
+    private void configureDatabaseProfileControls() {
+        if (databaseProfileBox == null) {
+            return;
+        }
+
+        databaseProfileBox.setCellFactory(list -> new ListCell<>() {
+            @Override
+            protected void updateItem(DatabaseProfileInfo item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(empty || item == null ? "" : item.toDisplayLabel());
             }
+        });
+
+        databaseProfileBox.setButtonCell(new ListCell<>() {
+            @Override
+            protected void updateItem(DatabaseProfileInfo item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(empty || item == null ? "Wybierz bazę danych" : item.toDisplayLabel());
+            }
+        });
+
+        databaseProfileBox.valueProperty().addListener((obs, oldValue, newValue) -> {
+            if (loadingDatabaseProfileSelection || newValue == null) {
+                return;
+            }
+            updateDatabaseProfileSelectionState(newValue);
         });
     }
 
     private void loadDatabaseProfileOverview() {
-        if (databasePathLabel != null) {
-            databasePathLabel.setText(backupService.getDatabaseFilePath().toString());
+        if (databasePathLabel == null) {
+            return;
         }
 
-        DatabaseProfileInfo info = databaseProfileService.getCurrentProfileInfo();
-        if (databaseProfileLabel != null) {
-            databaseProfileLabel.setText(info.displayName());
+        List<DatabaseProfileInfo> profiles = databaseProfileService.getAvailableProfiles();
+        loadingDatabaseProfileSelection = true;
+        try {
+            if (databaseProfileBox != null) {
+                databaseProfileBox.setItems(FXCollections.observableArrayList(profiles));
+                DatabaseProfileInfo currentProfile = profiles.stream()
+                        .filter(info -> !info.createNewOption() && info.current())
+                        .findFirst()
+                        .orElseGet(databaseProfileService::getCurrentProfileInfo);
+                databaseProfileBox.setValue(currentProfile);
+            }
+        } finally {
+            loadingDatabaseProfileSelection = false;
         }
-        if (databaseModeLabel != null) {
-            databaseModeLabel.setText(info.testProfile()
-                    ? "Pracujesz na wbudowanej bazie testowej z przykładowymi rekordami."
-                    : "Pracujesz na bazie roboczej przypisanej do wybranego profilu.");
+
+        DatabaseProfileInfo current = databaseProfileService.getCurrentProfileInfo();
+        if (databaseFolderLabel != null) {
+            databaseFolderLabel.setText(DatabaseConfig.getProfilesDirectory().toString());
         }
+        databasePathLabel.setText(current.databasePath() == null ? "Brak ścieżki bazy danych." : current.databasePath().toString());
         if (databaseProfileStatusLabel != null) {
-            databaseProfileStatusLabel.setText(databaseProfileService.buildCurrentProfileSummary());
+            databaseProfileStatusLabel.setText(buildDatabaseProfileStatus(current));
+        }
+        if (databaseMissingStatusLabel != null) {
+            databaseMissingStatusLabel.setText(buildMissingDatabaseStatus());
+        }
+        if (newDatabaseNameField != null) {
+            newDatabaseNameField.setVisible(false);
+            newDatabaseNameField.setManaged(false);
+            newDatabaseNameField.clear();
+        }
+        updateDatabaseProfileSelectionState(databaseProfileBox == null ? null : databaseProfileBox.getValue());
+    }
+
+    private String buildMissingDatabaseStatus() {
+        return DatabaseConfig.getMissingRememberedDatabasePath()
+                .map(path -> {
+                    String backupPath = BackupService.getRememberedBackupPath().map(Path::toString).orElse("brak zapamiętanego backupu");
+                    return "Nie znaleziono ostatnio używanej bazy danych: " + path + ". Możesz utworzyć nową bazę albo odzyskać dane z ostatniego backupu: " + backupPath;
+                })
+                .orElse("Ostatnio używana baza danych została poprawnie odnaleziona.");
+    }
+
+    private String buildDatabaseProfileStatus(DatabaseProfileInfo current) {
+        if (current == null) {
+            return "Nie wybrano aktywnej bazy danych.";
+        }
+
+        if (!current.exists()) {
+            String backupPath = BackupService.getRememberedBackupPath().map(Path::toString).orElse("brak dostępnej kopii");
+            return "Aktywna baza nie istnieje w zapisanej lokalizacji. Utwórz nową bazę lub odtwórz dane z ostatniej kopii: " + backupPath;
+        }
+
+        String mode = current.testProfile() ? "Baza testowa" : "Baza robocza";
+        return current.displayName() + " • " + mode + " • ostatnio używana baza została poprawnie odnaleziona.";
+    }
+
+    private void updateDatabaseProfileSelectionState(DatabaseProfileInfo selectedProfile) {
+        boolean createMode = selectedProfile != null && selectedProfile.createNewOption();
+        if (newDatabaseNameField != null) {
+            newDatabaseNameField.setManaged(createMode);
+            newDatabaseNameField.setVisible(createMode);
+            if (!createMode) {
+                newDatabaseNameField.clear();
+            }
+        }
+
+        if (databaseProfileStatusLabel == null || selectedProfile == null) {
+            return;
+        }
+
+        if (createMode) {
+            databaseProfileStatusLabel.setText("Wybierz nazwę nowej bazy danych i potwierdź przyciskiem „Użyj wybranej bazy”.");
+        } else if (!selectedProfile.exists()) {
+            databaseProfileStatusLabel.setText("Wybrana baza danych nie istnieje już w zapisanej lokalizacji. Możesz utworzyć nową bazę albo odzyskać dane z backupu.");
+        } else {
+            databaseProfileStatusLabel.setText(buildDatabaseProfileStatus(selectedProfile));
+        }
+    }
+
+    private void activateCreateNewDatabaseFlow() {
+        if (databaseProfileBox == null) {
+            return;
+        }
+
+        DatabaseProfileInfo createOption = databaseProfileBox.getItems().stream()
+                .filter(DatabaseProfileInfo::createNewOption)
+                .findFirst()
+                .orElse(null);
+        if (createOption == null) {
+            return;
+        }
+
+        databaseProfileBox.setValue(createOption);
+        updateDatabaseProfileSelectionState(createOption);
+        if (newDatabaseNameField != null) {
+            DatabaseConfig.getMissingRememberedDatabasePath()
+                    .map(Path::getFileName)
+                    .map(Path::toString)
+                    .map(name -> name.toLowerCase().endsWith(".db") ? name.substring(0, name.length() - 3) : name)
+                    .ifPresent(newDatabaseNameField::setText);
+            newDatabaseNameField.requestFocus();
+            newDatabaseNameField.selectAll();
         }
     }
 
     @FXML
-    private void refreshDatabaseProfileOverview() {
+    private void applySelectedDatabaseProfile() {
+        DatabaseProfileInfo selectedProfile = databaseProfileBox == null ? null : databaseProfileBox.getValue();
+        if (selectedProfile == null) {
+            DialogUtil.showWarning("Baza danych", "Wybierz bazę danych z listy.");
+            return;
+        }
+
+        if (selectedProfile.createNewOption()) {
+            String profileName = newDatabaseNameField == null ? "" : newDatabaseNameField.getText();
+            if (profileName == null || profileName.isBlank()) {
+                DialogUtil.showWarning("Nowa baza danych", "Podaj nazwę nowej bazy danych.");
+                return;
+            }
+            DatabaseProfileInfo created = databaseProfileService.createAndActivateProfile(profileName);
+            DialogUtil.showSuccess("Aktywowano bazę danych: " + created.displayName());
+            ViewManager.refreshCurrent();
+            MainController.requestRefreshSystemNews();
+            return;
+        }
+
+        if (!selectedProfile.exists()) {
+            DialogUtil.showWarning(
+                    "Baza danych",
+                    "Wybrana baza danych nie istnieje już w zapisanej lokalizacji. Utwórz nową bazę albo odzyskaj dane z ostatniego backupu."
+            );
+            return;
+        }
+
+        DatabaseProfileInfo current = databaseProfileService.getCurrentProfileInfo();
+        if (current.databasePath() != null && current.databasePath().equals(selectedProfile.databasePath())) {
+            return;
+        }
+
+        databaseProfileService.activateProfile(selectedProfile);
+        DialogUtil.showSuccess("Przełączono aktywną bazę danych na: " + selectedProfile.displayName());
+        ViewManager.refreshCurrent();
+        MainController.requestRefreshSystemNews();
+    }
+
+    @FXML
+    private void restoreDatabaseFromBackup() {
+        try {
+            Path sourceBackup = BackupService.getRememberedBackupPath().orElse(null);
+            if (sourceBackup == null || !Files.exists(sourceBackup)) {
+                FileChooser chooser = new FileChooser();
+                chooser.setTitle("Wybierz backup bazy danych");
+                chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Pliki baz danych", "*.db"));
+                File selectedFile = chooser.showOpenDialog(getOwningWindow());
+                if (selectedFile == null) {
+                    return;
+                }
+                sourceBackup = selectedFile.toPath();
+            }
+
+            String suggestedName = DatabaseConfig.getMissingRememberedDatabasePath()
+                    .map(Path::getFileName)
+                    .map(Path::toString)
+                    .map(name -> name.toLowerCase().endsWith(".db") ? name.substring(0, name.length() - 3) : name)
+                    .orElseGet(() -> {
+                        DatabaseProfileInfo selected = databaseProfileBox == null ? null : databaseProfileBox.getValue();
+                        if (selected != null && selected.createNewOption() && newDatabaseNameField != null && !newDatabaseNameField.getText().isBlank()) {
+                            return newDatabaseNameField.getText().trim();
+                        }
+                        return "odzyskana_baza";
+                    });
+
+            DatabaseProfileInfo restored = databaseProfileService.restoreAndActivateProfile(sourceBackup, suggestedName);
+            DialogUtil.showSuccess("Odzyskano i aktywowano bazę danych: " + restored.displayName());
+            ViewManager.refreshCurrent();
+            MainController.requestRefreshSystemNews();
+        } catch (Exception e) {
+            DialogUtil.showError("Odzyskiwanie bazy danych", e.getMessage());
+        }
+    }
+
+    @FXML
+    private void refreshDatabaseProfiles() {
         loadDatabaseProfileOverview();
-        refreshBackupStatus();
-    }
-
-    @FXML
-    private void createNewDatabaseProfile() {
-        String profileName = safe(databaseProfileNameField == null ? "" : databaseProfileNameField.getText());
-        if (profileName.isBlank()) {
-            DialogUtil.showWarning("Baza danych", "Podaj nazwę nowego profilu bazy danych.");
-            if (databaseProfileStatusLabel != null) {
-                databaseProfileStatusLabel.setText("Podaj nazwę nowego profilu, aby utworzyć bazę roboczą.");
-            }
-            return;
-        }
-
-        if (!DialogUtil.confirmAction("Nowa baza danych", "założyć", "profil bazy „" + profileName + "”")) {
-            return;
-        }
-
-        try {
-            DatabaseProfileInfo info = databaseProfileService.createOrActivateNewProfile(profileName);
-            AppContext.init();
-            if (databaseProfileNameField != null) {
-                databaseProfileNameField.clear();
-            }
-            if (AppContext.getAuditLogService() != null) {
-                AppContext.getAuditLogService().log("DATABASE_PROFILE", null, "SWITCH",
-                        "Aktywowano profil bazy danych: " + info.displayName() + ".");
-            }
-            MainController.requestRefreshSystemNews();
-            requestOpenDatabaseManagement();
-            DialogUtil.showSuccess(info.createdNow()
-                    ? "Założono nową bazę danych i aktywowano profil: " + info.displayName()
-                    : "Aktywowano istniejący profil bazy danych: " + info.displayName());
-            ViewManager.refreshCurrent();
-        } catch (Exception e) {
-            e.printStackTrace();
-            if (databaseProfileStatusLabel != null) {
-                databaseProfileStatusLabel.setText("Nie udało się założyć lub aktywować nowej bazy danych.");
-            }
-            DialogUtil.showError("Baza danych", "Nie udało się założyć lub aktywować nowej bazy danych.");
-        }
-    }
-
-    @FXML
-    private void switchToTestDatabase() {
-        if (!DialogUtil.confirmAction("Baza testowa", "przełączyć", "wbudowaną bazę testową")) {
-            return;
-        }
-
-        try {
-            DatabaseProfileInfo info = databaseProfileService.activateTestProfile();
-            AppContext.init();
-            if (AppContext.getAuditLogService() != null) {
-                AppContext.getAuditLogService().log("DATABASE_PROFILE", null, "SWITCH",
-                        "Aktywowano bazę testową.");
-            }
-            MainController.requestRefreshSystemNews();
-            requestOpenDatabaseManagement();
-            DialogUtil.showSuccess(info.createdNow()
-                    ? "Przygotowano i aktywowano bazę testową z przykładowymi danymi."
-                    : "Aktywowano bazę testową.");
-            ViewManager.refreshCurrent();
-        } catch (Exception e) {
-            e.printStackTrace();
-            if (databaseProfileStatusLabel != null) {
-                databaseProfileStatusLabel.setText("Nie udało się aktywować bazy testowej.");
-            }
-            DialogUtil.showError("Baza testowa", "Nie udało się aktywować bazy testowej.");
-        }
     }
 
     private void refreshBackupStatus() {

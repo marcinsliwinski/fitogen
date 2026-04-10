@@ -5,6 +5,7 @@ import com.egen.fitogen.model.AuditLogEntry;
 import com.egen.fitogen.repository.AuditLogRepository;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeParseException;
 import java.util.List;
 
 public class AuditLogService {
@@ -36,6 +37,16 @@ public class AuditLogService {
         return repository.countAll();
     }
 
+
+    public LocalDateTime getLatestChangedAt() {
+        return getRecentEntries(1).stream()
+                .map(AuditLogEntry::getChangedAt)
+                .map(this::parseChangedAt)
+                .filter(value -> value != null)
+                .findFirst()
+                .orElse(null);
+    }
+
     public String getLatestEntrySummary() {
         return getRecentEntries(1).stream()
                 .findFirst()
@@ -62,6 +73,19 @@ public class AuditLogService {
         }
 
         return "System";
+    }
+
+
+    private LocalDateTime parseChangedAt(String rawValue) {
+        if (rawValue == null || rawValue.isBlank()) {
+            return null;
+        }
+
+        try {
+            return LocalDateTime.parse(rawValue.trim());
+        } catch (DateTimeParseException ignored) {
+            return null;
+        }
     }
 
     private String normalize(String value) {

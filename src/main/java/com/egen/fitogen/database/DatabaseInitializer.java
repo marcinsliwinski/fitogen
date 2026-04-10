@@ -2,7 +2,6 @@ package com.egen.fitogen.database;
 
 import com.egen.fitogen.config.DatabaseConfig;
 
-import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -11,12 +10,8 @@ import java.sql.Statement;
 public class DatabaseInitializer {
 
     public static void initDatabase() {
-        initDatabase(DatabaseConfig.getDatabaseFilePath());
-    }
 
-    public static void initDatabase(Path databaseFilePath) {
-
-        try (Connection conn = DatabaseConfig.getConnection(databaseFilePath);
+        try (Connection conn = DatabaseConfig.getConnection();
              Statement stmt = conn.createStatement()) {
 
             // PLANTS
@@ -58,7 +53,6 @@ public class DatabaseInitializer {
                     plant_id INTEGER,
                     qty INTEGER,
                     creation_date TEXT,
-                    age TEXT,
                     manufacturer_country_code TEXT,
                     fito_qualification_category TEXT,
                     eppo_code TEXT,
@@ -150,11 +144,6 @@ public class DatabaseInitializer {
                     description TEXT,
                     changed_at TEXT
                 )
-            """);
-
-            stmt.execute("""
-                CREATE INDEX IF NOT EXISTS ix_audit_log_changed_at
-                ON audit_log (changed_at DESC, id DESC)
             """);
 
             // EPPO CODES
@@ -255,7 +244,6 @@ public class DatabaseInitializer {
             ensureColumnExists(stmt, "plants", "passport_required", "INTEGER NOT NULL DEFAULT 0");
             ensureColumnExists(stmt, "contrahents", "is_supplier", "INTEGER NOT NULL DEFAULT 0");
             ensureColumnExists(stmt, "contrahents", "is_client", "INTEGER NOT NULL DEFAULT 0");
-            ensureColumnExists(stmt, "plant_batches", "age", "TEXT");
             ensureColumnExists(stmt, "plant_batches", "is_internal_source", "INTEGER NOT NULL DEFAULT 0");
             ensureColumnExists(stmt, "plant_batches", "status", "TEXT DEFAULT 'ACTIVE'");
             ensureColumnExists(stmt, "documents", "status", "TEXT DEFAULT 'ACTIVE'");

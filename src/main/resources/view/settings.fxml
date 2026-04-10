@@ -323,35 +323,32 @@
                         <VBox spacing="16" styleClass="content-card">
                             <padding><Insets top="16" right="16" bottom="16" left="16"/></padding>
 
-                            <VBox spacing="10" styleClass="stat-card">
-                                <Label text="Aktywna baza danych" styleClass="stat-title"/>
-                                <Label text="Profil bazy danych możesz przełączać bez ręcznego podmieniania plików. Baza testowa jest utrzymywana oddzielnie od baz roboczych." wrapText="true" styleClass="page-subtitle"/>
-                                <Label text="Aktywny profil:"/>
-                                <Label fx:id="databaseProfileLabel" wrapText="true" styleClass="page-subtitle"/>
-                                <Label text="Tryb pracy:"/>
-                                <Label fx:id="databaseModeLabel" wrapText="true" styleClass="page-subtitle"/>
-                                <Label text="Plik bazy danych:"/>
-                                <Label fx:id="databasePathLabel" wrapText="true" styleClass="page-subtitle"/>
-                                <Label text="Podsumowanie profilu:"/>
-                                <Label fx:id="databaseProfileStatusLabel" wrapText="true" styleClass="page-subtitle"/>
-                                <TextField fx:id="databaseProfileNameField" promptText="Nazwa nowego profilu / nowej bazy"/>
-                                <HBox spacing="10">
-                                    <Button text="Nowa baza" onAction="#createNewDatabaseProfile"/>
-                                    <Button text="Baza testowa" onAction="#switchToTestDatabase" styleClass="button-secondary"/>
-                                    <Button text="Odśwież" onAction="#refreshDatabaseProfileOverview" styleClass="button-secondary"/>
-                                </HBox>
-                            </VBox>
+                            <Label text="Aktywna baza danych" styleClass="stat-title"/>
+                            <Label text="Wybierz bazę danych z katalogu użytkownika. Ostatnia pozycja listy pozwala od razu utworzyć nową bazę profilu." wrapText="true" styleClass="page-subtitle"/>
+                            <Label text="Katalog baz danych:"/>
+                            <Label fx:id="databaseFolderLabel" wrapText="true" styleClass="page-subtitle"/>
+                            <ComboBox fx:id="databaseProfileBox" promptText="Wybierz bazę danych" maxWidth="420"/>
+                            <TextField fx:id="newDatabaseNameField" promptText="Nazwa nowej bazy danych" managed="false" visible="false" maxWidth="420"/>
+                            <Label text="Plik bazy danych:"/>
+                            <Label fx:id="databasePathLabel" wrapText="true" styleClass="page-subtitle"/>
+                            <Label text="Stan profilu:"/>
+                            <Label fx:id="databaseProfileStatusLabel" wrapText="true" styleClass="page-subtitle"/>
+                            <Label text="Walidacja ostatnio używanej bazy:"/>
+                            <Label fx:id="databaseMissingStatusLabel" wrapText="true" styleClass="page-subtitle"/>
+                            <HBox spacing="10">
+                                <Button text="Użyj wybranej bazy" onAction="#applySelectedDatabaseProfile"/>
+                                <Button text="Odzyskaj z backupu" onAction="#restoreDatabaseFromBackup" styleClass="button-secondary"/>
+                                <Button text="Odśwież listę baz" onAction="#refreshDatabaseProfiles" styleClass="button-secondary"/>
+                            </HBox>
 
                             <Separator/>
 
-                            <VBox spacing="10" styleClass="stat-card">
-                                <Label text="Ręczna kopia zapasowa" styleClass="stat-title"/>
-                                <Label text="Stan kopii zapasowej:"/>
-                                <Label fx:id="backupStatusLabel" wrapText="true" styleClass="page-subtitle"/>
-                                <HBox spacing="10">
-                                    <Button text="Utwórz kopię zapasową" onAction="#createBackup"/>
-                                </HBox>
-                            </VBox>
+                            <Label text="Ręczna kopia zapasowa" styleClass="stat-title"/>
+                            <Label text="Stan kopii zapasowej:"/>
+                            <Label fx:id="backupStatusLabel" wrapText="true" styleClass="page-subtitle"/>
+                            <HBox spacing="10">
+                                <Button text="Utwórz kopię zapasową" onAction="#createBackup"/>
+                            </HBox>
                         </VBox>
                     </content>
                 </ScrollPane>

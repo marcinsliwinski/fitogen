@@ -34,15 +34,6 @@ public class DocumentPdfService {
             "/System/Library/Fonts/Supplemental/Arial.ttf"
     };
 
-    private static final String[] BOLD_FONT_CANDIDATES = {
-            "C:/Windows/Fonts/seguisb.ttf",
-            "C:/Windows/Fonts/segoeuib.ttf",
-            "C:/Windows/Fonts/arialbd.ttf",
-            "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
-            "/usr/share/fonts/truetype/liberation2/LiberationSans-Bold.ttf",
-            "/System/Library/Fonts/Supplemental/Arial Bold.ttf"
-    };
-
     public void export(DocumentPreviewDTO preview, File outputFile) {
         if (preview == null) {
             throw new IllegalArgumentException("Brak danych dokumentu do eksportu PDF.");
@@ -58,15 +49,14 @@ public class DocumentPdfService {
             PdfWriter.getInstance(pdf, out);
             pdf.open();
 
-            Font titleFont = createUnicodeFont(16f, TEXT_COLOR, false);
-            Font numberFont = createUnicodeFont(12f, TEXT_COLOR, false);
-            Font boxHeaderFont = createUnicodeFont(9.5f, TEXT_COLOR, true);
-            Font normalFont = createUnicodeFont(9.5f, TEXT_COLOR, false);
-            Font partyNameFont = createUnicodeFont(9.5f, TEXT_COLOR, true);
-            Font footerFont = createUnicodeFont(8f, FOOTER_COLOR, false);
-            Font cancelledFont = createUnicodeFont(10.5f, TEXT_COLOR, true);
+            Font titleFont = createUnicodeFont(16f, TEXT_COLOR);
+            Font numberFont = createUnicodeFont(12f, TEXT_COLOR);
+            Font boxHeaderFont = createUnicodeFont(9.5f, TEXT_COLOR);
+            Font normalFont = createUnicodeFont(9.5f, TEXT_COLOR);
+            Font footerFont = createUnicodeFont(8f, FOOTER_COLOR);
+            Font cancelledFont = createUnicodeFont(10.5f, TEXT_COLOR);
 
-            PdfPTable top = new PdfPTable(new float[]{1.18f, 1.12f});
+            PdfPTable top = new PdfPTable(new float[]{1.3f, 1f});
             top.setWidthPercentage(100);
             top.setSpacingAfter(12f);
             top.addCell(buildLogoPlaceholderCell());
@@ -83,7 +73,6 @@ public class DocumentPdfService {
                     preview.getIssuerAddressLine2(),
                     preview.getIssuerPhytosanitaryNumber(),
                     boxHeaderFont,
-                    partyNameFont,
                     normalFont
             ));
             parties.addCell(partyCell(
@@ -93,7 +82,6 @@ public class DocumentPdfService {
                     preview.getCustomerAddressLine2(),
                     preview.getCustomerPhytosanitaryNumber(),
                     boxHeaderFont,
-                    partyNameFont,
                     normalFont
             ));
             pdf.add(parties);
@@ -104,11 +92,12 @@ public class DocumentPdfService {
 
             Paragraph number = new Paragraph(buildDocumentNumberTitle(preview), numberFont);
             number.setAlignment(Element.ALIGN_CENTER);
-            number.setSpacingAfter(12f);
+            number.setSpacingAfter(6f);
             pdf.add(number);
 
             pdf.add(alignedLine("Państwowa Inspekcja Ochrony Roślin i Nasiennictwa", normalFont, Element.ALIGN_LEFT, 0f));
-            pdf.add(alignedLine("PL / Jakość WE", normalFont, Element.ALIGN_LEFT, 8f));
+            pdf.add(alignedLine("PL", normalFont, Element.ALIGN_LEFT, 0f));
+            pdf.add(alignedLine("Jakość WE", normalFont, Element.ALIGN_LEFT, 8f));
 
             if (preview.isCancelled()) {
                 Paragraph cancelled = new Paragraph("ANULOWANY", cancelledFont);
@@ -137,19 +126,24 @@ public class DocumentPdfService {
                 for (DocumentPreviewItemDTO item : preview.getItems()) {
                     items.addCell(bodyCell(String.valueOf(item.getLp()), normalFont, PdfPCell.ALIGN_CENTER));
                     items.addCell(bodyCell(safe(item.getPlantName()), normalFont, PdfPCell.ALIGN_LEFT));
-                    items.addCell(bodyCell(safe(item.getBatchNumber()), normalFont, PdfPCell.ALIGN_CENTER));
+                    items.addCell(bodyCell(safe(item.getBatchNumber()), normalFont, PdfPCell.ALIGN_LEFT));
                     items.addCell(bodyCell(safe(item.getBatchAgeLabel()), normalFont, PdfPCell.ALIGN_CENTER));
-                    items.addCell(bodyCell(safe(item.getBatchCategoryLabel()), normalFont, PdfPCell.ALIGN_CENTER));
+                    items.addCell(bodyCell(safe(item.getBatchCategoryLabel()), normalFont, PdfPCell.ALIGN_LEFT));
                     items.addCell(bodyCell(String.valueOf(item.getQty()), normalFont, PdfPCell.ALIGN_CENTER));
                 }
             }
 
+            PdfPCell summaryLp = new PdfPCell(new Phrase("", normalFont));
+            summaryLp.setBorderColor(GRID_COLOR);
+            summaryLp.setPadding(7f);
+            items.addCell(summaryLp);
+
             PdfPCell summaryLabel = new PdfPCell(new Phrase("Suma:", boxHeaderFont));
-            summaryLabel.setColspan(5);
+            summaryLabel.setColspan(4);
             summaryLabel.setPadding(7f);
             summaryLabel.setBackgroundColor(STRIP_COLOR);
             summaryLabel.setBorderColor(GRID_COLOR);
-            summaryLabel.setHorizontalAlignment(PdfPCell.ALIGN_CENTER);
+            summaryLabel.setHorizontalAlignment(PdfPCell.ALIGN_LEFT);
             items.addCell(summaryLabel);
 
             PdfPCell summaryValue = new PdfPCell(new Phrase(String.valueOf(preview.getTotalQty()), normalFont));
@@ -201,18 +195,18 @@ public class DocumentPdfService {
         return paragraph;
     }
 
-    private Font createUnicodeFont(float size, java.awt.Color color, boolean bold) {
+    private Font createUnicodeFont(float size, java.awt.Color color) {
         try {
-            String fontPath = resolveFontPath(bold ? BOLD_FONT_CANDIDATES : REGULAR_FONT_CANDIDATES);
+            String fontPath = resolveFontPath(REGULAR_FONT_CANDIDATES);
             BaseFont baseFont;
             if (fontPath != null) {
                 baseFont = BaseFont.createFont(fontPath, BaseFont.IDENTITY_H, BaseFont.EMBEDDED);
             } else {
                 baseFont = BaseFont.createFont(BaseFont.HELVETICA, BaseFont.CP1250, BaseFont.NOT_EMBEDDED);
             }
-            return new Font(baseFont, size, bold ? Font.BOLD : Font.NORMAL, color);
+            return new Font(baseFont, size, Font.NORMAL, color);
         } catch (Exception ignored) {
-            return new Font(Font.HELVETICA, size, bold ? Font.BOLD : Font.NORMAL, color);
+            return new Font(Font.HELVETICA, size, Font.NORMAL, color);
         }
     }
 
@@ -233,12 +227,12 @@ public class DocumentPdfService {
         PdfPCell cell = new PdfPCell();
         cell.setBorder(Rectangle.NO_BORDER);
         cell.setPadding(0f);
-        cell.setMinimumHeight(42f);
+        cell.setFixedHeight(82f);
         return cell;
     }
 
     private PdfPCell buildTopMetaCell(DocumentPreviewDTO preview, Font labelFont, Font valueFont) {
-        PdfPTable meta = new PdfPTable(new float[]{1.35f, 1.05f});
+        PdfPTable meta = new PdfPTable(new float[]{1.6f, 1f});
         meta.setWidthPercentage(100);
         addMetaStrip(meta, "Miejsce wystawienia:", blankToDash(preview.getIssuePlaceLabel()), labelFont, valueFont);
         addMetaStrip(meta, "Data wystawienia:", blankToDash(preview.getIssueDateLabel()), labelFont, valueFont);
@@ -246,15 +240,12 @@ public class DocumentPdfService {
         PdfPCell wrapper = new PdfPCell(meta);
         wrapper.setBorder(Rectangle.NO_BORDER);
         wrapper.setPadding(0f);
-        wrapper.setVerticalAlignment(PdfPCell.ALIGN_TOP);
         return wrapper;
     }
 
     private void addMetaStrip(PdfPTable table, String label, String value, Font labelFont, Font valueFont) {
         PdfPCell labelCell = new PdfPCell(new Phrase(label, labelFont));
         labelCell.setPadding(6f);
-        labelCell.setFixedHeight(22f);
-        labelCell.setNoWrap(true);
         labelCell.setBackgroundColor(STRIP_COLOR);
         labelCell.setBorderColor(GRID_COLOR);
         labelCell.setHorizontalAlignment(PdfPCell.ALIGN_LEFT);
@@ -262,8 +253,6 @@ public class DocumentPdfService {
 
         PdfPCell valueCell = new PdfPCell(new Phrase(value, valueFont));
         valueCell.setPadding(6f);
-        valueCell.setFixedHeight(22f);
-        valueCell.setNoWrap(true);
         valueCell.setBorderColor(GRID_COLOR);
         valueCell.setHorizontalAlignment(PdfPCell.ALIGN_RIGHT);
         table.addCell(valueCell);
@@ -276,7 +265,6 @@ public class DocumentPdfService {
             String line3,
             String phytosanitaryNumber,
             Font sectionFont,
-            Font partyNameFont,
             Font normalFont
     ) {
         PdfPTable content = new PdfPTable(1);
@@ -291,29 +279,17 @@ public class DocumentPdfService {
 
         PdfPCell body = new PdfPCell();
         body.setBorderColor(GRID_COLOR);
-        body.setPaddingTop(10f);
-        body.setPaddingRight(10f);
-        body.setPaddingBottom(10f);
-        body.setPaddingLeft(10f);
-        body.addElement(spacedParagraph(blankToDash(line1), partyNameFont, 6f));
-        body.addElement(spacedParagraph(blankToDash(line2), normalFont, 3f));
-        body.addElement(spacedParagraph(blankToDash(line3), normalFont, 6f));
-        body.addElement(spacedParagraph("Nr fitosanitarny: " + blankToDash(phytosanitaryNumber), normalFont, 0f));
+        body.setPadding(8f);
+        body.addElement(new Paragraph(blankToDash(line1), normalFont));
+        body.addElement(new Paragraph(blankToDash(line2), normalFont));
+        body.addElement(new Paragraph(blankToDash(line3), normalFont));
+        body.addElement(new Paragraph("Nr fitosanitarny: " + blankToDash(phytosanitaryNumber), normalFont));
         content.addCell(body);
 
         PdfPCell wrapper = new PdfPCell(content);
         wrapper.setBorder(Rectangle.NO_BORDER);
         wrapper.setPadding(0f);
-        wrapper.setVerticalAlignment(PdfPCell.ALIGN_TOP);
         return wrapper;
-    }
-
-
-    private Paragraph spacedParagraph(String text, Font font, float spacingAfter) {
-        Paragraph paragraph = new Paragraph(text, font);
-        paragraph.setSpacingAfter(spacingAfter);
-        paragraph.setLeading(11.5f);
-        return paragraph;
     }
 
     private void addHeader(PdfPTable table, String text, Font font) {
@@ -361,7 +337,6 @@ public class DocumentPdfService {
         PdfPCell wrapper = new PdfPCell(box);
         wrapper.setBorder(Rectangle.NO_BORDER);
         wrapper.setPadding(0f);
-        wrapper.setVerticalAlignment(PdfPCell.ALIGN_TOP);
         return wrapper;
     }
 
