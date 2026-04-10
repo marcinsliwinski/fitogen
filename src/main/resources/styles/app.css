@@ -316,7 +316,7 @@
 }
 
 .preview-subtitle {
-    -fx-font-size: 16px;
+    -fx-font-size: 15px;
     -fx-font-weight: 700;
     -fx-text-fill: #24303f;
 }
@@ -546,4 +546,51 @@
 .preview-signature-body {
     -fx-padding: 12 12 12 12;
     -fx-min-height: 108;
+}
+
+
+.preview-logo-placeholder {
+    -fx-background-color: transparent;
+    -fx-border-color: #d8dde3;
+    -fx-border-style: segments(8, 6);
+    -fx-border-radius: 4;
+}
+
+.preview-authority-box {
+    -fx-padding: 2 0 6 0;
+    -fx-alignment: CENTER_LEFT;
+}
+
+.preview-authority-line {
+    -fx-font-size: 12px;
+    -fx-text-fill: #111827;
+    -fx-alignment: CENTER_LEFT;
+}
+
+.invoice-table .table-cell {
+    -fx-alignment: CENTER_LEFT;
+    -fx-padding: 6 8 6 8;
+    -fx-font-size: 12px;
+}
+
+.preview-summary-row {
+    -fx-background-color: #f5f6f7;
+    -fx-font-weight: 700;
+}
+
+.preview-summary-row .table-cell {
+    -fx-border-color: transparent transparent #4b5563 transparent;
+    -fx-font-weight: 700;
+}
+
+.preview-document-footer {
+
+    -fx-font-size: 10px;
+    -fx-text-fill: #667085;
+    -fx-alignment: CENTER;
+    -fx-padding: 4 0 0 0;
+}
+
+.preview-summary-text-cell {
+    -fx-alignment: CENTER;
 }

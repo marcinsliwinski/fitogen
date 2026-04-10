@@ -17,6 +17,8 @@ import com.egen.fitogen.repository.ContrahentRepository;
 import com.egen.fitogen.repository.PlantBatchRepository;
 import com.egen.fitogen.repository.PlantRepository;
 
+import java.time.LocalDate;
+import java.time.Period;
 import java.time.format.DateTimeFormatter;
 
 public class DocumentRenderService {
@@ -120,6 +122,7 @@ public class DocumentRenderService {
     private void fillItems(DocumentPreviewDTO preview, DocumentDTO document) {
         int lp = 1;
         int totalQty = 0;
+        LocalDate referenceDate = document.getIssueDate() != null ? document.getIssueDate() : LocalDate.now();
 
         if (document.getItems() == null) {
             preview.setTotalQty(0);
@@ -134,6 +137,8 @@ public class DocumentRenderService {
             previewItem.setLp(lp++);
             previewItem.setPlantName(plant != null ? safe(plant.toString()) : "");
             previewItem.setBatchNumber(batch != null ? resolveBatchNumber(batch) : "");
+            previewItem.setBatchAgeLabel(batch != null ? resolveBatchAgeLabel(batch, referenceDate) : "");
+            previewItem.setBatchCategoryLabel(batch != null ? safe(batch.getFitoQualificationCategory()) : "");
             previewItem.setQty(item.getQty());
             previewItem.setPassportLabel(item.isPassportRequired() ? "Tak" : "Nie");
 
@@ -142,6 +147,54 @@ public class DocumentRenderService {
         }
 
         preview.setTotalQty(totalQty);
+    }
+
+    private String resolveBatchAgeLabel(PlantBatch batch, LocalDate referenceDate) {
+        if (batch == null) {
+            return "";
+        }
+
+        String explicitAge = normalizeBatchAgeLabel(safe(batch.getAge()));
+        if (!explicitAge.isBlank()) {
+            return explicitAge;
+        }
+
+        return buildBatchAgeLabel(batch, referenceDate);
+    }
+
+    private String buildBatchAgeLabel(PlantBatch batch, LocalDate referenceDate) {
+        if (batch == null || batch.getCreationDate() == null) {
+            return "";
+        }
+
+        LocalDate batchDate = batch.getCreationDate();
+        if (referenceDate == null) {
+            referenceDate = LocalDate.now();
+        }
+        if (referenceDate.isBefore(batchDate)) {
+            return "0";
+        }
+
+        Period period = Period.between(batchDate, referenceDate);
+        if (period.getYears() > 0) {
+            if (period.getMonths() > 0) {
+                return period.getYears() + " l " + period.getMonths() + " mies.";
+            }
+            return period.getYears() + " l";
+        }
+        if (period.getMonths() > 0) {
+            return period.getMonths() + " mies.";
+        }
+
+        return String.valueOf(Math.max(0, period.getDays()));
+    }
+
+    private String normalizeBatchAgeLabel(String value) {
+        String safeValue = safe(value);
+        if (safeValue.isBlank()) {
+            return "";
+        }
+        return safeValue.replaceFirst("(?iu)\\s*dni$", "").trim();
     }
 
     private String resolveBatchNumber(PlantBatch batch) {

@@ -51,6 +51,7 @@ public class PlantBatchFormController {
     @FXML private TextField exteriorBatchNoField;
     @FXML private TextField qtyField;
     @FXML private DatePicker creationDatePicker;
+    @FXML private TextField ageField;
     @FXML private TextField manufacturerCountryCodeField;
     @FXML private TextField fitoQualificationCategoryField;
     @FXML private TextField eppoCodeField;
@@ -167,6 +168,7 @@ public class PlantBatchFormController {
         exteriorBatchNoField.setText(plantBatch.getExteriorBatchNo());
         qtyField.setText(String.valueOf(plantBatch.getQty()));
         creationDatePicker.setValue(plantBatch.getCreationDate());
+        ageField.setText(plantBatch.getAge());
         manufacturerCountryCodeField.setText(plantBatch.getManufacturerCountryCode());
         fitoQualificationCategoryField.setText(plantBatch.getFitoQualificationCategory());
         eppoCodeField.setText(plantBatch.getEppoCode());
@@ -568,6 +570,7 @@ public class PlantBatchFormController {
 
     private void configureInputPresentation() {
         installTrimSupport(exteriorBatchNoField);
+        installTrimSupport(ageField);
         installTrimSupport(fitoQualificationCategoryField);
         installTrimSupport(commentsArea);
         installUppercaseSupport(manufacturerCountryCodeField);
@@ -589,6 +592,7 @@ public class PlantBatchFormController {
         setTooltip(exteriorBatchNoField, "Pole opcjonalne. Uzupełnij numer partii od dostawcy, jeśli został nadany zewnętrznie.");
         setTooltip(qtyField, "Pole wymagane. Wpisz ilość jako liczbę całkowitą większą od zera.");
         setTooltip(creationDatePicker, "Data utworzenia partii wpływa na numerację i historię zmian.");
+        setTooltip(ageField, "Pole opcjonalne. Możesz wpisać wiek partii, np. 2 lata, 18 mies. lub 1 rok.");
         setTooltip(manufacturerCountryCodeField, "Wpisz kod kraju pochodzenia, np. PL. Pole jest automatycznie uzupełniane dla partii wewnętrznych i zapisywane wielkimi literami.");
         setTooltip(fitoQualificationCategoryField, "Pole opcjonalne. Uzupełnij kategorię kwalifikacji, jeśli jest wymagana dla danej partii.");
         setTooltip(eppoCodeField, "Kod EPPO może zostać zasugerowany na podstawie wybranej rośliny i słowników EPPO.");
@@ -734,6 +738,7 @@ public class PlantBatchFormController {
         batch.setExteriorBatchNo(normalizeSpaces(exteriorBatchNoField.getText()));
         batch.setQty(Integer.parseInt(qtyField.getText().trim()));
         batch.setCreationDate(creationDatePicker.getValue());
+        batch.setAge(normalizeSpaces(ageField.getText()));
         batch.setManufacturerCountryCode(normalizeUppercase(manufacturerCountryCodeField.getText()));
         batch.setFitoQualificationCategory(normalizeSpaces(fitoQualificationCategoryField.getText()));
         batch.setEppoCode(normalizeUppercase(eppoCodeField.getText()));
@@ -771,6 +776,7 @@ public class PlantBatchFormController {
         setDisableIfPresent(exteriorBatchNoField, disabled);
         setDisableIfPresent(qtyField, disabled);
         setDisableIfPresent(creationDatePicker, disabled);
+        setDisableIfPresent(ageField, disabled);
         setDisableIfPresent(manufacturerCountryCodeField, disabled);
         setDisableIfPresent(fitoQualificationCategoryField, disabled);
         setDisableIfPresent(eppoCodeField, disabled);
@@ -837,6 +843,7 @@ public class PlantBatchFormController {
                 safeUpper(exteriorBatchNoField == null ? null : exteriorBatchNoField.getText()),
                 safeUpper(qtyField == null ? null : qtyField.getText()),
                 String.valueOf(creationDatePicker == null ? null : creationDatePicker.getValue()),
+                safeUpper(ageField == null ? null : ageField.getText()),
                 safeUpper(manufacturerCountryCodeField == null ? null : manufacturerCountryCodeField.getText()),
                 safeUpper(fitoQualificationCategoryField == null ? null : fitoQualificationCategoryField.getText()),
                 safeUpper(eppoCodeField == null ? null : eppoCodeField.getText()),

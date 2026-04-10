@@ -103,9 +103,9 @@ public class SqlitePlantBatchRepository
         String sql = """
                 INSERT INTO plant_batches
                 (interior_batch_no, exterior_batch_no, plant_id, qty, creation_date,
-                 manufacturer_country_code, fito_qualification_category,
+                 age, manufacturer_country_code, fito_qualification_category,
                  eppo_code, zp_zone, contrahent_id, is_internal_source, comments, status)
-                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
                 """;
 
         Connection conn = null;
@@ -120,14 +120,15 @@ public class SqlitePlantBatchRepository
             stmt.setInt(3, batch.getPlantId());
             stmt.setInt(4, batch.getQty());
             stmt.setString(5, batch.getCreationDate() != null ? batch.getCreationDate().toString() : null);
-            stmt.setString(6, batch.getManufacturerCountryCode());
-            stmt.setString(7, batch.getFitoQualificationCategory());
-            stmt.setString(8, batch.getEppoCode());
-            stmt.setString(9, batch.getZpZone());
-            stmt.setInt(10, batch.getContrahentId());
-            stmt.setInt(11, batch.isInternalSource() ? 1 : 0);
-            stmt.setString(12, batch.getComments());
-            stmt.setString(13, resolveStatus(batch).name());
+            stmt.setString(6, batch.getAge());
+            stmt.setString(7, batch.getManufacturerCountryCode());
+            stmt.setString(8, batch.getFitoQualificationCategory());
+            stmt.setString(9, batch.getEppoCode());
+            stmt.setString(10, batch.getZpZone());
+            stmt.setInt(11, batch.getContrahentId());
+            stmt.setInt(12, batch.isInternalSource() ? 1 : 0);
+            stmt.setString(13, batch.getComments());
+            stmt.setString(14, resolveStatus(batch).name());
 
             executeUpdate(stmt);
 
@@ -143,7 +144,7 @@ public class SqlitePlantBatchRepository
         String sql = """
                 UPDATE plant_batches
                 SET interior_batch_no=?, exterior_batch_no=?, plant_id=?, qty=?, creation_date=?,
-                    manufacturer_country_code=?, fito_qualification_category=?, eppo_code=?,
+                    age=?, manufacturer_country_code=?, fito_qualification_category=?, eppo_code=?,
                     zp_zone=?, contrahent_id=?, is_internal_source=?, comments=?, status=?
                 WHERE id=?
                 """;
@@ -160,15 +161,16 @@ public class SqlitePlantBatchRepository
             stmt.setInt(3, batch.getPlantId());
             stmt.setInt(4, batch.getQty());
             stmt.setString(5, batch.getCreationDate() != null ? batch.getCreationDate().toString() : null);
-            stmt.setString(6, batch.getManufacturerCountryCode());
-            stmt.setString(7, batch.getFitoQualificationCategory());
-            stmt.setString(8, batch.getEppoCode());
-            stmt.setString(9, batch.getZpZone());
-            stmt.setInt(10, batch.getContrahentId());
-            stmt.setInt(11, batch.isInternalSource() ? 1 : 0);
-            stmt.setString(12, batch.getComments());
-            stmt.setString(13, resolveStatus(batch).name());
-            stmt.setInt(14, batch.getId());
+            stmt.setString(6, batch.getAge());
+            stmt.setString(7, batch.getManufacturerCountryCode());
+            stmt.setString(8, batch.getFitoQualificationCategory());
+            stmt.setString(9, batch.getEppoCode());
+            stmt.setString(10, batch.getZpZone());
+            stmt.setInt(11, batch.getContrahentId());
+            stmt.setInt(12, batch.isInternalSource() ? 1 : 0);
+            stmt.setString(13, batch.getComments());
+            stmt.setString(14, resolveStatus(batch).name());
+            stmt.setInt(15, batch.getId());
 
             executeUpdate(stmt);
 
@@ -213,6 +215,7 @@ public class SqlitePlantBatchRepository
         batch.setPlantId(rs.getInt("plant_id"));
         batch.setQty(rs.getInt("qty"));
         batch.setCreationDate(parseCreationDate(rs.getString("creation_date")));
+        batch.setAge(rs.getString("age"));
         batch.setManufacturerCountryCode(rs.getString("manufacturer_country_code"));
         batch.setFitoQualificationCategory(rs.getString("fito_qualification_category"));
         batch.setEppoCode(rs.getString("eppo_code"));
