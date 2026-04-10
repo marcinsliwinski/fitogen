@@ -198,8 +198,8 @@ public class DashboardController {
         ModalViewUtil.openModal(
                 "/view/document_preview.fxml",
                 "Podgląd dokumentu",
+                1120, 900,
                 980, 760,
-                920, 700,
                 (DocumentPreviewController controller) -> controller.setDocumentId(document.getId())
         );
         refreshDashboard();

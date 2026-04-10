@@ -18,6 +18,9 @@ import java.io.FileOutputStream;
 
 public class DocumentPdfService {
 
+    private static final java.awt.Color GRID_COLOR = new java.awt.Color(85, 95, 105);
+    private static final java.awt.Color STRIP_COLOR = new java.awt.Color(217, 217, 217);
+
     public void export(DocumentPreviewDTO preview, File outputFile) {
         if (preview == null) {
             throw new IllegalArgumentException("Brak danych dokumentu do eksportu PDF.");
@@ -26,115 +29,134 @@ public class DocumentPdfService {
             throw new IllegalArgumentException("Nie wybrano pliku PDF.");
         }
 
-        Document pdf = new Document(PageSize.A4, 42, 42, 36, 36);
+        Document pdf = new Document(PageSize.A4, 40, 40, 32, 32);
         FileOutputStream out = null;
         try {
             out = new FileOutputStream(outputFile);
             PdfWriter.getInstance(pdf, out);
             pdf.open();
 
-            Font brandFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 11);
-            Font titleFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 16);
-            Font numberFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 11);
-            Font sectionFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 10);
-            Font labelFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 9);
-            Font normalFont = FontFactory.getFont(FontFactory.HELVETICA, 9);
+            Font issuerFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 12);
+            Font titleFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 17);
+            Font numberFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 13);
+            Font copyFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 12);
+            Font boxHeaderFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 10);
+            Font normalFont = FontFactory.getFont(FontFactory.HELVETICA, 10);
             Font smallFont = FontFactory.getFont(FontFactory.HELVETICA, 8);
-            Font cancelledFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 10);
+            Font cancelledFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 11);
 
-            Paragraph brand = new Paragraph("Fito Gen Essentials", brandFont);
-            brand.setSpacingAfter(4);
-            pdf.add(brand);
+            PdfPTable top = new PdfPTable(new float[]{1.25f, 0.95f});
+            top.setWidthPercentage(100);
+            top.setSpacingAfter(10);
+            top.addCell(buildTopIssuerCell(preview, issuerFont, normalFont));
+            top.addCell(buildTopMetaCell(preview, boxHeaderFont, normalFont));
+            pdf.add(top);
 
             Paragraph subtitle = new Paragraph(buildSummary(preview), smallFont);
-            subtitle.setSpacingAfter(12);
+            subtitle.setSpacingAfter(10);
             pdf.add(subtitle);
-
-            PdfPTable titleTable = new PdfPTable(new float[]{1.6f, 1f});
-            titleTable.setWidthPercentage(100);
-            titleTable.setSpacingAfter(10);
-            titleTable.addCell(borderlessCell(new Paragraph(safe(preview.getDocumentType()), titleFont), 0, 0, 8, 0));
-            titleTable.addCell(borderlessCell(new Paragraph(buildDocumentNumberTitle(preview), numberFont), 0, 0, 8, 0, PdfPCell.ALIGN_RIGHT));
-            pdf.add(titleTable);
-
-            if (preview.isCancelled()) {
-                Paragraph cancelled = new Paragraph("ANULOWANY", cancelledFont);
-                cancelled.setSpacingAfter(8);
-                pdf.add(cancelled);
-            }
-
-            PdfPTable meta = new PdfPTable(new float[]{1f, 1.2f, 1f, 1.2f});
-            meta.setWidthPercentage(100);
-            meta.setSpacingAfter(12);
-            addMetaRow(meta, "Status", safe(preview.getStatusLabel()), labelFont, normalFont);
-            addMetaRow(meta, "Data wystawienia", safe(preview.getIssueDateLabel()), labelFont, normalFont);
-            addMetaRow(meta, "Utworzył", safe(preview.getCreatedBy()), labelFont, normalFont);
-            addMetaRow(meta, "Łączna ilość", String.valueOf(preview.getTotalQty()), labelFont, normalFont);
-            pdf.add(meta);
 
             PdfPTable parties = new PdfPTable(new float[]{1f, 1f});
             parties.setWidthPercentage(100);
             parties.setSpacingAfter(12);
             parties.addCell(partyCell(
-                    "Wystawca",
+                    "Wystawca:",
                     preview.getIssuerName(),
                     preview.getIssuerAddressLine1(),
                     preview.getIssuerAddressLine2(),
                     preview.getIssuerPhytosanitaryNumber(),
-                    sectionFont,
+                    boxHeaderFont,
                     normalFont
             ));
             parties.addCell(partyCell(
-                    "Odbiorca",
+                    "Nabywca:",
                     preview.getCustomerName(),
                     preview.getCustomerAddressLine1(),
                     preview.getCustomerAddressLine2(),
                     preview.getCustomerPhytosanitaryNumber(),
-                    sectionFont,
+                    boxHeaderFont,
                     normalFont
             ));
             pdf.add(parties);
 
-            PdfPTable items = new PdfPTable(new float[]{0.6f, 3.7f, 2.2f, 0.9f, 1.2f});
+            PdfPTable heading = new PdfPTable(new float[]{1f, 1.4f, 1f});
+            heading.setWidthPercentage(100);
+            heading.setSpacingAfter(12);
+            heading.addCell(borderlessCell(new Phrase("", normalFont), PdfPCell.ALIGN_LEFT));
+            heading.addCell(borderlessCell(new Phrase(buildDocumentTitle(preview), titleFont), PdfPCell.ALIGN_CENTER));
+            heading.addCell(borderlessCell(new Phrase("ORYGINAŁ    KOPIA", copyFont), PdfPCell.ALIGN_RIGHT));
+            pdf.add(heading);
+
+            Paragraph number = new Paragraph(buildDocumentNumberTitle(preview), numberFont);
+            number.setAlignment(Paragraph.ALIGN_CENTER);
+            number.setSpacingAfter(10);
+            pdf.add(number);
+
+            if (preview.isCancelled()) {
+                Paragraph cancelled = new Paragraph("ANULOWANY", cancelledFont);
+                cancelled.setAlignment(Paragraph.ALIGN_CENTER);
+                cancelled.setSpacingAfter(10);
+                pdf.add(cancelled);
+            }
+
+            PdfPTable items = new PdfPTable(new float[]{0.55f, 3.5f, 2.1f, 0.85f, 1.15f});
             items.setWidthPercentage(100);
             items.setSpacingAfter(10);
-            addHeader(items, "Lp", labelFont);
-            addHeader(items, "Roślina", labelFont);
-            addHeader(items, "Partia", labelFont);
-            addHeader(items, "Ilość", labelFont);
-            addHeader(items, "Paszport", labelFont);
-
-            for (DocumentPreviewItemDTO item : preview.getItems()) {
-                items.addCell(bodyCell(String.valueOf(item.getLp()), normalFont, PdfPCell.ALIGN_CENTER));
-                items.addCell(bodyCell(safe(item.getPlantName()), normalFont, PdfPCell.ALIGN_LEFT));
-                items.addCell(bodyCell(safe(item.getBatchNumber()), normalFont, PdfPCell.ALIGN_LEFT));
-                items.addCell(bodyCell(String.valueOf(item.getQty()), normalFont, PdfPCell.ALIGN_CENTER));
-                items.addCell(bodyCell(safe(item.getPassportLabel()), normalFont, PdfPCell.ALIGN_CENTER));
-            }
+            addHeader(items, "Lp", boxHeaderFont);
+            addHeader(items, "Nazwa", boxHeaderFont);
+            addHeader(items, "Partia", boxHeaderFont);
+            addHeader(items, "Ilość", boxHeaderFont);
+            addHeader(items, "Paszport", boxHeaderFont);
 
             if (preview.getItems() == null || preview.getItems().isEmpty()) {
                 PdfPCell empty = new PdfPCell(new Phrase("Brak pozycji dokumentu.", normalFont));
                 empty.setColspan(5);
                 empty.setPadding(8);
+                empty.setBorderColor(GRID_COLOR);
                 items.addCell(empty);
+            } else {
+                for (DocumentPreviewItemDTO item : preview.getItems()) {
+                    items.addCell(bodyCell(String.valueOf(item.getLp()), normalFont, PdfPCell.ALIGN_CENTER));
+                    items.addCell(bodyCell(safe(item.getPlantName()), normalFont, PdfPCell.ALIGN_LEFT));
+                    items.addCell(bodyCell(safe(item.getBatchNumber()), normalFont, PdfPCell.ALIGN_LEFT));
+                    items.addCell(bodyCell(String.valueOf(item.getQty()), normalFont, PdfPCell.ALIGN_CENTER));
+                    items.addCell(bodyCell(safe(item.getPassportLabel()), normalFont, PdfPCell.ALIGN_CENTER));
+                }
             }
             pdf.add(items);
 
-            if (!safe(preview.getComments()).isBlank()) {
-                Paragraph commentsTitle = new Paragraph("Uwagi", sectionFont);
-                commentsTitle.setSpacingAfter(4);
-                pdf.add(commentsTitle);
+            PdfPTable totalsWrapper = new PdfPTable(new float[]{1.2f, 1f});
+            totalsWrapper.setWidthPercentage(100);
+            totalsWrapper.setSpacingAfter(10);
+            totalsWrapper.addCell(borderlessCell(new Phrase("", normalFont), PdfPCell.ALIGN_LEFT));
+            totalsWrapper.addCell(buildTotalsCell(preview, boxHeaderFont, normalFont));
+            pdf.add(totalsWrapper);
 
-                Paragraph comments = new Paragraph(preview.getComments(), normalFont);
+            if (!safe(preview.getComments()).isBlank()) {
+                Paragraph comments = new Paragraph("Uwagi: " + preview.getComments(), normalFont);
                 comments.setSpacingAfter(12);
                 pdf.add(comments);
             }
 
             PdfPTable signatures = new PdfPTable(new float[]{1f, 1f});
             signatures.setWidthPercentage(100);
-            signatures.setSpacingBefore(14);
-            signatures.addCell(signatureCell("Podpis wystawcy", smallFont));
-            signatures.addCell(signatureCell("Podpis odbiorcy", smallFont));
+            signatures.setSpacingBefore(8);
+            signatures.addCell(signatureCell(
+                    "Odebrał:",
+                    "",
+                    "Podpis osoby upoważnionej do odbioru dokumentu",
+                    boxHeaderFont,
+                    normalFont,
+                    smallFont
+            ));
+            signatures.addCell(signatureCell(
+                    "Wystawił:",
+                    blankToDash(preview.getCreatedBy()),
+                    "Podpis osoby upoważnionej do wystawienia dokumentu",
+                    boxHeaderFont,
+                    normalFont,
+                    smallFont
+            ));
             pdf.add(signatures);
 
         } catch (Exception e) {
@@ -152,25 +174,44 @@ public class DocumentPdfService {
         }
     }
 
-    private void addMetaRow(PdfPTable table, String leftLabel, String leftValue, Font labelFont, Font valueFont) {
-        table.addCell(metaCell(leftLabel, labelFont));
-        table.addCell(metaValueCell(leftValue, valueFont));
-    }
-
-    private PdfPCell metaCell(String text, Font font) {
-        PdfPCell cell = new PdfPCell(new Phrase(text, font));
-        cell.setPadding(6);
-        cell.setBorderWidth(0.8f);
-        cell.setBorderColor(new java.awt.Color(220, 226, 232));
+    private PdfPCell buildTopIssuerCell(DocumentPreviewDTO preview, Font issuerFont, Font normalFont) {
+        PdfPCell cell = new PdfPCell();
+        cell.setBorder(Rectangle.NO_BORDER);
+        cell.setPadding(0);
+        cell.addElement(new Paragraph(blankToDash(preview.getIssuerName()), issuerFont));
+        cell.addElement(new Paragraph(blankToDash(preview.getIssuerAddressLine1()), normalFont));
+        cell.addElement(new Paragraph(blankToDash(preview.getIssuerAddressLine2()), normalFont));
+        cell.addElement(new Paragraph("Nr fitosanitarny: " + blankToDash(preview.getIssuerPhytosanitaryNumber()), normalFont));
         return cell;
     }
 
-    private PdfPCell metaValueCell(String text, Font font) {
-        PdfPCell cell = new PdfPCell(new Phrase(blankToDash(text), font));
-        cell.setPadding(6);
-        cell.setBorderWidth(0.8f);
-        cell.setBorderColor(new java.awt.Color(220, 226, 232));
-        return cell;
+    private PdfPCell buildTopMetaCell(DocumentPreviewDTO preview, Font labelFont, Font valueFont) {
+        PdfPTable meta = new PdfPTable(new float[]{1.6f, 1f});
+        meta.setWidthPercentage(100);
+        addMetaStrip(meta, "Miejsce wystawienia:", blankToDash(preview.getIssuePlaceLabel()), labelFont, valueFont);
+        addMetaStrip(meta, "Data wystawienia:", blankToDash(preview.getIssueDateLabel()), labelFont, valueFont);
+        addMetaStrip(meta, "Status:", blankToDash(preview.getStatusLabel()), labelFont, valueFont);
+        addMetaStrip(meta, "Łączna ilość:", preview.getTotalQty() + "", labelFont, valueFont);
+
+        PdfPCell wrapper = new PdfPCell(meta);
+        wrapper.setBorder(Rectangle.NO_BORDER);
+        wrapper.setPadding(0);
+        return wrapper;
+    }
+
+    private void addMetaStrip(PdfPTable table, String label, String value, Font labelFont, Font valueFont) {
+        PdfPCell labelCell = new PdfPCell(new Phrase(label, labelFont));
+        labelCell.setPadding(6);
+        labelCell.setBackgroundColor(STRIP_COLOR);
+        labelCell.setBorderColor(GRID_COLOR);
+        labelCell.setHorizontalAlignment(PdfPCell.ALIGN_LEFT);
+        table.addCell(labelCell);
+
+        PdfPCell valueCell = new PdfPCell(new Phrase(value, valueFont));
+        valueCell.setPadding(6);
+        valueCell.setBorderColor(GRID_COLOR);
+        valueCell.setHorizontalAlignment(PdfPCell.ALIGN_RIGHT);
+        table.addCell(valueCell);
     }
 
     private PdfPCell partyCell(
@@ -182,30 +223,64 @@ public class DocumentPdfService {
             Font sectionFont,
             Font normalFont
     ) {
-        PdfPCell cell = new PdfPCell();
-        cell.setPadding(8);
-        cell.setBorderWidth(0.8f);
-        cell.setBorderColor(new java.awt.Color(220, 226, 232));
-        cell.addElement(new Paragraph(section, sectionFont));
-        if (!safe(line1).isBlank()) {
-            cell.addElement(new Paragraph(line1, normalFont));
-        }
-        if (!safe(line2).isBlank()) {
-            cell.addElement(new Paragraph(line2, normalFont));
-        }
-        if (!safe(line3).isBlank()) {
-            cell.addElement(new Paragraph(line3, normalFont));
-        }
-        cell.addElement(new Paragraph("Nr fitosanitarny: " + blankToDash(phytosanitaryNumber), normalFont));
-        return cell;
+        PdfPTable content = new PdfPTable(1);
+        content.setWidthPercentage(100);
+
+        PdfPCell header = new PdfPCell(new Phrase(section, sectionFont));
+        header.setBackgroundColor(STRIP_COLOR);
+        header.setBorderColor(GRID_COLOR);
+        header.setHorizontalAlignment(PdfPCell.ALIGN_CENTER);
+        header.setPadding(6);
+        content.addCell(header);
+
+        PdfPCell body = new PdfPCell();
+        body.setBorderColor(GRID_COLOR);
+        body.setPadding(8);
+        body.addElement(new Paragraph(blankToDash(line1), normalFont));
+        body.addElement(new Paragraph(blankToDash(line2), normalFont));
+        body.addElement(new Paragraph(blankToDash(line3), normalFont));
+        body.addElement(new Paragraph("Nr fitosanitarny: " + blankToDash(phytosanitaryNumber), normalFont));
+        content.addCell(body);
+
+        PdfPCell wrapper = new PdfPCell(content);
+        wrapper.setBorder(Rectangle.NO_BORDER);
+        wrapper.setPadding(0);
+        return wrapper;
+    }
+
+    private PdfPCell buildTotalsCell(DocumentPreviewDTO preview, Font labelFont, Font valueFont) {
+        PdfPTable totals = new PdfPTable(new float[]{1.6f, 0.85f});
+        totals.setWidthPercentage(100);
+        addTotalRow(totals, "Liczba pozycji", String.valueOf(preview.getItems() == null ? 0 : preview.getItems().size()), labelFont, valueFont, false);
+        addTotalRow(totals, "Razem do wydania", preview.getTotalQty() + " szt.", labelFont, valueFont, true);
+
+        PdfPCell wrapper = new PdfPCell(totals);
+        wrapper.setBorder(Rectangle.NO_BORDER);
+        wrapper.setPadding(0);
+        return wrapper;
+    }
+
+    private void addTotalRow(PdfPTable totals, String label, String value, Font labelFont, Font valueFont, boolean strong) {
+        PdfPCell labelCell = new PdfPCell(new Phrase(label, labelFont));
+        labelCell.setBackgroundColor(STRIP_COLOR);
+        labelCell.setBorderColor(GRID_COLOR);
+        labelCell.setPadding(7);
+        totals.addCell(labelCell);
+
+        Font effectiveValueFont = strong ? FontFactory.getFont(FontFactory.HELVETICA_BOLD, valueFont.getSize()) : valueFont;
+        PdfPCell valueCell = new PdfPCell(new Phrase(value, effectiveValueFont));
+        valueCell.setBorderColor(GRID_COLOR);
+        valueCell.setHorizontalAlignment(PdfPCell.ALIGN_RIGHT);
+        valueCell.setPadding(7);
+        totals.addCell(valueCell);
     }
 
     private void addHeader(PdfPTable table, String text, Font font) {
         PdfPCell cell = new PdfPCell(new Phrase(text, font));
         cell.setPadding(6);
         cell.setHorizontalAlignment(PdfPCell.ALIGN_CENTER);
-        cell.setBorderWidth(0.8f);
-        cell.setBorderColor(new java.awt.Color(220, 226, 232));
+        cell.setBackgroundColor(STRIP_COLOR);
+        cell.setBorderColor(GRID_COLOR);
         table.addCell(cell);
     }
 
@@ -214,49 +289,73 @@ public class DocumentPdfService {
         cell.setPadding(6);
         cell.setHorizontalAlignment(alignment);
         cell.setVerticalAlignment(PdfPCell.ALIGN_MIDDLE);
-        cell.setBorderWidth(0.8f);
-        cell.setBorderColor(new java.awt.Color(220, 226, 232));
+        cell.setBorderColor(GRID_COLOR);
         return cell;
     }
 
-    private PdfPCell signatureCell(String label, Font font) {
-        PdfPCell cell = new PdfPCell(new Phrase(label, font));
-        cell.setFixedHeight(64f);
-        cell.setPaddingTop(42f);
-        cell.setHorizontalAlignment(PdfPCell.ALIGN_CENTER);
-        cell.setVerticalAlignment(PdfPCell.ALIGN_BOTTOM);
-        cell.setBorder(Rectangle.TOP);
-        cell.setBorderWidthTop(0.8f);
-        cell.setBorderColorTop(new java.awt.Color(130, 140, 150));
-        return cell;
+    private PdfPCell signatureCell(
+            String headerText,
+            String signerName,
+            String footerText,
+            Font headerFont,
+            Font signerFont,
+            Font footerFont
+    ) {
+        PdfPTable box = new PdfPTable(1);
+        box.setWidthPercentage(100);
+
+        PdfPCell header = new PdfPCell(new Phrase(headerText, headerFont));
+        header.setBackgroundColor(STRIP_COLOR);
+        header.setBorderColor(GRID_COLOR);
+        header.setHorizontalAlignment(PdfPCell.ALIGN_CENTER);
+        header.setPadding(6);
+        box.addCell(header);
+
+        PdfPCell body = new PdfPCell();
+        body.setBorderColor(GRID_COLOR);
+        body.setFixedHeight(86f);
+        body.setPaddingTop(28f);
+        body.setHorizontalAlignment(PdfPCell.ALIGN_CENTER);
+        body.setVerticalAlignment(PdfPCell.ALIGN_MIDDLE);
+        if (!safe(signerName).isBlank()) {
+            Paragraph signer = new Paragraph(signerName, signerFont);
+            signer.setAlignment(Paragraph.ALIGN_CENTER);
+            body.addElement(signer);
+        }
+        box.addCell(body);
+
+        PdfPCell footer = new PdfPCell(new Phrase(footerText, footerFont));
+        footer.setBorder(Rectangle.NO_BORDER);
+        footer.setHorizontalAlignment(PdfPCell.ALIGN_CENTER);
+        footer.setPaddingTop(6);
+        box.addCell(footer);
+
+        PdfPCell wrapper = new PdfPCell(box);
+        wrapper.setBorder(Rectangle.NO_BORDER);
+        wrapper.setPadding(0);
+        return wrapper;
     }
 
-    private PdfPCell borderlessCell(Paragraph paragraph, float paddingTop, float paddingRight, float paddingBottom, float paddingLeft) {
-        return borderlessCell(paragraph, paddingTop, paddingRight, paddingBottom, paddingLeft, PdfPCell.ALIGN_LEFT);
-    }
-
-    private PdfPCell borderlessCell(Paragraph paragraph, float paddingTop, float paddingRight, float paddingBottom, float paddingLeft, int alignment) {
-        PdfPCell cell = new PdfPCell();
+    private PdfPCell borderlessCell(Phrase phrase, int alignment) {
+        PdfPCell cell = new PdfPCell(phrase);
         cell.setBorder(Rectangle.NO_BORDER);
         cell.setHorizontalAlignment(alignment);
-        cell.setPaddingTop(paddingTop);
-        cell.setPaddingRight(paddingRight);
-        cell.setPaddingBottom(paddingBottom);
-        cell.setPaddingLeft(paddingLeft);
-        cell.addElement(paragraph);
+        cell.setPadding(0);
         return cell;
+    }
+
+    private String buildDocumentTitle(DocumentPreviewDTO preview) {
+        String type = safe(preview.getDocumentType());
+        return type.isBlank() ? "Dokument fitosanitarny" : type;
     }
 
     private String buildDocumentNumberTitle(DocumentPreviewDTO preview) {
         String number = safe(preview.getDocumentNumber());
-        if (number.isBlank()) {
-            return "Numer dokumentu: —";
-        }
-        return "Numer dokumentu: " + number;
+        return number.isBlank() ? "nr —" : "nr " + number;
     }
 
     private String buildSummary(DocumentPreviewDTO preview) {
-        return "Klient: " + blankToDash(preview.getCustomerName())
+        return "Podgląd przygotowany do druku i PDF • Miejsce wystawienia: " + blankToDash(preview.getIssuePlaceLabel())
                 + " • Data wystawienia: " + blankToDash(preview.getIssueDateLabel())
                 + " • Status: " + blankToDash(preview.getStatusLabel());
     }

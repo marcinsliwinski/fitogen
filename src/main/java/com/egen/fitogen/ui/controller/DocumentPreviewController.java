@@ -27,22 +27,29 @@ import java.io.File;
 
 public class DocumentPreviewController {
 
-    private static final double TABLE_ROW_HEIGHT = 36;
+    private static final double TABLE_ROW_HEIGHT = 38;
     private static final double TABLE_HEADER_HEIGHT = 34;
-    private static final double TABLE_MIN_HEIGHT = 180;
+    private static final double TABLE_MIN_HEIGHT = 160;
     private static final double TABLE_MAX_HEIGHT = 360;
 
     @FXML private VBox printableRoot;
     @FXML private Label documentTypeTitleLabel;
     @FXML private Label documentNumberTitleLabel;
+    @FXML private Label copyMarkerLabel;
     @FXML private Label previewSummaryLabel;
     @FXML private Label statusLabel;
     @FXML private Label issueDateLabel;
+    @FXML private Label issuePlaceLabel;
     @FXML private Label createdByLabel;
-    @FXML private Label totalQtyLabel;
+    @FXML private Label totalQtyMetaLabel;
+    @FXML private Label totalQtySummaryLabel;
+    @FXML private Label itemCountLabel;
     @FXML private Label issuerNameLabel;
     @FXML private Label issuerAddressLabel;
     @FXML private Label issuerPhytosanitaryNumberLabel;
+    @FXML private Label issuerPartyNameLabel;
+    @FXML private Label issuerPartyAddressLabel;
+    @FXML private Label issuerPartyPhytosanitaryNumberLabel;
     @FXML private Label customerNameLabel;
     @FXML private Label customerAddressLabel;
     @FXML private Label customerPhytosanitaryNumberLabel;
@@ -108,24 +115,35 @@ public class DocumentPreviewController {
     private void applyPreview(DocumentPreviewDTO preview) {
         currentPreview = preview;
 
-        documentTypeTitleLabel.setText(valueOrDash(preview.getDocumentType()));
+        String issuerAddress = joinPreviewLines(preview.getIssuerAddressLine1(), preview.getIssuerAddressLine2());
+        String customerAddress = joinPreviewLines(preview.getCustomerAddressLine1(), preview.getCustomerAddressLine2());
+        String totalQtyText = String.valueOf(preview.getTotalQty());
+
+        documentTypeTitleLabel.setText(buildDocumentTitle(preview));
         documentNumberTitleLabel.setText(buildDocumentNumberTitle(preview));
+        copyMarkerLabel.setText("ORYGINAŁ    KOPIA");
+        previewSummaryLabel.setText(buildPreviewSummary(preview));
         statusLabel.setText(valueOrDash(preview.getStatusLabel()));
         issueDateLabel.setText(valueOrDash(preview.getIssueDateLabel()));
+        issuePlaceLabel.setText(valueOrDash(preview.getIssuePlaceLabel()));
         createdByLabel.setText(valueOrDash(preview.getCreatedBy()));
-        totalQtyLabel.setText(String.valueOf(preview.getTotalQty()));
+        totalQtyMetaLabel.setText(totalQtyText);
+        totalQtySummaryLabel.setText(totalQtyText + " szt.");
+        itemCountLabel.setText(String.valueOf(preview.getItems() == null ? 0 : preview.getItems().size()));
         commentsLabel.setText(valueOrDash(preview.getComments()));
         commentsSection.setVisible(preview.getComments() != null && !preview.getComments().isBlank());
         cancelledBadge.setVisible(preview.isCancelled());
         itemsTable.setItems(FXCollections.observableArrayList(preview.getItems()));
         updateItemsTableHeight(preview);
 
-        previewSummaryLabel.setText(buildPreviewSummary(preview));
         issuerNameLabel.setText(valueOrDash(preview.getIssuerName()));
-        issuerAddressLabel.setText(joinPreviewLines(preview.getIssuerAddressLine1(), preview.getIssuerAddressLine2()));
+        issuerAddressLabel.setText(issuerAddress);
         issuerPhytosanitaryNumberLabel.setText(buildPhytosanitaryLabel(preview.getIssuerPhytosanitaryNumber()));
+        issuerPartyNameLabel.setText(valueOrDash(preview.getIssuerName()));
+        issuerPartyAddressLabel.setText(issuerAddress);
+        issuerPartyPhytosanitaryNumberLabel.setText(buildPhytosanitaryLabel(preview.getIssuerPhytosanitaryNumber()));
         customerNameLabel.setText(valueOrDash(preview.getCustomerName()));
-        customerAddressLabel.setText(joinPreviewLines(preview.getCustomerAddressLine1(), preview.getCustomerAddressLine2()));
+        customerAddressLabel.setText(customerAddress);
         customerPhytosanitaryNumberLabel.setText(buildPhytosanitaryLabel(preview.getCustomerPhytosanitaryNumber()));
         warningSummaryLabel.setText("Uwagi operacyjne do weryfikacji");
         warningArea.setText(buildOperationalWarningsText(preview));
@@ -221,21 +239,25 @@ public class DocumentPreviewController {
         }
     }
 
+    private String buildDocumentTitle(DocumentPreviewDTO preview) {
+        String type = safe(preview.getDocumentType());
+        return type.isBlank() ? "Dokument fitosanitarny" : type;
+    }
+
     private String buildDocumentNumberTitle(DocumentPreviewDTO preview) {
         String number = safe(preview.getDocumentNumber());
         if (number.isBlank()) {
-            return "Numer dokumentu: —";
+            return "nr —";
         }
-        return "Numer dokumentu: " + number;
+        return "nr " + number;
     }
 
     private String buildPreviewSummary(DocumentPreviewDTO preview) {
         StringBuilder builder = new StringBuilder();
-        builder.append("Klient: ").append(valueOrDash(preview.getCustomerName()));
-        builder.append(" • Data wystawienia: ").append(valueOrDash(preview.getIssueDateLabel()));
-        builder.append(" • Status: ").append(valueOrDash(preview.getStatusLabel()));
+        builder.append("Podgląd dokumentu przygotowany do druku i PDF.");
+        builder.append(" Miejsce wystawienia: ").append(valueOrDash(preview.getIssuePlaceLabel())).append('.');
         if (preview.isCancelled()) {
-            builder.append(" • Dokument anulowany");
+            builder.append(" Dokument jest anulowany.");
         }
         return builder.toString();
     }
@@ -272,7 +294,7 @@ public class DocumentPreviewController {
         if (preview.isCancelled()) {
             UiTextUtil.appendParagraph(builder, "Dokument został anulowany. Traktuj go wyłącznie jako zapis historyczny i nie używaj go do bieżącej obsługi operacyjnej.");
         } else {
-            UiTextUtil.appendParagraph(builder, "Układ wydruku i PDF odpowiada sekcji drukowalnej powyżej. Przed finalnym użyciem sprawdź tylko dane biznesowe.");
+            UiTextUtil.appendParagraph(builder, "Sekcja drukowalna powyżej jest teraz bliższa układowi arkuszowego wzoru. Przed finalnym użyciem sprawdź tylko dane biznesowe i komplet pozycji.");
         }
 
         UiTextUtil.appendLabelValue(builder, "Pozycje dokumentu", itemsCount);

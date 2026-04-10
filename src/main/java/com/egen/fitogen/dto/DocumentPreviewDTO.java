@@ -16,6 +16,7 @@ public class DocumentPreviewDTO {
 
     private LocalDate issueDate;
     private String issueDateLabel;
+    private String issuePlaceLabel;
     private String createdBy;
     private String comments;
 

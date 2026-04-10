@@ -80,6 +80,7 @@ public class DocumentRenderService {
     private void fillIssuer(DocumentPreviewDTO preview) {
         IssuerProfile issuer = appSettingsService.getIssuerProfile();
 
+        preview.setIssuePlaceLabel(safe(issuer.getCity()));
         preview.setIssuerName(safe(issuer.getNurseryName()));
         preview.setIssuerAddressLine1(safe(issuer.getStreet()));
         preview.setIssuerAddressLine2(joinWithSpace(

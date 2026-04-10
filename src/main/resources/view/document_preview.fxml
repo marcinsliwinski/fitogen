@@ -4,7 +4,6 @@
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ScrollPane?>
-<?import javafx.scene.control.Separator?>
 <?import javafx.scene.control.TableColumn?>
 <?import javafx.scene.control.TableView?>
 <?import javafx.scene.control.TextArea?>
@@ -31,87 +30,111 @@
         <ScrollPane fitToWidth="true" BorderPane.alignment="CENTER" styleClass="dashboard-scroll">
             <content>
                 <VBox spacing="18" alignment="TOP_CENTER" style="-fx-padding: 20 20 20 20;">
-                    <VBox fx:id="printableRoot" spacing="18" maxWidth="820" styleClass="preview-sheet preview-sheet-a4">
+                    <VBox fx:id="printableRoot" spacing="14" maxWidth="840" styleClass="preview-sheet preview-sheet-a4 preview-invoice-sheet">
                         <padding>
-                            <Insets top="28" right="30" bottom="28" left="30"/>
+                            <Insets top="24" right="24" bottom="24" left="24"/>
                         </padding>
 
-                        <HBox spacing="18" alignment="TOP_LEFT">
-                            <VBox spacing="6" HBox.hgrow="ALWAYS">
-                                <Label text="Fito Gen Essentials" styleClass="preview-brand"/>
-                                <Label text="Wizualizacja dokumentu do druku i PDF" styleClass="page-subtitle"/>
-                                <Label fx:id="previewSummaryLabel" wrapText="true" styleClass="page-subtitle"/>
-                            </VBox>
-                            <VBox spacing="6" alignment="TOP_RIGHT">
-                                <Label fx:id="documentTypeTitleLabel" styleClass="preview-document-type"/>
-                                <Label fx:id="documentNumberTitleLabel" styleClass="preview-document-number" wrapText="true"/>
-                            </VBox>
-                        </HBox>
-
-                        <Separator/>
-
-                        <GridPane hgap="16" vgap="10">
-                            <columnConstraints>
-                                <ColumnConstraints minWidth="140" prefWidth="160"/>
-                                <ColumnConstraints hgrow="ALWAYS"/>
-                                <ColumnConstraints minWidth="140" prefWidth="160"/>
-                                <ColumnConstraints hgrow="ALWAYS"/>
-                            </columnConstraints>
-
-                            <Label text="Status" GridPane.rowIndex="0" GridPane.columnIndex="0" styleClass="preview-meta-label"/>
-                            <Label fx:id="statusLabel" GridPane.rowIndex="0" GridPane.columnIndex="1" styleClass="preview-meta-value"/>
-                            <Label text="Data wystawienia" GridPane.rowIndex="0" GridPane.columnIndex="2" styleClass="preview-meta-label"/>
-                            <Label fx:id="issueDateLabel" GridPane.rowIndex="0" GridPane.columnIndex="3" styleClass="preview-meta-value"/>
-
-                            <Label text="Utworzył" GridPane.rowIndex="1" GridPane.columnIndex="0" styleClass="preview-meta-label"/>
-                            <Label fx:id="createdByLabel" GridPane.rowIndex="1" GridPane.columnIndex="1" styleClass="preview-meta-value"/>
-                            <Label text="Łączna ilość" GridPane.rowIndex="1" GridPane.columnIndex="2" styleClass="preview-meta-label"/>
-                            <Label fx:id="totalQtyLabel" GridPane.rowIndex="1" GridPane.columnIndex="3" styleClass="preview-meta-value"/>
-                        </GridPane>
-
-                        <HBox spacing="24">
-                            <VBox spacing="8" HBox.hgrow="ALWAYS" styleClass="preview-party-box">
-                                <Label text="Wystawca" styleClass="section-title"/>
-                                <Label fx:id="issuerNameLabel" styleClass="preview-subtitle"/>
+                        <HBox spacing="22" alignment="TOP_LEFT">
+                            <VBox spacing="4" HBox.hgrow="ALWAYS">
+                                <Label fx:id="issuerNameLabel" styleClass="preview-invoice-issuer"/>
                                 <Label fx:id="issuerAddressLabel" wrapText="true" styleClass="preview-value"/>
                                 <Label fx:id="issuerPhytosanitaryNumberLabel" wrapText="true" styleClass="preview-value"/>
                             </VBox>
-                            <VBox spacing="8" HBox.hgrow="ALWAYS" styleClass="preview-party-box">
-                                <Label text="Odbiorca" styleClass="section-title"/>
-                                <Label fx:id="customerNameLabel" styleClass="preview-subtitle"/>
-                                <Label fx:id="customerAddressLabel" wrapText="true" styleClass="preview-value"/>
-                                <Label fx:id="customerPhytosanitaryNumberLabel" wrapText="true" styleClass="preview-value"/>
+                            <VBox spacing="6" styleClass="preview-meta-panel" prefWidth="300">
+                                <GridPane hgap="0" vgap="0">
+                                    <columnConstraints>
+                                        <ColumnConstraints percentWidth="60"/>
+                                        <ColumnConstraints percentWidth="40"/>
+                                    </columnConstraints>
+
+                                    <Label text="Miejsce wystawienia:" GridPane.rowIndex="0" GridPane.columnIndex="0" styleClass="preview-meta-strip-label"/>
+                                    <Label fx:id="issuePlaceLabel" GridPane.rowIndex="0" GridPane.columnIndex="1" styleClass="preview-meta-strip-value"/>
+                                    <Label text="Data wystawienia:" GridPane.rowIndex="1" GridPane.columnIndex="0" styleClass="preview-meta-strip-label"/>
+                                    <Label fx:id="issueDateLabel" GridPane.rowIndex="1" GridPane.columnIndex="1" styleClass="preview-meta-strip-value"/>
+                                    <Label text="Status:" GridPane.rowIndex="2" GridPane.columnIndex="0" styleClass="preview-meta-strip-label"/>
+                                    <Label fx:id="statusLabel" GridPane.rowIndex="2" GridPane.columnIndex="1" styleClass="preview-meta-strip-value"/>
+                                    <Label text="Łączna ilość:" GridPane.rowIndex="3" GridPane.columnIndex="0" styleClass="preview-meta-strip-label"/>
+                                    <Label fx:id="totalQtyMetaLabel" GridPane.rowIndex="3" GridPane.columnIndex="1" styleClass="preview-meta-strip-value"/>
+                                </GridPane>
                             </VBox>
                         </HBox>
 
-                        <VBox spacing="8">
-                            <Label text="Pozycje dokumentu" styleClass="section-title"/>
-                            <TableView fx:id="itemsTable">
-                                <columns>
-                                    <TableColumn fx:id="colLp" text="Lp" maxWidth="50" prefWidth="50"/>
-                                    <TableColumn fx:id="colPlant" text="Roślina" prefWidth="300"/>
-                                    <TableColumn fx:id="colBatch" text="Partia" prefWidth="220"/>
-                                    <TableColumn fx:id="colQty" text="Ilość" prefWidth="90"/>
-                                    <TableColumn fx:id="colPassport" text="Paszport" prefWidth="120"/>
-                                </columns>
-                            </TableView>
-                        </VBox>
+                        <Label fx:id="previewSummaryLabel" wrapText="true" styleClass="page-subtitle"/>
 
-                        <VBox fx:id="commentsSection" spacing="8" visible="false">
-                            <Label text="Uwagi" styleClass="section-title"/>
+                        <HBox spacing="22">
+                            <VBox spacing="0" HBox.hgrow="ALWAYS" styleClass="preview-party-box preview-party-box-flat">
+                                <Label text="Wystawca:" styleClass="preview-box-header" maxWidth="1.7976931348623157E308"/>
+                                <VBox spacing="3" styleClass="preview-box-body">
+                                    <Label fx:id="issuerPartyNameLabel" styleClass="preview-subtitle"/>
+                                    <Label fx:id="issuerPartyAddressLabel" wrapText="true" styleClass="preview-value"/>
+                                    <Label fx:id="issuerPartyPhytosanitaryNumberLabel" wrapText="true" styleClass="preview-value"/>
+                                </VBox>
+                            </VBox>
+                            <VBox spacing="0" HBox.hgrow="ALWAYS" styleClass="preview-party-box preview-party-box-flat">
+                                <Label text="Nabywca:" styleClass="preview-box-header" maxWidth="1.7976931348623157E308"/>
+                                <VBox spacing="3" styleClass="preview-box-body">
+                                    <Label fx:id="customerNameLabel" styleClass="preview-subtitle"/>
+                                    <Label fx:id="customerAddressLabel" wrapText="true" styleClass="preview-value"/>
+                                    <Label fx:id="customerPhytosanitaryNumberLabel" wrapText="true" styleClass="preview-value"/>
+                                </VBox>
+                            </VBox>
+                        </HBox>
+
+                        <HBox alignment="CENTER_LEFT" spacing="16">
+                            <Region HBox.hgrow="ALWAYS"/>
+                            <VBox spacing="2" alignment="CENTER">
+                                <Label fx:id="documentTypeTitleLabel" styleClass="preview-invoice-title"/>
+                                <Label fx:id="documentNumberTitleLabel" styleClass="preview-invoice-number"/>
+                            </VBox>
+                            <Region HBox.hgrow="ALWAYS"/>
+                            <Label fx:id="copyMarkerLabel" styleClass="preview-copy-marker"/>
+                        </HBox>
+
+                        <TableView fx:id="itemsTable" styleClass="invoice-table">
+                            <columns>
+                                <TableColumn fx:id="colLp" text="Lp" maxWidth="55" prefWidth="55"/>
+                                <TableColumn fx:id="colPlant" text="Nazwa" prefWidth="355"/>
+                                <TableColumn fx:id="colBatch" text="Partia" prefWidth="220"/>
+                                <TableColumn fx:id="colQty" text="Ilość" prefWidth="90"/>
+                                <TableColumn fx:id="colPassport" text="Paszport" prefWidth="120"/>
+                            </columns>
+                        </TableView>
+
+                        <HBox alignment="TOP_RIGHT">
+                            <VBox spacing="0" prefWidth="320" styleClass="preview-totals-box">
+                                <HBox spacing="0">
+                                    <Label text="Liczba pozycji" HBox.hgrow="ALWAYS" styleClass="preview-total-label" maxWidth="1.7976931348623157E308"/>
+                                    <Label fx:id="itemCountLabel" prefWidth="108" styleClass="preview-total-value"/>
+                                </HBox>
+                                <HBox spacing="0">
+                                    <Label text="Razem do wydania" HBox.hgrow="ALWAYS" styleClass="preview-total-label preview-total-label-strong" maxWidth="1.7976931348623157E308"/>
+                                    <Label fx:id="totalQtySummaryLabel" prefWidth="108" styleClass="preview-total-value preview-total-value-strong"/>
+                                </HBox>
+                            </VBox>
+                        </HBox>
+
+                        <VBox fx:id="commentsSection" spacing="6" visible="false">
+                            <Label text="Uwagi:" styleClass="preview-comments-title"/>
                             <Label fx:id="commentsLabel" wrapText="true" styleClass="preview-value"/>
                         </VBox>
 
-                        <Separator/>
-
                         <HBox spacing="26">
-                            <VBox spacing="8" HBox.hgrow="ALWAYS">
-                                <Region minHeight="48" styleClass="signature-line"/>
-                                <Label text="Podpis wystawcy" styleClass="form-info-label"/>
+                            <VBox spacing="0" HBox.hgrow="ALWAYS" styleClass="preview-signature-box">
+                                <Label text="Odebrał:" styleClass="preview-box-header" maxWidth="1.7976931348623157E308"/>
+                                <VBox spacing="6" styleClass="preview-signature-body">
+                                    <Region minHeight="58" VBox.vgrow="ALWAYS"/>
+                                    <Label text="Podpis osoby upoważnionej do odbioru dokumentu" wrapText="true" styleClass="form-info-label"/>
+                                </VBox>
                             </VBox>
-                            <VBox spacing="8" HBox.hgrow="ALWAYS">
-                                <Region minHeight="48" styleClass="signature-line"/>
-                                <Label text="Podpis odbiorcy" styleClass="form-info-label"/>
+                            <VBox spacing="0" HBox.hgrow="ALWAYS" styleClass="preview-signature-box">
+                                <Label text="Wystawił:" styleClass="preview-box-header" maxWidth="1.7976931348623157E308"/>
+                                <VBox spacing="6" alignment="CENTER" styleClass="preview-signature-body">
+                                    <Region minHeight="18" VBox.vgrow="ALWAYS"/>
+                                    <Label fx:id="createdByLabel" styleClass="preview-subtitle"/>
+                                    <Region minHeight="18" VBox.vgrow="ALWAYS"/>
+                                    <Label text="Podpis osoby upoważnionej do wystawienia dokumentu" wrapText="true" styleClass="form-info-label"/>
+                                </VBox>
                             </VBox>
                         </HBox>
                     </VBox>
