@@ -7,6 +7,7 @@
 <?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Priority?>
 <?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
@@ -58,7 +59,11 @@
     </left>
 
     <center>
-        <VBox styleClass="content-area">
+        <VBox styleClass="content-area" spacing="12">
+            <HBox fx:id="systemNewsBar" spacing="12" alignment="CENTER_LEFT" managed="false" visible="false" styleClass="news-feed-bar">
+                <Label fx:id="systemNewsLabel" wrapText="true" maxWidth="1.7976931348623157E308" HBox.hgrow="ALWAYS"/>
+                <Button fx:id="systemNewsActionButton" text="Przejdź" styleClass="button-secondary"/>
+            </HBox>
             <StackPane fx:id="content" VBox.vgrow="ALWAYS"/>
         </VBox>
     </center>

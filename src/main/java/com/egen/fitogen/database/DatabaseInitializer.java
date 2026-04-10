@@ -2,6 +2,7 @@ package com.egen.fitogen.database;
 
 import com.egen.fitogen.config.DatabaseConfig;
 
+import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -10,8 +11,12 @@ import java.sql.Statement;
 public class DatabaseInitializer {
 
     public static void initDatabase() {
+        initDatabase(DatabaseConfig.getDatabaseFilePath());
+    }
 
-        try (Connection conn = DatabaseConfig.getConnection();
+    public static void initDatabase(Path databaseFilePath) {
+
+        try (Connection conn = DatabaseConfig.getConnection(databaseFilePath);
              Statement stmt = conn.createStatement()) {
 
             // PLANTS
@@ -132,6 +137,24 @@ public class DatabaseInitializer {
                     setting_key TEXT PRIMARY KEY,
                     setting_value TEXT
                 )
+            """);
+
+            // AUDIT LOG
+            stmt.execute("""
+                CREATE TABLE IF NOT EXISTS audit_log (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    entity_type TEXT,
+                    entity_id INTEGER,
+                    action_type TEXT,
+                    actor TEXT,
+                    description TEXT,
+                    changed_at TEXT
+                )
+            """);
+
+            stmt.execute("""
+                CREATE INDEX IF NOT EXISTS ix_audit_log_changed_at
+                ON audit_log (changed_at DESC, id DESC)
             """);
 
             // EPPO CODES

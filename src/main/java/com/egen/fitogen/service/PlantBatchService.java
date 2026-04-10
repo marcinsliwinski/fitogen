@@ -48,7 +48,7 @@ public class PlantBatchService {
     }
 
     public List<PlantBatch> getAllBatches() {
-        logger.info("Pobieranie wszystkich partii roślin");
+        logger.debug("Pobieranie wszystkich partii roślin");
         return repository.findAll();
     }
 

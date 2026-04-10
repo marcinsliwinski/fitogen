@@ -1,8 +1,10 @@
 package com.egen.fitogen.ui.controller;
 
 import com.egen.fitogen.config.AppContext;
+import com.egen.fitogen.config.DatabaseConfig;
 import com.egen.fitogen.domain.NumberingConfig;
 import com.egen.fitogen.dto.ContrahentImportPreviewResult;
+import com.egen.fitogen.dto.DatabaseProfileInfo;
 import com.egen.fitogen.dto.CsvImportExecutionResult;
 import com.egen.fitogen.dto.PlantImportPreviewResult;
 import com.egen.fitogen.domain.NumberingSectionType;
@@ -21,12 +23,15 @@ import com.egen.fitogen.service.CountryDirectoryService;
 import com.egen.fitogen.service.DocumentCsvExportService;
 import com.egen.fitogen.service.DocumentCsvImportService;
 import com.egen.fitogen.service.DocumentTypeService;
+import com.egen.fitogen.service.DatabaseProfileService;
 import com.egen.fitogen.service.NumberingConfigService;
 import com.egen.fitogen.service.PlantCsvExportService;
 import com.egen.fitogen.service.PlantCsvImportService;
 import com.egen.fitogen.ui.util.CountryDirectory;
+import com.egen.fitogen.ui.router.ViewManager;
 import com.egen.fitogen.ui.util.DialogUtil;
 import com.egen.fitogen.ui.util.ValidationUtil;
+import javafx.application.Platform;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
@@ -41,6 +46,8 @@ import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
 import javafx.scene.control.TextArea;
+import javafx.scene.control.Tab;
+import javafx.scene.control.TabPane;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
@@ -65,7 +72,14 @@ public class SettingsController {
 
     private static final DateTimeFormatter BACKUP_DATE_TIME_FORMATTER =
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    private static final String BACKUP_TAB_TITLE = "Kopia zapasowa i baza";
+    private static final String ISSUER_TAB_TITLE = "Dane podmiotu";
 
+    private static String pendingTabTitle;
+    private static boolean pendingFocusDatabaseProfileField;
+    private static boolean pendingFocusIssuerField;
+
+    @FXML private TabPane settingsTabPane;
     @FXML private ComboBox<NumberingType> numberingTypeBox;
     @FXML private ComboBox<NumberingSectionType> section1TypeBox;
     @FXML private TextField section1StaticValueField;
@@ -80,6 +94,10 @@ public class SettingsController {
     @FXML private Label previewLabel;
     @FXML private Label infoLabel;
     @FXML private Label databasePathLabel;
+    @FXML private Label databaseProfileLabel;
+    @FXML private Label databaseModeLabel;
+    @FXML private Label databaseProfileStatusLabel;
+    @FXML private TextField databaseProfileNameField;
     @FXML private Label backupStatusLabel;
     @FXML private ListView<DocumentType> documentTypesList;
     @FXML private TextField documentTypeSearchField;
@@ -142,6 +160,7 @@ public class SettingsController {
 
     private final NumberingConfigService numberingConfigService = AppContext.getNumberingConfigService();
     private final BackupService backupService = AppContext.getBackupService();
+    private final DatabaseProfileService databaseProfileService = AppContext.getDatabaseProfileService();
     private final DocumentTypeService documentTypeService = AppContext.getDocumentTypeService();
     private final AppUserService appUserService = AppContext.getAppUserService();
     private final AppSettingsService appSettingsService = AppContext.getAppSettingsService();
@@ -174,6 +193,16 @@ public class SettingsController {
     private ContrahentImportPreviewResult lastContrahentsCsvPreviewResult;
     private com.egen.fitogen.dto.DocumentImportPreviewResult lastDocumentsCsvPreviewResult;
 
+    public static void requestOpenDatabaseManagement() {
+        pendingTabTitle = BACKUP_TAB_TITLE;
+        pendingFocusDatabaseProfileField = true;
+    }
+
+    public static void requestOpenIssuerProfile() {
+        pendingTabTitle = ISSUER_TAB_TITLE;
+        pendingFocusIssuerField = true;
+    }
+
     @FXML
     public void initialize() {
         configureTypeBoxes();
@@ -187,7 +216,7 @@ public class SettingsController {
         numberingTypeBox.getItems().setAll(NumberingType.values());
         numberingTypeBox.setValue(NumberingType.DOCUMENT);
 
-        databasePathLabel.setText(backupService.getDatabaseFilePath().toString());
+        loadDatabaseProfileOverview();
 
         configureDictionarySelections();
         refreshDocumentTypes();
@@ -201,6 +230,7 @@ public class SettingsController {
         loadAuditLogOverview();
         refreshBackupStatus();
         loadConfig(NumberingType.DOCUMENT);
+        applyPendingTabSelection();
     }
 
     private void configureUserControls() {
@@ -1585,6 +1615,126 @@ public class SettingsController {
         }
 
         return builder.toString();
+    }
+
+    private void applyPendingTabSelection() {
+        if (settingsTabPane != null && pendingTabTitle != null && !pendingTabTitle.isBlank()) {
+            for (Tab tab : settingsTabPane.getTabs()) {
+                if (pendingTabTitle.equalsIgnoreCase(tab.getText())) {
+                    settingsTabPane.getSelectionModel().select(tab);
+                    break;
+                }
+            }
+        }
+
+        boolean focusDatabaseField = pendingFocusDatabaseProfileField;
+        boolean focusIssuer = pendingFocusIssuerField;
+        pendingTabTitle = null;
+        pendingFocusDatabaseProfileField = false;
+        pendingFocusIssuerField = false;
+
+        Platform.runLater(() -> {
+            if (focusDatabaseField && databaseProfileNameField != null) {
+                databaseProfileNameField.requestFocus();
+                databaseProfileNameField.selectAll();
+            } else if (focusIssuer && issuerNameField != null) {
+                issuerNameField.requestFocus();
+                issuerNameField.selectAll();
+            }
+        });
+    }
+
+    private void loadDatabaseProfileOverview() {
+        if (databasePathLabel != null) {
+            databasePathLabel.setText(backupService.getDatabaseFilePath().toString());
+        }
+
+        DatabaseProfileInfo info = databaseProfileService.getCurrentProfileInfo();
+        if (databaseProfileLabel != null) {
+            databaseProfileLabel.setText(info.displayName());
+        }
+        if (databaseModeLabel != null) {
+            databaseModeLabel.setText(info.testProfile()
+                    ? "Pracujesz na wbudowanej bazie testowej z przykładowymi rekordami."
+                    : "Pracujesz na bazie roboczej przypisanej do wybranego profilu.");
+        }
+        if (databaseProfileStatusLabel != null) {
+            databaseProfileStatusLabel.setText(databaseProfileService.buildCurrentProfileSummary());
+        }
+    }
+
+    @FXML
+    private void refreshDatabaseProfileOverview() {
+        loadDatabaseProfileOverview();
+        refreshBackupStatus();
+    }
+
+    @FXML
+    private void createNewDatabaseProfile() {
+        String profileName = safe(databaseProfileNameField == null ? "" : databaseProfileNameField.getText());
+        if (profileName.isBlank()) {
+            DialogUtil.showWarning("Baza danych", "Podaj nazwę nowego profilu bazy danych.");
+            if (databaseProfileStatusLabel != null) {
+                databaseProfileStatusLabel.setText("Podaj nazwę nowego profilu, aby utworzyć bazę roboczą.");
+            }
+            return;
+        }
+
+        if (!DialogUtil.confirmAction("Nowa baza danych", "założyć", "profil bazy „" + profileName + "”")) {
+            return;
+        }
+
+        try {
+            DatabaseProfileInfo info = databaseProfileService.createOrActivateNewProfile(profileName);
+            AppContext.init();
+            if (databaseProfileNameField != null) {
+                databaseProfileNameField.clear();
+            }
+            if (AppContext.getAuditLogService() != null) {
+                AppContext.getAuditLogService().log("DATABASE_PROFILE", null, "SWITCH",
+                        "Aktywowano profil bazy danych: " + info.displayName() + ".");
+            }
+            MainController.requestRefreshSystemNews();
+            requestOpenDatabaseManagement();
+            DialogUtil.showSuccess(info.createdNow()
+                    ? "Założono nową bazę danych i aktywowano profil: " + info.displayName()
+                    : "Aktywowano istniejący profil bazy danych: " + info.displayName());
+            ViewManager.refreshCurrent();
+        } catch (Exception e) {
+            e.printStackTrace();
+            if (databaseProfileStatusLabel != null) {
+                databaseProfileStatusLabel.setText("Nie udało się założyć lub aktywować nowej bazy danych.");
+            }
+            DialogUtil.showError("Baza danych", "Nie udało się założyć lub aktywować nowej bazy danych.");
+        }
+    }
+
+    @FXML
+    private void switchToTestDatabase() {
+        if (!DialogUtil.confirmAction("Baza testowa", "przełączyć", "wbudowaną bazę testową")) {
+            return;
+        }
+
+        try {
+            DatabaseProfileInfo info = databaseProfileService.activateTestProfile();
+            AppContext.init();
+            if (AppContext.getAuditLogService() != null) {
+                AppContext.getAuditLogService().log("DATABASE_PROFILE", null, "SWITCH",
+                        "Aktywowano bazę testową.");
+            }
+            MainController.requestRefreshSystemNews();
+            requestOpenDatabaseManagement();
+            DialogUtil.showSuccess(info.createdNow()
+                    ? "Przygotowano i aktywowano bazę testową z przykładowymi danymi."
+                    : "Aktywowano bazę testową.");
+            ViewManager.refreshCurrent();
+        } catch (Exception e) {
+            e.printStackTrace();
+            if (databaseProfileStatusLabel != null) {
+                databaseProfileStatusLabel.setText("Nie udało się aktywować bazy testowej.");
+            }
+            DialogUtil.showError("Baza testowa", "Nie udało się aktywować bazy testowej.");
+        }
     }
 
     private void refreshBackupStatus() {

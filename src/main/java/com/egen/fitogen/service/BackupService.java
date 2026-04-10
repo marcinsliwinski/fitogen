@@ -49,6 +49,11 @@ public class BackupService {
     }
 
     private String buildBackupFileName() {
-        return "fitogen_backup_" + LocalDateTime.now().format(FORMATTER) + ".db";
+        String databaseBaseName = DatabaseConfig.getDatabaseFileName();
+        if (databaseBaseName == null || databaseBaseName.isBlank()) {
+            databaseBaseName = "fitogen";
+        }
+        databaseBaseName = databaseBaseName.replaceAll("(?i)\\.db$", "").replaceAll("\\s+", "_");
+        return databaseBaseName + "_backup_" + LocalDateTime.now().format(FORMATTER) + ".db";
     }
 }

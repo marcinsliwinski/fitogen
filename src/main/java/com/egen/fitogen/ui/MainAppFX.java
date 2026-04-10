@@ -29,12 +29,12 @@ public class MainAppFX extends Application {
         try {
             Scene scene = new Scene(
                     loader.load(),
-                    WindowSizingUtil.resolveInitialWidth(1280),
-                    WindowSizingUtil.resolveInitialHeight(860)
+                    WindowSizingUtil.resolveInitialWidth(1360),
+                    WindowSizingUtil.resolveInitialHeight(840)
             );
             stage.setTitle("Fito Gen Essentials");
             stage.setScene(scene);
-            WindowSizingUtil.applyStageSize(stage, 1280, 860, 1100, 760);
+            WindowSizingUtil.applyStageSize(stage, 1360, 840, 1120, 720);
             stage.show();
         } catch (Exception e) {
             throw new IllegalStateException("Nie udało się załadować głównego widoku aplikacji: view/main.fxml", e);

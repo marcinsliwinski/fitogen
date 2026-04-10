@@ -30,7 +30,7 @@
         <Label text="Konfiguracja numeratora, słowników i ustawień technicznych systemu." styleClass="page-subtitle"/>
     </VBox>
 
-    <TabPane tabClosingPolicy="UNAVAILABLE" VBox.vgrow="ALWAYS">
+    <TabPane fx:id="settingsTabPane" tabClosingPolicy="UNAVAILABLE" VBox.vgrow="ALWAYS">
         <tabs>
             <Tab text="Rośliny">
                 <ScrollPane fitToWidth="true" fitToHeight="true">
@@ -322,14 +322,36 @@
                     <content>
                         <VBox spacing="16" styleClass="content-card">
                             <padding><Insets top="16" right="16" bottom="16" left="16"/></padding>
-                            <Label text="Ręczna kopia zapasowa" styleClass="stat-title"/>
-                            <Label text="Plik bazy danych:"/>
-                            <Label fx:id="databasePathLabel" wrapText="true" styleClass="page-subtitle"/>
-                            <Label text="Stan kopii zapasowej:"/>
-                            <Label fx:id="backupStatusLabel" wrapText="true" styleClass="page-subtitle"/>
-                            <HBox spacing="10">
-                                <Button text="Utwórz kopię zapasową" onAction="#createBackup"/>
-                            </HBox>
+
+                            <VBox spacing="10" styleClass="stat-card">
+                                <Label text="Aktywna baza danych" styleClass="stat-title"/>
+                                <Label text="Profil bazy danych możesz przełączać bez ręcznego podmieniania plików. Baza testowa jest utrzymywana oddzielnie od baz roboczych." wrapText="true" styleClass="page-subtitle"/>
+                                <Label text="Aktywny profil:"/>
+                                <Label fx:id="databaseProfileLabel" wrapText="true" styleClass="page-subtitle"/>
+                                <Label text="Tryb pracy:"/>
+                                <Label fx:id="databaseModeLabel" wrapText="true" styleClass="page-subtitle"/>
+                                <Label text="Plik bazy danych:"/>
+                                <Label fx:id="databasePathLabel" wrapText="true" styleClass="page-subtitle"/>
+                                <Label text="Podsumowanie profilu:"/>
+                                <Label fx:id="databaseProfileStatusLabel" wrapText="true" styleClass="page-subtitle"/>
+                                <TextField fx:id="databaseProfileNameField" promptText="Nazwa nowego profilu / nowej bazy"/>
+                                <HBox spacing="10">
+                                    <Button text="Nowa baza" onAction="#createNewDatabaseProfile"/>
+                                    <Button text="Baza testowa" onAction="#switchToTestDatabase" styleClass="button-secondary"/>
+                                    <Button text="Odśwież" onAction="#refreshDatabaseProfileOverview" styleClass="button-secondary"/>
+                                </HBox>
+                            </VBox>
+
+                            <Separator/>
+
+                            <VBox spacing="10" styleClass="stat-card">
+                                <Label text="Ręczna kopia zapasowa" styleClass="stat-title"/>
+                                <Label text="Stan kopii zapasowej:"/>
+                                <Label fx:id="backupStatusLabel" wrapText="true" styleClass="page-subtitle"/>
+                                <HBox spacing="10">
+                                    <Button text="Utwórz kopię zapasową" onAction="#createBackup"/>
+                                </HBox>
+                            </VBox>
                         </VBox>
                     </content>
                 </ScrollPane>

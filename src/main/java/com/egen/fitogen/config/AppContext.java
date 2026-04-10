@@ -35,6 +35,7 @@ import com.egen.fitogen.service.AppUserService;
 import com.egen.fitogen.service.AuditLogService;
 import com.egen.fitogen.service.BackupService;
 import com.egen.fitogen.service.ContrahentService;
+import com.egen.fitogen.service.DatabaseProfileService;
 import com.egen.fitogen.service.CountryDirectoryService;
 import com.egen.fitogen.service.DocumentService;
 import com.egen.fitogen.service.DocumentTypeService;
@@ -75,6 +76,7 @@ public class AppContext {
     private static NumberingService numberingService;
     private static NumberingConfigService numberingConfigService;
     private static BackupService backupService;
+    private static DatabaseProfileService databaseProfileService;
     private static DocumentTypeService documentTypeService;
     private static AppSettingsService appSettingsService;
     private static AppUserService appUserService;
@@ -107,6 +109,7 @@ public class AppContext {
 
         numberingService = new NumberingService(numberingConfigRepository);
         backupService = new BackupService();
+        databaseProfileService = new DatabaseProfileService();
         appUserService = new AppUserService(appUserRepository, null);
         auditLogService = new AuditLogService(auditLogRepository, appUserService);
         appSettingsService = new AppSettingsService(appSettingsRepository, auditLogService);
@@ -182,6 +185,10 @@ public class AppContext {
 
     public static BackupService getBackupService() {
         return backupService;
+    }
+
+    public static DatabaseProfileService getDatabaseProfileService() {
+        return databaseProfileService;
     }
 
     public static DocumentTypeService getDocumentTypeService() {

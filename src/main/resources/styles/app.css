@@ -594,3 +594,32 @@
 .preview-summary-text-cell {
     -fx-alignment: CENTER;
 }
+
+.news-feed-bar {
+    -fx-background-color: #ffffff;
+    -fx-background-radius: 14;
+    -fx-border-radius: 14;
+    -fx-border-color: #dce4eb;
+    -fx-padding: 10 14 10 14;
+    -fx-alignment: center-left;
+}
+
+.news-feed-bar .label {
+    -fx-font-size: 13px;
+    -fx-font-weight: 600;
+}
+
+.news-feed-info {
+    -fx-background-color: #eef5ff;
+    -fx-border-color: #b9d3ff;
+}
+
+.news-feed-warning {
+    -fx-background-color: #fff7e8;
+    -fx-border-color: #f3d49c;
+}
+
+.news-feed-success {
+    -fx-background-color: #eefbf1;
+    -fx-border-color: #b9e1c2;
+}
