@@ -23,35 +23,35 @@
 
             <VBox spacing="4">
                 <Label text="Pulpit" styleClass="page-title"/>
-                <Label text="Stan systemu i najważniejsze dane operacyjne Fito Gen." styleClass="page-subtitle"/>
+                <Label text="Najważniejsze informacje operacyjne i szybki dostęp do ostatnich działań." styleClass="page-subtitle"/>
             </VBox>
 
-            <FlowPane hgap="16" vgap="16" prefWrapLength="1180">
-                <VBox fx:id="backupCardBox" styleClass="stat-card dashboard-stat-card dashboard-clickable-card" prefWidth="220" spacing="8" onMouseClicked="#openBackupSettings">
+            <FlowPane hgap="16" vgap="16" prefWrapLength="1180" styleClass="dashboard-cards-pane">
+                <VBox fx:id="backupCardBox" styleClass="stat-card dashboard-stat-card dashboard-clickable-card dashboard-primary-card" prefWidth="220" spacing="8" prefHeight="138" onMouseClicked="#openBackupSettings">
                     <Label text="Kopia zapasowa" styleClass="stat-title"/>
                     <Label fx:id="backupStatusValueLabel" text="—" styleClass="stat-value" wrapText="true"/>
                     <Label fx:id="backupStatusNoteLabel" text="Stan kopii zapasowej bieżącej bazy." styleClass="stat-note" wrapText="true"/>
                 </VBox>
 
-                <VBox styleClass="stat-card dashboard-stat-card" prefWidth="220" spacing="8">
+                <VBox styleClass="stat-card dashboard-stat-card dashboard-secondary-card" prefWidth="220" spacing="8" prefHeight="138">
                     <Label text="Rośliny" styleClass="stat-title"/>
                     <Label fx:id="plantsCountLabel" text="0" styleClass="stat-value"/>
                     <Label fx:id="plantsCountNoteLabel" styleClass="stat-note" wrapText="true"/>
                 </VBox>
 
-                <VBox styleClass="stat-card dashboard-stat-card" prefWidth="220" spacing="8">
+                <VBox styleClass="stat-card dashboard-stat-card dashboard-secondary-card" prefWidth="220" spacing="8" prefHeight="138">
                     <Label text="Kontrahenci" styleClass="stat-title"/>
                     <Label fx:id="contrahentsCountLabel" text="0" styleClass="stat-value"/>
                     <Label fx:id="contrahentsCountNoteLabel" styleClass="stat-note" wrapText="true"/>
                 </VBox>
 
-                <VBox styleClass="stat-card dashboard-stat-card" prefWidth="220" spacing="8">
+                <VBox styleClass="stat-card dashboard-stat-card dashboard-secondary-card" prefWidth="220" spacing="8" prefHeight="138">
                     <Label text="Partie roślin" styleClass="stat-title"/>
                     <Label fx:id="batchesCountLabel" text="0" styleClass="stat-value"/>
                     <Label fx:id="batchesCountNoteLabel" styleClass="stat-note" wrapText="true"/>
                 </VBox>
 
-                <VBox styleClass="stat-card dashboard-stat-card" prefWidth="220" spacing="8">
+                <VBox styleClass="stat-card dashboard-stat-card dashboard-secondary-card" prefWidth="220" spacing="8" prefHeight="138">
                     <Label text="Dokumenty" styleClass="stat-title"/>
                     <Label fx:id="documentsCountLabel" text="0" styleClass="stat-value"/>
                     <Label fx:id="documentsCountNoteLabel" styleClass="stat-note" wrapText="true"/>
@@ -72,7 +72,7 @@
                 <VBox styleClass="content-card" spacing="12" HBox.hgrow="ALWAYS">
                     <Label text="Ostatnie dokumenty" styleClass="section-title" style="-fx-font-size: 18px;"/>
                     <Label text="Dwukrotnie kliknij wiersz, aby otworzyć podgląd dokumentu." styleClass="page-subtitle"/>
-                    <TableView fx:id="recentDocumentsTable" prefHeight="270">
+                    <TableView fx:id="recentDocumentsTable" prefHeight="270" minHeight="270" maxHeight="270">
                         <columns>
                             <TableColumn fx:id="colRecentDocumentNumber" text="Numer" prefWidth="160"/>
                             <TableColumn fx:id="colRecentDocumentType" text="Typ" prefWidth="180"/>
@@ -83,9 +83,9 @@
                 </VBox>
 
                 <VBox styleClass="content-card" spacing="12" HBox.hgrow="ALWAYS">
-                    <Label text="Najnowsze partie roślin" styleClass="section-title" style="-fx-font-size: 18px;"/>
+                    <Label text="Ostatnie partie" styleClass="section-title" style="-fx-font-size: 18px;"/>
                     <Label text="Dwukrotnie kliknij wiersz, aby otworzyć partię." styleClass="page-subtitle"/>
-                    <TableView fx:id="recentBatchesTable" prefHeight="270">
+                    <TableView fx:id="recentBatchesTable" prefHeight="270" minHeight="270" maxHeight="270">
                         <columns>
                             <TableColumn fx:id="colRecentBatchPlant" text="Roślina" prefWidth="220"/>
                             <TableColumn fx:id="colRecentBatchNumber" text="Partia" prefWidth="180"/>

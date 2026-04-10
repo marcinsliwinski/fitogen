@@ -20,6 +20,7 @@ import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
+import javafx.scene.control.ScrollBar;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
@@ -38,15 +39,22 @@ public class DashboardController {
 
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
     private static final DateTimeFormatter BACKUP_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    private static final DateTimeFormatter SHORT_BACKUP_FORMATTER = DateTimeFormatter.ofPattern("dd.MM.yyyy");
+    private static final double DASHBOARD_TABLE_HEADER_HEIGHT = 44;
+    private static final double DASHBOARD_TABLE_PADDING = 14;
 
     @FXML private VBox backupCardBox;
     @FXML private Label backupStatusValueLabel;
     @FXML private Label backupStatusNoteLabel;
 
     @FXML private Label plantsCountLabel;
+    @FXML private Label plantsCountNoteLabel;
     @FXML private Label contrahentsCountLabel;
+    @FXML private Label contrahentsCountNoteLabel;
     @FXML private Label batchesCountLabel;
+    @FXML private Label batchesCountNoteLabel;
     @FXML private Label documentsCountLabel;
+    @FXML private Label documentsCountNoteLabel;
 
     @FXML private TableView<Document> recentDocumentsTable;
     @FXML private TableColumn<Document, String> colRecentDocumentNumber;
@@ -102,6 +110,7 @@ public class DashboardController {
         contrahentsCountLabel.setText(String.valueOf(contrahents.size()));
         batchesCountLabel.setText(String.valueOf(batches.size()));
         documentsCountLabel.setText(String.valueOf(documents.size()));
+        updateCountNotes(plants.size(), contrahents.size(), batches.size(), documents.size());
 
         fillBackupCard();
         fillRecentDocuments(documents);
@@ -115,6 +124,8 @@ public class DashboardController {
 
         recentDocumentsTable.setPlaceholder(new Label("Brak dokumentów do wyświetlenia."));
         recentDocumentsTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
+        recentDocumentsTable.setFixedCellSize(38);
+        recentDocumentsTable.getStyleClass().add("dashboard-compact-table");
 
                 if (colRecentDocumentNumber != null) {
             colRecentDocumentNumber.setCellValueFactory(data -> new SimpleStringProperty(safe(data.getValue().getDocumentNumber())));
@@ -150,6 +161,8 @@ public class DashboardController {
 
         recentBatchesTable.setPlaceholder(new Label("Brak partii do wyświetlenia."));
         recentBatchesTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
+        recentBatchesTable.setFixedCellSize(38);
+        recentBatchesTable.getStyleClass().add("dashboard-compact-table");
 
                 if (colRecentBatchPlant != null) {
             colRecentBatchPlant.setCellValueFactory(data -> new SimpleStringProperty(getPlantLabel(data.getValue().getPlantId())));
@@ -185,6 +198,8 @@ public class DashboardController {
 
         backupCardBox.getStyleClass().remove("stat-card-alert");
         backupStatusValueLabel.getStyleClass().remove("stat-value-danger");
+        backupStatusNoteLabel.setManaged(false);
+        backupStatusNoteLabel.setVisible(false);
 
         String lastBackupAtRaw = safe(appSettingsService.getLastBackupAt());
         LocalDateTime lastBackupAt = parseBackupDate(lastBackupAtRaw);
@@ -197,16 +212,18 @@ public class DashboardController {
             backupCardBox.getStyleClass().add("stat-card-alert");
             backupStatusValueLabel.getStyleClass().add("stat-value-danger");
             backupStatusValueLabel.setText("Zrób kopię");
+            backupStatusNoteLabel.setManaged(true);
+            backupStatusNoteLabel.setVisible(true);
             if (lastBackupAt == null) {
-                backupStatusNoteLabel.setText("Brak wykonanej kopii zapasowej. Kliknij kafelek, aby przejść do sekcji kopii zapasowej.");
+                backupStatusNoteLabel.setText("Brak kopii. Kliknij kafelek, aby przejść do sekcji kopii zapasowej.");
             } else {
-                backupStatusNoteLabel.setText("Ostatnia kopia: " + lastBackupAtRaw + ". Od tego czasu w systemie zapisano nowe zmiany.");
+                backupStatusNoteLabel.setText("Ostatnia kopia: " + SHORT_BACKUP_FORMATTER.format(lastBackupAt) + ". W systemie zapisano nowe zmiany.");
             }
             return;
         }
 
-        backupStatusValueLabel.setText(lastBackupAtRaw);
-        backupStatusNoteLabel.setText("Kopia zapasowa jest aktualna.");
+        backupStatusValueLabel.setText(SHORT_BACKUP_FORMATTER.format(lastBackupAt));
+        backupStatusNoteLabel.setText("");
     }
 
     private void fillRecentDocuments(List<Document> documents) {
@@ -222,6 +239,7 @@ public class DashboardController {
                         .limit(8)
                         .toList()
         ));
+        resizeDashboardTable(recentDocumentsTable);
     }
 
     private void fillRecentBatches(List<PlantBatch> batches) {
@@ -237,6 +255,48 @@ public class DashboardController {
                         .limit(8)
                         .toList()
         ));
+        resizeDashboardTable(recentBatchesTable);
+    }
+
+
+    private void updateCountNotes(int plants, int contrahents, int batches, int documents) {
+        setCountNote(plantsCountNoteLabel, pluralize(plants, "rekord w bazie", "rekordy w bazie", "rekordów w bazie"));
+        setCountNote(contrahentsCountNoteLabel, pluralize(contrahents, "rekord w bazie", "rekordy w bazie", "rekordów w bazie"));
+        setCountNote(batchesCountNoteLabel, pluralize(batches, "rekord w bazie", "rekordy w bazie", "rekordów w bazie"));
+        setCountNote(documentsCountNoteLabel, pluralize(documents, "rekord w bazie", "rekordy w bazie", "rekordów w bazie"));
+    }
+
+    private void setCountNote(Label label, String text) {
+        if (label == null) {
+            return;
+        }
+        label.setText(text);
+    }
+
+    private String pluralize(int count, String singular, String plural234, String pluralOther) {
+        int mod10 = count % 10;
+        int mod100 = count % 100;
+        if (count == 1) {
+            return singular;
+        }
+        if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) {
+            return plural234;
+        }
+        return pluralOther;
+    }
+
+    private void resizeDashboardTable(TableView<?> tableView) {
+        if (tableView == null) {
+            return;
+        }
+
+        int visibleRows = Math.max(1, tableView.getItems() == null ? 0 : tableView.getItems().size());
+        double fixedCellSize = tableView.getFixedCellSize() > 0 ? tableView.getFixedCellSize() : 38;
+        double targetHeight = DASHBOARD_TABLE_HEADER_HEIGHT + (visibleRows * fixedCellSize) + DASHBOARD_TABLE_PADDING;
+
+        tableView.setPrefHeight(targetHeight);
+        tableView.setMinHeight(targetHeight);
+        tableView.setMaxHeight(targetHeight);
     }
 
     private LocalDateTime parseBackupDate(String rawValue) {
