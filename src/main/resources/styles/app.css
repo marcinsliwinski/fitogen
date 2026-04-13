@@ -229,11 +229,12 @@
 
 .dashboard-cards-pane {
     -fx-padding: 2 0 2 0;
+    -fx-alignment: center-left;
 }
 
 .dashboard-stat-card {
-    -fx-spacing: 10;
-    -fx-padding: 18 18 16 18;
+    -fx-spacing: 8;
+    -fx-padding: 16 16 14 16;
     -fx-effect: dropshadow(gaussian, rgba(15, 23, 42, 0.05), 18, 0.18, 0, 4);
 }
 
@@ -255,7 +256,7 @@
 
 .stat-value {
     -fx-text-fill: #1f2933;
-    -fx-font-size: 28px;
+    -fx-font-size: 26px;
     -fx-font-weight: 700;
 }
 
@@ -673,4 +674,16 @@
     -fx-text-fill: #667085;
     -fx-alignment: CENTER;
     -fx-padding: 4 0 0 0;
+}
+
+.sidebar-link {
+    -fx-text-fill: #c7d2df;
+    -fx-font-size: 12px;
+    -fx-border-color: transparent;
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+}
+
+.sidebar-link:hover {
+    -fx-text-fill: white;
 }

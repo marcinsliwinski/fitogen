@@ -4,6 +4,8 @@ import com.egen.fitogen.config.AppContext;
 import com.egen.fitogen.config.DatabaseConfig;
 import com.egen.fitogen.service.AppSettingsService;
 import com.egen.fitogen.ui.router.ViewManager;
+import java.awt.Desktop;
+import java.net.URI;
 import javafx.fxml.FXML;
 import javafx.geometry.Insets;
 import javafx.scene.control.Button;
@@ -85,6 +87,16 @@ public class MainController {
     @FXML
     private void openHelp() {
         navigate(ViewManager.HELP);
+    }
+
+    @FXML
+    private void openEgenLabsWebsite() {
+        try {
+            if (Desktop.isDesktopSupported()) {
+                Desktop.getDesktop().browse(new URI("https://www.egenlabs.eu"));
+            }
+        } catch (Exception ignored) {
+        }
     }
 
     private void navigate(String viewKey) {

@@ -37,9 +37,9 @@ import java.util.Map;
 
 public class DashboardController {
 
-    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+    private static final DateTimeFormatter DASHBOARD_DATE_FORMATTER = DateTimeFormatter.ofPattern("dd.MM.yy");
     private static final DateTimeFormatter BACKUP_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-    private static final DateTimeFormatter SHORT_BACKUP_FORMATTER = DateTimeFormatter.ofPattern("dd.MM.yyyy");
+    private static final DateTimeFormatter SHORT_BACKUP_FORMATTER = DateTimeFormatter.ofPattern("dd.MM.yy");
     private static final double DASHBOARD_TABLE_HEADER_HEIGHT = 44;
     private static final double DASHBOARD_TABLE_PADDING = 14;
 
@@ -66,6 +66,7 @@ public class DashboardController {
     @FXML private TableView<PlantBatch> recentBatchesTable;
     @FXML private TableColumn<PlantBatch, String> colRecentBatchPlant;
     @FXML private TableColumn<PlantBatch, String> colRecentBatchNumber;
+    @FXML private TableColumn<PlantBatch, String> colRecentBatchContrahent;
     @FXML private TableColumn<PlantBatch, String> colRecentBatchQty;
     @FXML private TableColumn<PlantBatch, String> colRecentBatchDate;
     @FXML private TableColumn<PlantBatch, String> colRecentBatchStatus;
@@ -131,7 +132,7 @@ public class DashboardController {
             colRecentDocumentNumber.setCellValueFactory(data -> new SimpleStringProperty(safe(data.getValue().getDocumentNumber())));
         }
         if (colRecentDocumentType != null) {
-            colRecentDocumentType.setCellValueFactory(data -> new SimpleStringProperty(safe(data.getValue().getDocumentType())));
+            colRecentDocumentType.setCellValueFactory(data -> new SimpleStringProperty(abbreviateDocumentType(data.getValue().getDocumentType())));
         }
         if (colRecentDocumentContrahent != null) {
             colRecentDocumentContrahent.setCellValueFactory(data -> new SimpleStringProperty(getContrahentName(data.getValue().getContrahentId())));
@@ -172,6 +173,9 @@ public class DashboardController {
         }
         if (colRecentBatchQty != null) {
             colRecentBatchQty.setCellValueFactory(data -> new SimpleStringProperty(String.valueOf(data.getValue().getQty())));
+        }
+        if (colRecentBatchContrahent != null) {
+            colRecentBatchContrahent.setCellValueFactory(data -> new SimpleStringProperty(getContrahentName(data.getValue().getContrahentId())));
         }
         if (colRecentBatchDate != null) {
             colRecentBatchDate.setCellValueFactory(data -> new SimpleStringProperty(formatDate(data.getValue().getCreationDate())));
@@ -361,7 +365,25 @@ public class DashboardController {
     }
 
     private String formatDate(LocalDate value) {
-        return value == null ? "" : value.format(DATE_FORMATTER);
+        return value == null ? "" : value.format(DASHBOARD_DATE_FORMATTER);
+    }
+
+    private String abbreviateDocumentType(String documentType) {
+        String value = safe(documentType).trim();
+        if (value.isEmpty()) {
+            return "";
+        }
+        String normalized = value.toLowerCase();
+        if (normalized.equals("dokument dostawcy") || normalized.equals("dd")) {
+            return "DD";
+        }
+        if (normalized.equals("szkółkarski dokument dostawcy") || normalized.equals("sdd")) {
+            return "SDD";
+        }
+        if (value.length() <= 5) {
+            return value.toUpperCase();
+        }
+        return value;
     }
 
     private String formatDocumentStatus(DocumentStatus status) {

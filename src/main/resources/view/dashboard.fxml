@@ -6,7 +6,6 @@
 <?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.control.TableColumn?>
 <?import javafx.scene.control.TableView?>
-<?import javafx.scene.layout.FlowPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
 
@@ -26,37 +25,37 @@
                 <Label text="Najważniejsze informacje operacyjne i szybki dostęp do ostatnich działań." styleClass="page-subtitle"/>
             </VBox>
 
-            <FlowPane hgap="16" vgap="16" prefWrapLength="1180" styleClass="dashboard-cards-pane">
-                <VBox fx:id="backupCardBox" styleClass="stat-card dashboard-stat-card dashboard-clickable-card dashboard-primary-card" prefWidth="220" spacing="8" prefHeight="138" onMouseClicked="#openBackupSettings">
+            <HBox spacing="12" fillHeight="false" styleClass="dashboard-cards-pane">
+                <VBox fx:id="backupCardBox" styleClass="stat-card dashboard-stat-card dashboard-clickable-card dashboard-primary-card" maxWidth="1.7976931348623157E308" minWidth="180" spacing="8" prefHeight="132" HBox.hgrow="ALWAYS" onMouseClicked="#openBackupSettings">
                     <Label text="Kopia zapasowa" styleClass="stat-title"/>
                     <Label fx:id="backupStatusValueLabel" text="—" styleClass="stat-value" wrapText="true"/>
                     <Label fx:id="backupStatusNoteLabel" text="Stan kopii zapasowej bieżącej bazy." styleClass="stat-note" wrapText="true"/>
                 </VBox>
 
-                <VBox styleClass="stat-card dashboard-stat-card dashboard-secondary-card" prefWidth="220" spacing="8" prefHeight="138">
+                <VBox styleClass="stat-card dashboard-stat-card dashboard-secondary-card" maxWidth="1.7976931348623157E308" minWidth="180" spacing="8" prefHeight="132" HBox.hgrow="ALWAYS">
                     <Label text="Rośliny" styleClass="stat-title"/>
                     <Label fx:id="plantsCountLabel" text="0" styleClass="stat-value"/>
                     <Label fx:id="plantsCountNoteLabel" styleClass="stat-note" wrapText="true"/>
                 </VBox>
 
-                <VBox styleClass="stat-card dashboard-stat-card dashboard-secondary-card" prefWidth="220" spacing="8" prefHeight="138">
+                <VBox styleClass="stat-card dashboard-stat-card dashboard-secondary-card" maxWidth="1.7976931348623157E308" minWidth="180" spacing="8" prefHeight="132" HBox.hgrow="ALWAYS">
                     <Label text="Kontrahenci" styleClass="stat-title"/>
                     <Label fx:id="contrahentsCountLabel" text="0" styleClass="stat-value"/>
                     <Label fx:id="contrahentsCountNoteLabel" styleClass="stat-note" wrapText="true"/>
                 </VBox>
 
-                <VBox styleClass="stat-card dashboard-stat-card dashboard-secondary-card" prefWidth="220" spacing="8" prefHeight="138">
+                <VBox styleClass="stat-card dashboard-stat-card dashboard-secondary-card" maxWidth="1.7976931348623157E308" minWidth="180" spacing="8" prefHeight="132" HBox.hgrow="ALWAYS">
                     <Label text="Partie roślin" styleClass="stat-title"/>
                     <Label fx:id="batchesCountLabel" text="0" styleClass="stat-value"/>
                     <Label fx:id="batchesCountNoteLabel" styleClass="stat-note" wrapText="true"/>
                 </VBox>
 
-                <VBox styleClass="stat-card dashboard-stat-card dashboard-secondary-card" prefWidth="220" spacing="8" prefHeight="138">
+                <VBox styleClass="stat-card dashboard-stat-card dashboard-secondary-card" maxWidth="1.7976931348623157E308" minWidth="180" spacing="8" prefHeight="132" HBox.hgrow="ALWAYS">
                     <Label text="Dokumenty" styleClass="stat-title"/>
                     <Label fx:id="documentsCountLabel" text="0" styleClass="stat-value"/>
                     <Label fx:id="documentsCountNoteLabel" styleClass="stat-note" wrapText="true"/>
                 </VBox>
-            </FlowPane>
+            </HBox>
 
             <VBox styleClass="content-card" spacing="12">
                 <Label text="Szybkie akcje" styleClass="section-title" style="-fx-font-size: 18px;"/>
@@ -75,9 +74,9 @@
                     <TableView fx:id="recentDocumentsTable" prefHeight="270" minHeight="270" maxHeight="270">
                         <columns>
                             <TableColumn fx:id="colRecentDocumentNumber" text="Numer" prefWidth="160"/>
-                            <TableColumn fx:id="colRecentDocumentType" text="Typ" prefWidth="180"/>
+                            <TableColumn fx:id="colRecentDocumentType" text="Typ dokumentu" prefWidth="180"/>
                             <TableColumn fx:id="colRecentDocumentContrahent" text="Kontrahent" prefWidth="220"/>
-                            <TableColumn fx:id="colRecentDocumentDate" text="Data" prefWidth="110"/>
+                            <TableColumn fx:id="colRecentDocumentDate" text="Data" prefWidth="96"/>
                         </columns>
                     </TableView>
                 </VBox>
@@ -88,9 +87,9 @@
                     <TableView fx:id="recentBatchesTable" prefHeight="270" minHeight="270" maxHeight="270">
                         <columns>
                             <TableColumn fx:id="colRecentBatchPlant" text="Roślina" prefWidth="220"/>
-                            <TableColumn fx:id="colRecentBatchNumber" text="Partia" prefWidth="180"/>
+                            <TableColumn fx:id="colRecentBatchNumber" text="Partia" prefWidth="160"/>
+                            <TableColumn fx:id="colRecentBatchContrahent" text="Kontrahent / Dostawca" prefWidth="190"/>
                             <TableColumn fx:id="colRecentBatchQty" text="Ilość" prefWidth="90"/>
-                            <TableColumn fx:id="colRecentBatchStatus" text="Status" prefWidth="110"/>
                         </columns>
                     </TableView>
                 </VBox>
