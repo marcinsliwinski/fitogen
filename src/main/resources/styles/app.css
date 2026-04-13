@@ -233,8 +233,8 @@
 }
 
 .dashboard-stat-card {
-    -fx-spacing: 8;
-    -fx-padding: 16 16 14 16;
+    -fx-spacing: 6;
+    -fx-padding: 14 16 12 16;
     -fx-effect: dropshadow(gaussian, rgba(15, 23, 42, 0.05), 18, 0.18, 0, 4);
 }
 

@@ -15,6 +15,7 @@ import com.egen.fitogen.service.PlantService;
 import com.egen.fitogen.database.SqliteDocumentRepository;
 import com.egen.fitogen.repository.DocumentRepository;
 import com.egen.fitogen.ui.router.ViewManager;
+import com.egen.fitogen.ui.util.DialogUtil;
 import com.egen.fitogen.ui.util.ModalViewUtil;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
@@ -148,7 +149,7 @@ public class DashboardController {
             TableRow<Document> row = new TableRow<>();
             row.setOnMouseClicked(event -> {
                 if (event.getClickCount() == 2 && !row.isEmpty()) {
-                    openDocumentPreview(row.getItem());
+                    openDocumentFromDashboard(row.getItem());
                 }
             });
             return row;
@@ -404,13 +405,25 @@ public class DashboardController {
         ViewManager.show(ViewManager.SETTINGS);
     }
 
-    private void openDocumentPreview(Document document) {
+    private void openDocumentFromDashboard(Document document) {
+        if (document == null) {
+            return;
+        }
+
+        if (document.getStatus() == DocumentStatus.CANCELLED) {
+            DialogUtil.showWarning(
+                    "Dokument anulowany",
+                    "Anulowany dokument nie może być edytowany."
+            );
+            return;
+        }
+
         ModalViewUtil.openModal(
-                "/view/document_preview.fxml",
-                "Podgląd dokumentu",
-                1120, 900,
-                980, 760,
-                (DocumentPreviewController controller) -> controller.setDocumentId(document.getId())
+                "/view/document_form.fxml",
+                "Edytuj dokument",
+                1220, 880,
+                1080, 760,
+                (DocumentFormController controller) -> controller.setDocument(document)
         );
         refreshDashboard();
     }
