@@ -84,11 +84,21 @@ public class DocumentRenderService {
 
         preview.setIssuePlaceLabel(safe(issuer.getCity()));
         preview.setIssuerName(safe(issuer.getNurseryName()));
-        preview.setIssuerAddressLine1(safe(issuer.getStreet()));
-        preview.setIssuerAddressLine2(joinWithSpace(
-                safe(issuer.getPostalCode()),
-                joinWithSpace(safe(issuer.getCity()), joinWithSpace(safe(issuer.getCountryCode()), safe(issuer.getCountry())))
-        ));
+
+        if (issuer != null && issuer.isNoStreet()) {
+            preview.setIssuerAddressLine1(joinWithSpace(safe(issuer.getCity()), safe(issuer.getStreet())));
+            preview.setIssuerAddressLine2(joinWithNewLine(
+                    joinWithSpace(safe(issuer.getPostalCode()), safe(issuer.getCity())),
+                    joinWithSpace(safe(issuer.getCountryCode()), safe(issuer.getCountry()))
+            ));
+        } else {
+            preview.setIssuerAddressLine1(safe(issuer.getStreet()));
+            preview.setIssuerAddressLine2(joinWithSpace(
+                    safe(issuer.getPostalCode()),
+                    joinWithSpace(safe(issuer.getCity()), joinWithSpace(safe(issuer.getCountryCode()), safe(issuer.getCountry())))
+            ));
+        }
+
         preview.setIssuerPhytosanitaryNumber(safe(issuer.getPhytosanitaryNumber()));
     }
 
@@ -104,11 +114,21 @@ public class DocumentRenderService {
             return;
         }
 
-        String addressLine1 = safe(contrahent.getStreet());
-        String addressLine2 = joinWithSpace(
-                safe(contrahent.getPostalCode()),
-                joinWithSpace(safe(contrahent.getCity()), joinWithSpace(safe(contrahent.getCountryCode()), safe(contrahent.getCountry())))
-        );
+        String addressLine1;
+        String addressLine2;
+        if (contrahent.isNoStreet()) {
+            addressLine1 = joinWithSpace(safe(contrahent.getCity()), safe(contrahent.getStreet()));
+            addressLine2 = joinWithNewLine(
+                    joinWithSpace(safe(contrahent.getPostalCode()), safe(contrahent.getCity())),
+                    joinWithSpace(safe(contrahent.getCountryCode()), safe(contrahent.getCountry()))
+            );
+        } else {
+            addressLine1 = safe(contrahent.getStreet());
+            addressLine2 = joinWithNewLine(
+                    joinWithSpace(safe(contrahent.getPostalCode()), safe(contrahent.getCity())),
+                    joinWithSpace(safe(contrahent.getCountryCode()), safe(contrahent.getCountry()))
+            );
+        }
 
         preview.setContrahentName(safe(contrahent.getName()));
         preview.setContrahentAddress(joinWithNewLine(addressLine1, addressLine2));
@@ -159,21 +179,12 @@ public class DocumentRenderService {
             referenceDate = LocalDate.now();
         }
         if (referenceDate.isBefore(batchDate)) {
-            return "0 dni";
+            return "1";
         }
 
         Period period = Period.between(batchDate, referenceDate);
-        if (period.getYears() > 0) {
-            if (period.getMonths() > 0) {
-                return period.getYears() + " l " + period.getMonths() + " mies.";
-            }
-            return period.getYears() + " l";
-        }
-        if (period.getMonths() > 0) {
-            return period.getMonths() + " mies.";
-        }
-
-        return Math.max(0, period.getDays()) + " dni";
+        int ageInYears = Math.max(1, period.getYears());
+        return String.valueOf(ageInYears);
     }
 
     private String resolveBatchNumber(PlantBatch batch) {

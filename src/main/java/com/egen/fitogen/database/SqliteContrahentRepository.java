@@ -17,8 +17,8 @@ public class SqliteContrahentRepository
     public void save(Contrahent contrahent) {
         String sql = """
                 INSERT INTO contrahents
-                (name, country, country_code, postal_code, city, street, phytosanitary_number, is_supplier, is_client)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                (name, country, country_code, postal_code, city, street, no_street, phytosanitary_number, is_supplier, is_client)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """;
 
         Connection conn = null;
@@ -34,9 +34,10 @@ public class SqliteContrahentRepository
             stmt.setString(4, contrahent.getPostalCode());
             stmt.setString(5, contrahent.getCity());
             stmt.setString(6, contrahent.getStreet());
-            stmt.setString(7, contrahent.getPhytosanitaryNumber());
-            stmt.setBoolean(8, contrahent.isSupplier());
-            stmt.setBoolean(9, contrahent.isClient());
+            stmt.setBoolean(7, contrahent.isNoStreet());
+            stmt.setString(8, contrahent.getPhytosanitaryNumber());
+            stmt.setBoolean(9, contrahent.isSupplier());
+            stmt.setBoolean(10, contrahent.isClient());
 
             executeUpdate(stmt);
 
@@ -52,7 +53,7 @@ public class SqliteContrahentRepository
         String sql = """
                 UPDATE contrahents
                 SET name = ?, country = ?, country_code = ?, postal_code = ?, city = ?, street = ?,
-                    phytosanitary_number = ?, is_supplier = ?, is_client = ?
+                    no_street = ?, phytosanitary_number = ?, is_supplier = ?, is_client = ?
                 WHERE id = ?
                 """;
 
@@ -69,10 +70,11 @@ public class SqliteContrahentRepository
             stmt.setString(4, contrahent.getPostalCode());
             stmt.setString(5, contrahent.getCity());
             stmt.setString(6, contrahent.getStreet());
-            stmt.setString(7, contrahent.getPhytosanitaryNumber());
-            stmt.setBoolean(8, contrahent.isSupplier());
-            stmt.setBoolean(9, contrahent.isClient());
-            stmt.setInt(10, contrahent.getId());
+            stmt.setBoolean(7, contrahent.isNoStreet());
+            stmt.setString(8, contrahent.getPhytosanitaryNumber());
+            stmt.setBoolean(9, contrahent.isSupplier());
+            stmt.setBoolean(10, contrahent.isClient());
+            stmt.setInt(11, contrahent.getId());
 
             executeUpdate(stmt);
 
@@ -197,6 +199,7 @@ public class SqliteContrahentRepository
         contrahent.setPostalCode(rs.getString("postal_code"));
         contrahent.setCity(rs.getString("city"));
         contrahent.setStreet(rs.getString("street"));
+        contrahent.setNoStreet(rs.getBoolean("no_street"));
         contrahent.setPhytosanitaryNumber(rs.getString("phytosanitary_number"));
         contrahent.setSupplier(rs.getBoolean("is_supplier"));
         contrahent.setClient(rs.getBoolean("is_client"));

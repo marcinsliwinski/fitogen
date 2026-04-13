@@ -394,7 +394,10 @@
                                 <TextField fx:id="issuerCityField" promptText="Miasto" GridPane.rowIndex="4" GridPane.columnIndex="1"/>
 
                                 <Label text="Ulica i nr" GridPane.rowIndex="5" GridPane.columnIndex="0"/>
-                                <TextField fx:id="issuerStreetField" promptText="Ulica i numer" GridPane.rowIndex="5" GridPane.columnIndex="1"/>
+                                <HBox spacing="10" alignment="CENTER_LEFT" GridPane.rowIndex="5" GridPane.columnIndex="1">
+                                    <TextField fx:id="issuerStreetField" promptText="Ulica i numer" HBox.hgrow="ALWAYS"/>
+                                    <CheckBox fx:id="issuerNoStreetCheckBox" text="Brak ulicy"/>
+                                </HBox>
 
                                 <Label text="Nr fitosanitarny" GridPane.rowIndex="6" GridPane.columnIndex="0"/>
                                 <TextField fx:id="issuerPhytosanitaryNumberField" promptText="Numer fitosanitarny" GridPane.rowIndex="6" GridPane.columnIndex="1"/>

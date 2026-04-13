@@ -38,6 +38,7 @@ public class DatabaseInitializer {
                     postal_code TEXT,
                     city TEXT,
                     street TEXT,
+                    no_street INTEGER NOT NULL DEFAULT 0,
                     phytosanitary_number TEXT,
                     is_supplier INTEGER NOT NULL DEFAULT 0,
                     is_client INTEGER NOT NULL DEFAULT 0
@@ -242,6 +243,7 @@ public class DatabaseInitializer {
             // migrations for older databases
             ensureColumnExists(stmt, "plants", "eppo_code", "TEXT");
             ensureColumnExists(stmt, "plants", "passport_required", "INTEGER NOT NULL DEFAULT 0");
+            ensureColumnExists(stmt, "contrahents", "no_street", "INTEGER NOT NULL DEFAULT 0");
             ensureColumnExists(stmt, "contrahents", "is_supplier", "INTEGER NOT NULL DEFAULT 0");
             ensureColumnExists(stmt, "contrahents", "is_client", "INTEGER NOT NULL DEFAULT 0");
             ensureColumnExists(stmt, "plant_batches", "is_internal_source", "INTEGER NOT NULL DEFAULT 0");
@@ -257,6 +259,7 @@ public class DatabaseInitializer {
             ensureColumnExists(stmt, "eppo_zones", "status", "TEXT DEFAULT 'ACTIVE'");
 
             stmt.executeUpdate("UPDATE plants SET passport_required = COALESCE(passport_required, 0)");
+            stmt.executeUpdate("UPDATE contrahents SET no_street = COALESCE(no_street, 0)");
             stmt.executeUpdate("UPDATE contrahents SET is_supplier = COALESCE(is_supplier, 0)");
             stmt.executeUpdate("UPDATE contrahents SET is_client = COALESCE(is_client, 0)");
             stmt.executeUpdate("UPDATE plant_batches SET is_internal_source = COALESCE(is_internal_source, 0)");

@@ -16,8 +16,8 @@ import javafx.print.PrinterJob;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
@@ -27,8 +27,8 @@ import java.io.File;
 
 public class DocumentPreviewController {
 
-    private static final double TABLE_ROW_HEIGHT = 38;
-    private static final double TABLE_HEADER_HEIGHT = 36;
+    private static final double TABLE_ROW_HEIGHT = 40;
+    private static final double TABLE_HEADER_HEIGHT = 42;
 
     @FXML private VBox printableRoot;
     @FXML private Label documentTypeTitleLabel;
@@ -45,6 +45,9 @@ public class DocumentPreviewController {
     @FXML private VBox commentsSection;
     @FXML private Label commentsLabel;
     @FXML private Label cancelledBadge;
+    @FXML private HBox itemsSummaryRow;
+    @FXML private Label summaryLabelCell;
+    @FXML private Label totalQtyLabel;
     @FXML private TableView<DocumentPreviewItemDTO> itemsTable;
     @FXML private TableColumn<DocumentPreviewItemDTO, String> colLp;
     @FXML private TableColumn<DocumentPreviewItemDTO, String> colPlant;
@@ -60,7 +63,7 @@ public class DocumentPreviewController {
 
     @FXML
     public void initialize() {
-        colLp.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().isSummaryRow() ? "" : String.valueOf(cell.getValue().getLp())));
+        colLp.setCellValueFactory(cell -> new SimpleStringProperty(String.valueOf(cell.getValue().getLp())));
         colPlant.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getPlantName()));
         colBatch.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getBatchNumber()));
         colAge.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getBatchAgeLabel()));
@@ -68,7 +71,9 @@ public class DocumentPreviewController {
         colQty.setCellValueFactory(cell -> new SimpleIntegerProperty(cell.getValue().getQty()));
 
         colLp.setStyle("-fx-alignment: CENTER;");
+        colBatch.setStyle("-fx-alignment: CENTER;");
         colAge.setStyle("-fx-alignment: CENTER;");
+        colCategory.setStyle("-fx-alignment: CENTER;");
         colQty.setStyle("-fx-alignment: CENTER;");
 
         if (itemsTable != null) {
@@ -76,16 +81,36 @@ public class DocumentPreviewController {
             itemsTable.setPlaceholder(new Label("Brak pozycji dokumentu do wyświetlenia."));
             itemsTable.setFixedCellSize(TABLE_ROW_HEIGHT);
             itemsTable.setFocusTraversable(false);
-            itemsTable.setRowFactory(table -> new TableRow<>() {
-                @Override
-                protected void updateItem(DocumentPreviewItemDTO item, boolean empty) {
-                    super.updateItem(item, empty);
-                    getStyleClass().remove("preview-summary-row");
-                    if (!empty && item != null && item.isSummaryRow()) {
-                        getStyleClass().add("preview-summary-row");
-                    }
-                }
-            });
+        }
+
+        if (summaryLabelCell != null) {
+            summaryLabelCell.prefWidthProperty().bind(
+                    colLp.widthProperty()
+                            .add(colPlant.widthProperty())
+                            .add(colBatch.widthProperty())
+                            .add(colAge.widthProperty())
+                            .add(colCategory.widthProperty())
+            );
+            summaryLabelCell.minWidthProperty().bind(summaryLabelCell.prefWidthProperty());
+            summaryLabelCell.maxWidthProperty().bind(summaryLabelCell.prefWidthProperty());
+            summaryLabelCell.setMinHeight(TABLE_HEADER_HEIGHT);
+            summaryLabelCell.setPrefHeight(TABLE_HEADER_HEIGHT);
+            summaryLabelCell.setMaxHeight(TABLE_HEADER_HEIGHT);
+        }
+
+        if (totalQtyLabel != null) {
+            totalQtyLabel.prefWidthProperty().bind(colQty.widthProperty());
+            totalQtyLabel.minWidthProperty().bind(totalQtyLabel.prefWidthProperty());
+            totalQtyLabel.maxWidthProperty().bind(totalQtyLabel.prefWidthProperty());
+            totalQtyLabel.setMinHeight(TABLE_HEADER_HEIGHT);
+            totalQtyLabel.setPrefHeight(TABLE_HEADER_HEIGHT);
+            totalQtyLabel.setMaxHeight(TABLE_HEADER_HEIGHT);
+        }
+
+        if (itemsSummaryRow != null) {
+            itemsSummaryRow.setMinHeight(TABLE_HEADER_HEIGHT);
+            itemsSummaryRow.setPrefHeight(TABLE_HEADER_HEIGHT);
+            itemsSummaryRow.setMaxHeight(TABLE_HEADER_HEIGHT);
         }
 
         commentsSection.managedProperty().bind(commentsSection.visibleProperty());
@@ -114,6 +139,11 @@ public class DocumentPreviewController {
         issueDateLabel.setText(valueOrDash(preview.getIssueDateLabel()));
         issuePlaceLabel.setText(valueOrDash(preview.getIssuePlaceLabel()));
         createdByLabel.setText(valueOrDash(preview.getCreatedBy()));
+        totalQtyLabel.setText(String.valueOf(preview.getTotalQty()));
+        if (itemsSummaryRow != null) {
+            itemsSummaryRow.setVisible(true);
+            itemsSummaryRow.setManaged(true);
+        }
         commentsLabel.setText(valueOrDash(preview.getComments()));
         commentsSection.setVisible(preview.getComments() != null && !preview.getComments().isBlank());
         cancelledBadge.setVisible(preview.isCancelled());
@@ -133,12 +163,6 @@ public class DocumentPreviewController {
         if (preview.getItems() != null) {
             displayItems.addAll(preview.getItems());
         }
-
-        DocumentPreviewItemDTO summaryRow = new DocumentPreviewItemDTO();
-        summaryRow.setSummaryRow(true);
-        summaryRow.setPlantName("Suma:");
-        summaryRow.setQty(preview.getTotalQty());
-        displayItems.add(summaryRow);
         return displayItems;
     }
 
@@ -147,8 +171,8 @@ public class DocumentPreviewController {
             return;
         }
 
-        int itemsCount = (preview.getItems() == null ? 0 : preview.getItems().size()) + 1;
-        double preferredHeight = TABLE_HEADER_HEIGHT + Math.max(1, itemsCount) * TABLE_ROW_HEIGHT + 8;
+        int itemsCount = preview.getItems() == null ? 0 : preview.getItems().size();
+        double preferredHeight = TABLE_HEADER_HEIGHT + Math.max(1, itemsCount) * TABLE_ROW_HEIGHT + 2;
 
         itemsTable.setPrefHeight(preferredHeight);
         itemsTable.setMinHeight(preferredHeight);

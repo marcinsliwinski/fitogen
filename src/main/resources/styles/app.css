@@ -545,7 +545,7 @@
 }
 
 .preview-box-body {
-    -fx-padding: 10 12 10 12;
+    -fx-padding: 8 12 8 12;
 }
 
 .preview-invoice-title {
@@ -580,7 +580,7 @@
 
 .invoice-table .column-header,
 .invoice-table .filler {
-    -fx-size: 44;
+    -fx-size: 52;
     -fx-border-color: transparent transparent #4b5563 transparent;
 }
 
@@ -589,6 +589,8 @@
     -fx-font-size: 12px;
     -fx-font-weight: 700;
     -fx-alignment: CENTER;
+    -fx-wrap-text: true;
+    -fx-text-alignment: center;
 }
 
 .invoice-table .table-row-cell {
@@ -596,30 +598,54 @@
     -fx-border-color: transparent transparent #d4d8de transparent;
 }
 
-.preview-total-label,
-.preview-total-value {
-    -fx-border-color: #4b5563;
-    -fx-border-width: 0 0 1 0;
-    -fx-padding: 8 10 8 10;
-    -fx-font-size: 12px;
+.invoice-table .scroll-bar:vertical,
+.invoice-table .scroll-bar:horizontal {
+    -fx-pref-width: 0;
+    -fx-pref-height: 0;
+    -fx-opacity: 0;
+    -fx-padding: 0;
 }
 
-.preview-total-label {
-    -fx-background-color: #d9d9d9;
-    -fx-font-weight: 700;
-    -fx-text-fill: #111827;
+.preview-items-wrap {
+    -fx-spacing: 0;
 }
 
-.preview-total-value {
-    -fx-background-color: white;
-    -fx-alignment: CENTER_RIGHT;
-    -fx-text-fill: #111827;
+.preview-items-table {
+    -fx-border-radius: 0;
+    -fx-background-radius: 0;
+    -fx-border-width: 1 1 0 1;
 }
 
-.preview-total-label-strong,
-.preview-total-value-strong {
+.preview-table-summary-row {
+    -fx-spacing: 0;
+    -fx-padding: 0;
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-border-color: transparent;
+    -fx-border-width: 0;
+    -fx-border-insets: 0;
+}
+
+.preview-table-summary-label,
+.preview-table-summary-value {
+    -fx-background-color: #f4f7fa;
+    -fx-background-insets: 0;
+    -fx-border-color: #e8edf2;
+    -fx-border-insets: 0;
+    -fx-padding: 0 10 0 10;
     -fx-font-size: 13px;
-    -fx-font-weight: 800;
+    -fx-font-weight: 700;
+    -fx-text-fill: #425466;
+    -fx-alignment: CENTER;
+    -fx-text-alignment: center;
+}
+
+.preview-table-summary-label {
+    -fx-border-width: 1 0 1 1;
+}
+
+.preview-table-summary-value {
+    -fx-border-width: 1 1 1 1;
 }
 
 .preview-comments-title {
@@ -644,6 +670,7 @@
 .preview-authority-box {
     -fx-padding: 2 0 6 0;
     -fx-alignment: CENTER_LEFT;
+    -fx-spacing: 1;
 }
 
 .preview-authority-line {

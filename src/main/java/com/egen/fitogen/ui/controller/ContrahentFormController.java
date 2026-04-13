@@ -30,6 +30,7 @@ public class ContrahentFormController {
     @FXML private javafx.scene.control.TextField postalCodeField;
     @FXML private javafx.scene.control.TextField cityField;
     @FXML private javafx.scene.control.TextField streetField;
+    @FXML private CheckBox noStreetCheckBox;
     @FXML private javafx.scene.control.TextField phytosanitaryNumberField;
     @FXML private CheckBox supplierCheckBox;
     @FXML private CheckBox clientCheckBox;
@@ -58,6 +59,9 @@ public class ContrahentFormController {
         installComboTrimSupport(countryCodeField);
         installUppercaseEditorSupport(countryCodeField);
         installFieldTooltips();
+        if (noStreetCheckBox != null) {
+            noStreetCheckBox.selectedProperty().addListener((obs, oldVal, newVal) -> updateStreetPrompt());
+        }
 
         attachAutocomplete(countryField, countryDirectoryService::getCountries);
         attachAutocomplete(countryCodeField, countryDirectoryService::getCodes);
@@ -74,6 +78,7 @@ public class ContrahentFormController {
         countryCodeField.valueProperty().addListener((obs, oldVal, newVal) -> syncCountryFromCode());
 
         Platform.runLater(() -> {
+            updateStreetPrompt();
             installWindowCloseGuard();
             markCurrentStateAsClean();
         });
@@ -88,7 +93,11 @@ public class ContrahentFormController {
         postalCodeField.setText(contrahent.getPostalCode());
         cityField.setText(contrahent.getCity());
         streetField.setText(contrahent.getStreet());
+        if (noStreetCheckBox != null) {
+            noStreetCheckBox.setSelected(contrahent.isNoStreet());
+        }
         phytosanitaryNumberField.setText(contrahent.getPhytosanitaryNumber());
+        updateStreetPrompt();
         supplierCheckBox.setSelected(contrahent.isSupplier());
         clientCheckBox.setSelected(contrahent.isClient());
         markCurrentStateAsClean();
@@ -106,6 +115,7 @@ public class ContrahentFormController {
             entity.setPostalCode(ValidationUtil.optionalText(postalCodeField.getText()));
             entity.setCity(ValidationUtil.optionalText(cityField.getText()));
             entity.setStreet(ValidationUtil.optionalText(streetField.getText()));
+            entity.setNoStreet(noStreetCheckBox != null && noStreetCheckBox.isSelected());
             entity.setPhytosanitaryNumber(ValidationUtil.optionalText(phytosanitaryNumberField.getText()));
             entity.setSupplier(supplierCheckBox.isSelected());
             entity.setClient(clientCheckBox.isSelected());
@@ -192,7 +202,8 @@ public class ContrahentFormController {
         setTooltip(countryCodeField, "Kod kraju jest synchronizowany ze słownikiem krajów. Wpis ręczny zostanie zapisany wielkimi literami.");
         setTooltip(postalCodeField, "Pole opcjonalne. Możesz wpisać kod pocztowy używany na dokumentach i etykietach.");
         setTooltip(cityField, "Pole opcjonalne. Ułatwia identyfikację adresu kontrahenta.");
-        setTooltip(streetField, "Pole opcjonalne. Możesz wpisać ulicę i numer, jeśli mają pojawiać się w danych kontrahenta.");
+        setTooltip(streetField, "Pole opcjonalne. Standardowo wpisz ulicę i numer. Przy włączonym trybie 'Brak ulicy' wpisz sam numer domu miejscowości.");
+        setTooltip(noStreetCheckBox, "Zaznacz, jeśli kontrahent nie ma ulicy. Wtedy na dokumentach zostanie użyty format: miejscowość + numer domu.");
         setTooltip(phytosanitaryNumberField, "Pole opcjonalne. Wpisz numer fitosanitarny, jeśli kontrahent go posiada i ma być widoczny na dokumentach.");
         setTooltip(supplierCheckBox, "Zaznacz, jeśli kontrahent występuje jako dostawca partii roślin.");
         setTooltip(clientCheckBox, "Zaznacz, jeśli kontrahent występuje jako odbiorca lub klient na dokumentach.");
@@ -383,6 +394,7 @@ public class ContrahentFormController {
                 normalizeText(postalCodeField == null ? null : postalCodeField.getText()),
                 normalizeText(cityField == null ? null : cityField.getText()),
                 normalizeText(streetField == null ? null : streetField.getText()),
+                String.valueOf(noStreetCheckBox != null && noStreetCheckBox.isSelected()),
                 normalizeText(phytosanitaryNumberField == null ? null : phytosanitaryNumberField.getText()),
                 String.valueOf(supplierCheckBox != null && supplierCheckBox.isSelected()),
                 String.valueOf(clientCheckBox != null && clientCheckBox.isSelected())
@@ -400,6 +412,15 @@ public class ContrahentFormController {
         }
         String normalized = value.trim().replaceAll("\\s+", " ");
         return normalized.isBlank() ? "" : normalized;
+    }
+
+    private void updateStreetPrompt() {
+        if (streetField == null) {
+            return;
+        }
+
+        boolean noStreet = noStreetCheckBox != null && noStreetCheckBox.isSelected();
+        streetField.setPromptText(noStreet ? "Numer domu miejscowości" : "Ulica i numer");
     }
 
     private void installWindowCloseGuard() {
@@ -431,6 +452,7 @@ public class ContrahentFormController {
                 postalCodeField,
                 cityField,
                 streetField,
+                noStreetCheckBox,
                 phytosanitaryNumberField
         };
 

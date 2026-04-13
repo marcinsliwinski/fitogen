@@ -212,6 +212,7 @@ public class ContrahentCsvImportService {
                 row.getPostalCode(),
                 row.getCity(),
                 null,
+                false,
                 row.getPhytosanitaryNumber(),
                 row.isSupplier(),
                 row.isClient()

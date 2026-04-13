@@ -8,6 +8,7 @@ public class IssuerProfile {
     private String postalCode;
     private String city;
     private String street;
+    private boolean noStreet;
     private String phytosanitaryNumber;
 
     public String getNurseryName() {
@@ -56,6 +57,14 @@ public class IssuerProfile {
 
     public void setStreet(String street) {
         this.street = street;
+    }
+
+    public boolean isNoStreet() {
+        return noStreet;
+    }
+
+    public void setNoStreet(boolean noStreet) {
+        this.noStreet = noStreet;
     }
 
     public String getPhytosanitaryNumber() {

@@ -16,6 +16,7 @@ public class AppSettingsService {
     public static final String ISSUER_POSTAL_CODE = "issuer.postal_code";
     public static final String ISSUER_CITY = "issuer.city";
     public static final String ISSUER_STREET = "issuer.street";
+    public static final String ISSUER_NO_STREET = "issuer.no_street";
     public static final String ISSUER_PHYTOSANITARY_NUMBER = "issuer.phytosanitary_number";
     public static final String LAST_BACKUP_PATH = "backup.last.path";
     public static final String LAST_BACKUP_AT = "backup.last.at";
@@ -77,6 +78,7 @@ public class AppSettingsService {
         profile.setPostalCode(getSetting(ISSUER_POSTAL_CODE));
         profile.setCity(getSetting(ISSUER_CITY));
         profile.setStreet(getSetting(ISSUER_STREET));
+        profile.setNoStreet(parseBooleanSetting(getSetting(ISSUER_NO_STREET)));
         profile.setPhytosanitaryNumber(getSetting(ISSUER_PHYTOSANITARY_NUMBER));
         return profile;
     }
@@ -96,6 +98,7 @@ public class AppSettingsService {
         saveSetting(ISSUER_POSTAL_CODE, profile.getPostalCode(), false);
         saveSetting(ISSUER_CITY, profile.getCity(), false);
         saveSetting(ISSUER_STREET, profile.getStreet(), false);
+        saveSetting(ISSUER_NO_STREET, String.valueOf(profile.isNoStreet()), false);
         saveSetting(ISSUER_PHYTOSANITARY_NUMBER, profile.getPhytosanitaryNumber(), false);
 
         if (auditLogService != null) {
@@ -207,6 +210,13 @@ public class AppSettingsService {
                 && notBlank(profile.getPhytosanitaryNumber());
     }
 
+    private boolean parseBooleanSetting(String raw) {
+        if (raw == null || raw.trim().isEmpty()) {
+            return false;
+        }
+        return "true".equalsIgnoreCase(raw.trim()) || "1".equals(raw.trim());
+    }
+
     private boolean notBlank(String value) {
         return value != null && !value.trim().isBlank();
     }
@@ -253,6 +263,7 @@ public class AppSettingsService {
                 + ", kraj=" + summarizeValue(profile.getCountry())
                 + ", kod kraju=" + summarizeValue(profile.getCountryCode())
                 + ", miasto=" + summarizeValue(profile.getCity())
+                + ", bez ulicy=" + (profile.isNoStreet() ? "tak" : "nie")
                 + ", numer fitosanitarny=" + summarizeValue(profile.getPhytosanitaryNumber());
     }
 

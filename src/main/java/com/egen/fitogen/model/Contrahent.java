@@ -16,6 +16,7 @@ public class Contrahent {
     private String postalCode;
     private String city;
     private String street;
+    private boolean noStreet;
     private String phytosanitaryNumber;
     private boolean supplier;
     private boolean client;

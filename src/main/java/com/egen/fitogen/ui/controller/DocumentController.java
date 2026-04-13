@@ -335,8 +335,8 @@ public class DocumentController {
         ModalViewUtil.openModal(
                 "/view/document_preview.fxml",
                 "Podgląd dokumentu",
-                1120, 900,
-                980, 760,
+                1220, 980,
+                1080, 820,
                 (DocumentPreviewController controller) -> controller.setDocumentId(selected.getId())
         );
     }

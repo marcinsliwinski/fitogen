@@ -27,7 +27,7 @@
         <ScrollPane fitToWidth="true" BorderPane.alignment="CENTER" styleClass="dashboard-scroll">
             <content>
                 <VBox spacing="18" alignment="TOP_CENTER" style="-fx-padding: 20 20 20 20;">
-                    <VBox fx:id="printableRoot" spacing="14" maxWidth="860" styleClass="preview-sheet preview-sheet-a4 preview-invoice-sheet">
+                    <VBox fx:id="printableRoot" spacing="14" maxWidth="940" styleClass="preview-sheet preview-sheet-a4 preview-invoice-sheet">
                         <padding>
                             <Insets top="24" right="24" bottom="18" left="24"/>
                         </padding>
@@ -74,20 +74,31 @@
 
                         <VBox spacing="1" alignment="CENTER_LEFT" styleClass="preview-authority-box">
                             <Label text="Państwowa Inspekcja Ochrony Roślin i Nasiennictwa" styleClass="preview-authority-line"/>
-                            <Label text="PL" styleClass="preview-authority-line"/>
-                            <Label text="Jakość WE" styleClass="preview-authority-line"/>
+                            <Label text="PL / Jakość WE" styleClass="preview-authority-line"/>
                         </VBox>
 
-                        <TableView fx:id="itemsTable" styleClass="invoice-table">
-                            <columns>
-                                <TableColumn fx:id="colLp" text="Lp" maxWidth="50" prefWidth="50"/>
-                                <TableColumn fx:id="colPlant" text="Nazwa" prefWidth="290"/>
-                                <TableColumn fx:id="colBatch" text="Partia" prefWidth="170"/>
-                                <TableColumn fx:id="colAge" text="Wiek" prefWidth="95"/>
-                                <TableColumn fx:id="colCategory" text="Kategoria" prefWidth="145"/>
-                                <TableColumn fx:id="colQty" text="Ilość" prefWidth="90"/>
-                            </columns>
-                        </TableView>
+                        <VBox spacing="0" styleClass="preview-items-wrap">
+                            <TableView fx:id="itemsTable" styleClass="invoice-table preview-items-table">
+                                <columns>
+                                    <TableColumn fx:id="colLp" text="Lp" maxWidth="50" prefWidth="50"/>
+                                    <TableColumn fx:id="colPlant" text="Nazwa rośliny (Gatunek, Podkładka, Odmiana)" prefWidth="420"/>
+                                    <TableColumn fx:id="colBatch" text="Partia" prefWidth="150"/>
+                                    <TableColumn fx:id="colAge" text="Wiek" prefWidth="60"/>
+                                    <TableColumn fx:id="colCategory" text="Kategoria" prefWidth="115"/>
+                                    <TableColumn fx:id="colQty" text="Ilość" prefWidth="70"/>
+                                </columns>
+                            </TableView>
+
+                            <HBox fx:id="itemsSummaryRow" spacing="0" styleClass="preview-table-summary-row">
+                                <Label fx:id="summaryLabelCell"
+                                       text="Suma:"
+                                       alignment="CENTER"
+                                       styleClass="preview-table-summary-label"/>
+                                <Label fx:id="totalQtyLabel"
+                                       alignment="CENTER"
+                                       styleClass="preview-table-summary-value"/>
+                            </HBox>
+                        </VBox>
 
                         <VBox fx:id="commentsSection" spacing="6" visible="false">
                             <Label text="Uwagi:" styleClass="preview-comments-title"/>

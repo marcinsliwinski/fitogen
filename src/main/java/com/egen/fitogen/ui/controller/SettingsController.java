@@ -124,6 +124,7 @@ public class SettingsController {
     @FXML private TextField issuerPostalCodeField;
     @FXML private TextField issuerCityField;
     @FXML private TextField issuerStreetField;
+    @FXML private CheckBox issuerNoStreetCheckBox;
     @FXML private TextField issuerPhytosanitaryNumberField;
     @FXML private Label issuerStatusLabel;
     @FXML private Label issuerSummaryLabel;
@@ -1351,6 +1352,13 @@ public class SettingsController {
         attachIssuerProfileListener(issuerStreetField);
         attachIssuerProfileListener(issuerPhytosanitaryNumberField);
 
+        if (issuerNoStreetCheckBox != null) {
+            issuerNoStreetCheckBox.selectedProperty().addListener((obs, oldVal, newVal) -> {
+                updateIssuerStreetPrompt();
+                updateIssuerStatusLabel();
+            });
+        }
+
         if (issuerCountryField != null) {
             issuerCountryField.valueProperty().addListener((obs, oldVal, newVal) -> updateIssuerStatusLabel());
             if (issuerCountryField.getEditor() != null) {
@@ -1474,7 +1482,11 @@ public class SettingsController {
         issuerPostalCodeField.clear();
         issuerCityField.clear();
         issuerStreetField.clear();
+        if (issuerNoStreetCheckBox != null) {
+            issuerNoStreetCheckBox.setSelected(false);
+        }
         issuerPhytosanitaryNumberField.clear();
+        updateIssuerStreetPrompt();
         issuerStatusLabel.setText("Formularz wyczyszczony. Zapisz, aby usunąć dane z ustawień.");
         updateIssuerStatusLabel();
     }
@@ -1487,7 +1499,11 @@ public class SettingsController {
         issuerPostalCodeField.setText(safe(profile.getPostalCode()));
         issuerCityField.setText(safe(profile.getCity()));
         issuerStreetField.setText(safe(profile.getStreet()));
+        if (issuerNoStreetCheckBox != null) {
+            issuerNoStreetCheckBox.setSelected(profile.isNoStreet());
+        }
         issuerPhytosanitaryNumberField.setText(safe(profile.getPhytosanitaryNumber()));
+        updateIssuerStreetPrompt();
         updateIssuerStatusLabel();
     }
 
@@ -1499,8 +1515,19 @@ public class SettingsController {
         profile.setPostalCode(safe(issuerPostalCodeField.getText()));
         profile.setCity(safe(issuerCityField.getText()));
         profile.setStreet(safe(issuerStreetField.getText()));
+        profile.setNoStreet(issuerNoStreetCheckBox != null && issuerNoStreetCheckBox.isSelected());
         profile.setPhytosanitaryNumber(safe(issuerPhytosanitaryNumberField.getText()));
         return profile;
+    }
+
+
+    private void updateIssuerStreetPrompt() {
+        if (issuerStreetField == null) {
+            return;
+        }
+
+        boolean noStreet = issuerNoStreetCheckBox != null && issuerNoStreetCheckBox.isSelected();
+        issuerStreetField.setPromptText(noStreet ? "Numer domu miejscowości" : "Ulica i numer");
     }
 
     private void updateIssuerStatusLabel() {
@@ -1555,7 +1582,7 @@ public class SettingsController {
             missing.add("miasto");
         }
         if (safe(profile.getStreet()).isBlank()) {
-            missing.add("ulica i numer");
+            missing.add(profile.isNoStreet() ? "numer domu miejscowości" : "ulica i numer");
         }
         if (safe(profile.getPhytosanitaryNumber()).isBlank()) {
             missing.add("nr fitosanitarny");
@@ -1603,6 +1630,10 @@ public class SettingsController {
 
         if (!safe(profile.getCountryCode()).isBlank()) {
             builder.append(" (").append(safe(profile.getCountryCode()).toUpperCase()).append(")");
+        }
+
+        if (profile.isNoStreet()) {
+            builder.append(", tryb: brak ulicy");
         }
 
         builder.append(". ");

@@ -55,8 +55,11 @@
         <Label text="Miasto:" GridPane.rowIndex="4" GridPane.columnIndex="0"/>
         <TextField fx:id="cityField" GridPane.rowIndex="4" GridPane.columnIndex="1"/>
 
-        <Label text="Ulica:" GridPane.rowIndex="5" GridPane.columnIndex="0"/>
-        <TextField fx:id="streetField" GridPane.rowIndex="5" GridPane.columnIndex="1"/>
+        <Label text="Ulica i nr:" GridPane.rowIndex="5" GridPane.columnIndex="0"/>
+        <HBox spacing="10" alignment="CENTER_LEFT" GridPane.rowIndex="5" GridPane.columnIndex="1">
+            <TextField fx:id="streetField" promptText="Ulica i numer" HBox.hgrow="ALWAYS"/>
+            <CheckBox fx:id="noStreetCheckBox" text="Brak ulicy"/>
+        </HBox>
 
         <Label text="Nr fitosanitarny:" GridPane.rowIndex="6" GridPane.columnIndex="0"/>
         <TextField fx:id="phytosanitaryNumberField" GridPane.rowIndex="6" GridPane.columnIndex="1"/>
