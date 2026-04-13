@@ -60,6 +60,13 @@ public class DocumentRenderService {
         if (document == null) {
             throw new IllegalArgumentException("Dokument nie istnieje.");
         }
+        return buildPreview(document);
+    }
+
+    public DocumentPreviewDTO buildPreview(DocumentDTO document) {
+        if (document == null) {
+            throw new IllegalArgumentException("Brak danych dokumentu do podglądu.");
+        }
 
         DocumentPreviewDTO preview = new DocumentPreviewDTO();
         preview.setDocumentId(document.getId());

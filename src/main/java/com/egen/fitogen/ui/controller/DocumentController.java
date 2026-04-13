@@ -279,8 +279,8 @@ public class DocumentController {
         ModalViewUtil.openModal(
                 "/view/document_form.fxml",
                 "Dodaj dokument",
-                1220, 880,
-                1080, 760,
+                1340, 960,
+                1180, 840,
                 (DocumentFormController controller) -> {
                 }
         );
@@ -306,8 +306,8 @@ public class DocumentController {
         ModalViewUtil.openModal(
                 "/view/document_form.fxml",
                 "Edytuj dokument",
-                1220, 880,
-                1080, 760,
+                1340, 960,
+                1180, 840,
                 (DocumentFormController controller) -> controller.setDocument(selected)
         );
         refresh();

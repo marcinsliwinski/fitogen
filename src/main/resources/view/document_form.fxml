@@ -18,8 +18,8 @@
 <VBox xmlns:fx="http://javafx.com/fxml"
       fx:controller="com.egen.fitogen.ui.controller.DocumentFormController"
       spacing="16"
-      prefWidth="1180"
-      prefHeight="860"
+      prefWidth="1320"
+      prefHeight="940"
       styleClass="content-pane">
 
     <padding>
@@ -60,9 +60,9 @@
         <TableView fx:id="itemsTable" VBox.vgrow="ALWAYS">
             <columns>
                 <TableColumn fx:id="colLp" text="LP" prefWidth="55"/>
-                <TableColumn fx:id="colPlant" text="Roślina" prefWidth="260"/>
-                <TableColumn fx:id="colBatch" text="Partia" prefWidth="420"/>
-                <TableColumn fx:id="colQty" text="Ilość" prefWidth="120"/>
+                <TableColumn fx:id="colPlant" text="Roślina" prefWidth="300"/>
+                <TableColumn fx:id="colBatch" text="Partia" prefWidth="470"/>
+                <TableColumn fx:id="colQty" text="Ilość" prefWidth="130"/>
                 <TableColumn fx:id="colPassport" text="Paszport" prefWidth="110"/>
                 <TableColumn fx:id="colActions" text="Usuń" prefWidth="90"/>
             </columns>
@@ -75,7 +75,7 @@
     <VBox spacing="8">
         <Label fx:id="eppoInfoSummaryLabel" text="Informacje EPPO dla klienta" styleClass="form-section-title"/>
         <TextArea fx:id="eppoInfoArea"
-                  prefRowCount="6"
+                  prefRowCount="5"
                   wrapText="true"
                   editable="false"
                   focusTraversable="false"
@@ -99,13 +99,13 @@
             <ComboBox fx:id="createdByBox" promptText="Wybierz użytkownika" maxWidth="1.7976931348623157E308" GridPane.rowIndex="0" GridPane.columnIndex="3"/>
 
             <Label text="Uwagi:" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
-            <TextArea fx:id="commentsField" promptText="Dodatkowe uwagi" prefRowCount="3" wrapText="true" maxWidth="1.7976931348623157E308" GridPane.rowIndex="1" GridPane.columnIndex="1" GridPane.columnSpan="3"/>
+            <TextArea fx:id="commentsField" promptText="Dodatkowe uwagi" prefRowCount="4" wrapText="true" maxWidth="1.7976931348623157E308" GridPane.rowIndex="1" GridPane.columnIndex="1" GridPane.columnSpan="3"/>
         </GridPane>
     </VBox>
 
     <HBox spacing="10" alignment="CENTER_RIGHT" styleClass="form-actions">
-        <Button text="Podgląd" disable="true" styleClass="button-secondary"/>
-        <Button text="PDF" disable="true" styleClass="button-secondary"/>
+        <Button fx:id="previewButton" text="Podgląd" onAction="#previewDocument" styleClass="button-secondary"/>
+        <Button fx:id="pdfButton" text="PDF" onAction="#exportPdf" styleClass="button-secondary"/>
         <Button fx:id="cancelButton" text="Anuluj" minWidth="110" onAction="#cancel"/>
         <Button fx:id="saveButton" text="Zapisz dokument" minWidth="150" onAction="#save"/>
     </HBox>

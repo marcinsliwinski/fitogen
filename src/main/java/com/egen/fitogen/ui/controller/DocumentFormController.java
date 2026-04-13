@@ -1,12 +1,12 @@
 package com.egen.fitogen.ui.controller;
 
-import javafx.util.StringConverter;
 import javafx.application.Platform;
 import com.egen.fitogen.config.AppContext;
 import com.egen.fitogen.database.SqliteContrahentRepository;
 import com.egen.fitogen.database.SqlitePlantBatchRepository;
 import com.egen.fitogen.database.SqlitePlantRepository;
 import com.egen.fitogen.dto.DocumentDTO;
+import com.egen.fitogen.dto.DocumentPreviewDTO;
 import com.egen.fitogen.dto.DocumentItemDTO;
 import com.egen.fitogen.model.AppUser;
 import com.egen.fitogen.model.Contrahent;
@@ -24,8 +24,12 @@ import com.egen.fitogen.service.DocumentService;
 import com.egen.fitogen.service.DocumentTypeService;
 import com.egen.fitogen.service.EppoAdvisoryService;
 import com.egen.fitogen.service.EppoCodePlantLinkService;
+import com.egen.fitogen.service.DocumentPdfService;
+import com.egen.fitogen.service.DocumentRenderService;
 import com.egen.fitogen.service.PassportAdvisoryService;
+import com.egen.fitogen.ui.util.ComboBoxAutoComplete;
 import com.egen.fitogen.ui.util.DialogUtil;
+import com.egen.fitogen.ui.util.ModalViewUtil;
 import com.egen.fitogen.ui.util.UiTextUtil;
 import com.egen.fitogen.ui.util.WindowSizingUtil;
 import javafx.beans.property.BooleanProperty;
@@ -53,15 +57,19 @@ import javafx.scene.control.TableView;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
+import javafx.scene.control.TextFormatter;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
+import javafx.stage.FileChooser;
+import javafx.stage.Stage;
 
-
+import java.io.File;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -83,12 +91,16 @@ public class DocumentFormController {
     @FXML private TableColumn<DocumentItemRow, DocumentItemRow> colActions;
     @FXML private Button saveButton;
     @FXML private Button cancelButton;
+    @FXML private Button previewButton;
+    @FXML private Button pdfButton;
     @FXML private Label eppoInfoSummaryLabel;
     @FXML private TextArea eppoInfoArea;
 
     private final DocumentService documentService = AppContext.getDocumentService();
     private final DocumentTypeService documentTypeService = AppContext.getDocumentTypeService();
     private final AppUserService appUserService = AppContext.getAppUserService();
+    private final DocumentRenderService documentRenderService = new DocumentRenderService(documentService);
+    private final DocumentPdfService documentPdfService = new DocumentPdfService();
     private final EppoCodePlantLinkService eppoCodePlantLinkService = AppContext.getEppoCodePlantLinkService();
     private final EppoAdvisoryService eppoAdvisoryService = AppContext.getEppoAdvisoryService();
     private final PassportAdvisoryService passportAdvisoryService = AppContext.getPassportAdvisoryService();
@@ -115,6 +127,7 @@ public class DocumentFormController {
         configureUsersBox();
         configureContrahentBox();
         configureTable();
+        configureActionButtons();
 
         issueDateField.setValue(LocalDate.now());
         updateStatusLabel(DocumentStatus.ACTIVE);
@@ -225,7 +238,7 @@ public class DocumentFormController {
 
     private void configureDocumentTypeBox() {
         documentTypeBox.setItems(FXCollections.observableArrayList(allDocumentTypes));
-        documentTypeBox.setEditable(false);
+        documentTypeBox.setMaxWidth(Double.MAX_VALUE);
         documentTypeBox.setCellFactory(list -> new ListCell<>() {
             @Override
             protected void updateItem(DocumentType item, boolean empty) {
@@ -240,6 +253,7 @@ public class DocumentFormController {
                 setText(empty || item == null ? "" : formatDocumentType(item));
             }
         });
+        ComboBoxAutoComplete.bindSelectionAutocomplete(documentTypeBox, allDocumentTypes, this::formatDocumentType);
     }
 
     private void configureUsersBox() {
@@ -258,10 +272,12 @@ public class DocumentFormController {
                 setText(empty || item == null ? "" : item.getDisplayName());
             }
         });
+        ComboBoxAutoComplete.bindSelectionAutocomplete(createdByBox, allUsers, user -> user == null ? "" : safe(user.getDisplayName()));
     }
 
     private void configureContrahentBox() {
         contrahentBox.setItems(FXCollections.observableArrayList(allContrahents));
+        contrahentBox.setMaxWidth(Double.MAX_VALUE);
         contrahentBox.setCellFactory(list -> new ListCell<>() {
             @Override
             protected void updateItem(Contrahent item, boolean empty) {
@@ -276,6 +292,7 @@ public class DocumentFormController {
                 setText(empty || item == null ? "" : safe(item.getName()));
             }
         });
+        ComboBoxAutoComplete.bindSelectionAutocomplete(contrahentBox, allContrahents, contrahent -> contrahent == null ? "" : safe(contrahent.getName()));
         contrahentBox.valueProperty().addListener((obs, oldVal, newVal) -> refreshEppoInfo());
     }
 
@@ -305,6 +322,15 @@ public class DocumentFormController {
             });
             return row;
         });
+    }
+
+    private void configureActionButtons() {
+        if (previewButton != null) {
+            previewButton.setDisable(false);
+        }
+        if (pdfButton != null) {
+            pdfButton.setDisable(false);
+        }
     }
 
     private void bindRow(DocumentItemRow row) {
@@ -724,7 +750,7 @@ public class DocumentFormController {
         }
 
         DocumentDTO dto = new DocumentDTO();
-        dto.setDocumentNumber(safe(documentNumberField.getText()));
+        dto.setDocumentNumber(normalizeDocumentNumberForWorkflow(documentNumberField.getText()));
         dto.setDocumentType(selectedType.getName());
         dto.setIssueDate(issueDateField.getValue());
         dto.setContrahentId(selectedContrahent.getId());
@@ -732,6 +758,96 @@ public class DocumentFormController {
         dto.setComments(commentsField.getText());
         dto.setItems(items);
         return dto;
+    }
+
+    @FXML
+    private void previewDocument() {
+        try {
+            DocumentPreviewDTO preview = buildPreviewFromForm();
+            ModalViewUtil.openModal(
+                    "/view/document_preview.fxml",
+                    "Podgląd dokumentu",
+                    1260, 980,
+                    1120, 840,
+                    (DocumentPreviewController controller) -> controller.setPreview(preview)
+            );
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            DialogUtil.showWarning("Błędne dane", e.getMessage());
+        } catch (Exception e) {
+            e.printStackTrace();
+            DialogUtil.showError("Błąd podglądu", "Nie udało się przygotować podglądu dokumentu.");
+        }
+    }
+
+    @FXML
+    private void exportPdf() {
+        try {
+            DocumentPreviewDTO preview = buildPreviewFromForm();
+            FileChooser chooser = new FileChooser();
+            chooser.setTitle("Zapisz dokument jako PDF");
+            chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Pliki PDF", "*.pdf"));
+            chooser.setInitialFileName(buildPdfFileName(preview));
+
+            Stage stage = getStage();
+            File outputFile = chooser.showSaveDialog(stage);
+            if (outputFile == null) {
+                return;
+            }
+
+            documentPdfService.export(preview, outputFile);
+            DialogUtil.showSuccess("Dokument PDF został zapisany.");
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            DialogUtil.showWarning("Błędne dane", e.getMessage());
+        } catch (Exception e) {
+            e.printStackTrace();
+            DialogUtil.showError("Błąd eksportu", "Nie udało się zapisać dokumentu jako PDF.");
+        }
+    }
+
+    private DocumentPreviewDTO buildPreviewFromForm() {
+        DocumentDTO dto = buildDocumentDto();
+        dto.setDocumentNumber(resolvePreviewDocumentNumber());
+        if (dto.getStatus() == null) {
+            dto.setStatus(document != null ? document.getStatus() : DocumentStatus.ACTIVE);
+        }
+        return documentRenderService.buildPreview(dto);
+    }
+
+    private String resolvePreviewDocumentNumber() {
+        if (document != null && document.getDocumentNumber() != null && !document.getDocumentNumber().isBlank()) {
+            return safe(document.getDocumentNumber());
+        }
+        String current = safe(documentNumberField.getText());
+        if (current.equals("Zostanie nadany automatycznie przy zapisie")) {
+            return "";
+        }
+        return current;
+    }
+
+    private String normalizeDocumentNumberForWorkflow(String value) {
+        String normalized = safe(value);
+        return normalized.equals("Zostanie nadany automatycznie przy zapisie") ? "" : normalized;
+    }
+
+    private String buildPdfFileName(DocumentPreviewDTO preview) {
+        String baseName = safe(preview.getDocumentNumber());
+        if (baseName.isBlank()) {
+            baseName = safe(preview.getDocumentType());
+        }
+        if (baseName.isBlank()) {
+            baseName = "dokument";
+        }
+        return baseName.replaceAll("[\\/:*?\"<>|]", "_") + ".pdf";
+    }
+
+    private Stage getStage() {
+        if (saveButton != null && saveButton.getScene() != null) {
+            return (Stage) saveButton.getScene().getWindow();
+        }
+        if (cancelButton != null && cancelButton.getScene() != null) {
+            return (Stage) cancelButton.getScene().getWindow();
+        }
+        return null;
     }
 
     private void selectDefaultUser() {
@@ -869,11 +985,17 @@ public class DocumentFormController {
 
     private class PlantEditingCell extends TableCell<DocumentItemRow, DocumentItemRow> {
         private final ComboBox<Plant> plantBox = new ComboBox<>();
+        private final ObservableList<Plant> plantOptions = FXCollections.observableArrayList();
+        private boolean syncingEditor;
+        private boolean handlingAction;
+        private boolean syncingSelection;
 
         PlantEditingCell() {
+            plantBox.setEditable(true);
             plantBox.setMaxWidth(Double.MAX_VALUE);
             HBox.setHgrow(plantBox, Priority.ALWAYS);
-            plantBox.setItems(FXCollections.observableArrayList(allPlants));
+            plantOptions.setAll(allPlants);
+            plantBox.setItems(FXCollections.observableArrayList(plantOptions));
             plantBox.setCellFactory(list -> new ListCell<>() {
                 @Override
                 protected void updateItem(Plant item, boolean empty) {
@@ -890,7 +1012,36 @@ public class DocumentFormController {
                     applyPlantCellStyle(this, item, empty);
                 }
             });
+            plantBox.setConverter(new javafx.util.StringConverter<>() {
+                @Override
+                public String toString(Plant object) {
+                    return object == null ? "" : object.toString();
+                }
+
+                @Override
+                public Plant fromString(String string) {
+                    return findMatchingPlant(string);
+                }
+            });
+            if (plantBox.getEditor() != null) {
+                plantBox.getEditor().textProperty().addListener((obs, oldVal, newVal) -> {
+                    if (syncingEditor || !plantBox.isFocused()) {
+                        return;
+                    }
+                    filterPlantOptions(newVal);
+                });
+                plantBox.getEditor().setOnAction(event -> commitPlantEditorSelection());
+                plantBox.focusedProperty().addListener((obs, oldVal, focused) -> {
+                    if (!focused) {
+                        commitPlantEditorSelection();
+                    }
+                });
+            }
             plantBox.valueProperty().addListener((obs, oldVal, newVal) -> {
+                if (syncingSelection) {
+                    return;
+                }
+
                 DocumentItemRow row = getCurrentRow();
                 if (row == null) {
                     return;
@@ -898,8 +1049,69 @@ public class DocumentFormController {
                 if (row.getPlant() != newVal) {
                     row.setPlant(newVal);
                 }
+                if (!syncingEditor && plantBox.getEditor() != null) {
+                    syncingEditor = true;
+                    plantBox.getEditor().setText(newVal == null ? "" : newVal.toString());
+                    syncingEditor = false;
+                }
                 itemsTable.getSelectionModel().select(row);
             });
+        }
+
+        private void filterPlantOptions(String value) {
+            if (handlingAction) {
+                return;
+            }
+            String normalized = safe(value).toLowerCase();
+            syncingSelection = true;
+            try {
+                if (normalized.isBlank()) {
+                    plantBox.getItems().setAll(plantOptions);
+                } else {
+                    plantBox.getItems().setAll(plantOptions.filtered(plant -> plant != null && plant.toString().toLowerCase().contains(normalized)));
+                }
+            } finally {
+                syncingSelection = false;
+            }
+            if (!plantBox.isShowing()) {
+                plantBox.show();
+            }
+        }
+
+        private Plant findMatchingPlant(String text) {
+            String normalized = safe(text).toLowerCase();
+            if (normalized.isBlank()) {
+                return null;
+            }
+            for (Plant plant : plantOptions) {
+                if (plant != null && plant.toString().toLowerCase().equals(normalized)) {
+                    return plant;
+                }
+            }
+            return null;
+        }
+
+        private void commitPlantEditorSelection() {
+            if (handlingAction) {
+                return;
+            }
+
+            Plant match = findMatchingPlant(plantBox.getEditor() != null ? plantBox.getEditor().getText() : "");
+            handlingAction = true;
+            syncingSelection = true;
+            try {
+                plantBox.getItems().setAll(plantOptions);
+                if (match != null) {
+                    plantBox.setValue(match);
+                } else if (plantBox.getEditor() != null) {
+                    syncingEditor = true;
+                    plantBox.getEditor().setText(plantBox.getValue() == null ? "" : plantBox.getValue().toString());
+                    syncingEditor = false;
+                }
+            } finally {
+                syncingSelection = false;
+                handlingAction = false;
+            }
         }
 
         @Override
@@ -909,7 +1121,23 @@ public class DocumentFormController {
                 setGraphic(null);
                 return;
             }
-            plantBox.setValue(item.getPlant());
+
+            syncingSelection = true;
+            handlingAction = true;
+            try {
+                plantOptions.setAll(allPlants);
+                plantBox.getItems().setAll(plantOptions);
+                plantBox.setValue(item.getPlant());
+                if (plantBox.getEditor() != null) {
+                    syncingEditor = true;
+                    plantBox.getEditor().setText(item.getPlant() == null ? "" : item.getPlant().toString());
+                    syncingEditor = false;
+                }
+            } finally {
+                handlingAction = false;
+                syncingSelection = false;
+            }
+
             setGraphic(plantBox);
         }
 
@@ -920,9 +1148,14 @@ public class DocumentFormController {
 
     private class BatchEditingCell extends TableCell<DocumentItemRow, DocumentItemRow> {
         private final ComboBox<PlantBatch> batchBox = new ComboBox<>();
+        private final ObservableList<PlantBatch> batchOptions = FXCollections.observableArrayList();
         private boolean handlingSpecialOption = false;
+        private boolean syncingEditor;
+        private boolean handlingAction;
+        private boolean syncingSelection;
 
         BatchEditingCell() {
+            batchBox.setEditable(true);
             batchBox.setMaxWidth(Double.MAX_VALUE);
             HBox.setHgrow(batchBox, Priority.ALWAYS);
 
@@ -945,9 +1178,37 @@ public class DocumentFormController {
                     }
                 }
             });
+            batchBox.setConverter(new javafx.util.StringConverter<>() {
+                @Override
+                public String toString(PlantBatch object) {
+                    if (object == null || isAddBatchOption(object)) {
+                        return "";
+                    }
+                    return formatBatchNumber(object);
+                }
+
+                @Override
+                public PlantBatch fromString(String string) {
+                    return findMatchingBatch(string);
+                }
+            });
+            if (batchBox.getEditor() != null) {
+                batchBox.getEditor().textProperty().addListener((obs, oldVal, newVal) -> {
+                    if (syncingEditor || !batchBox.isFocused()) {
+                        return;
+                    }
+                    filterBatchOptions(newVal);
+                });
+                batchBox.getEditor().setOnAction(event -> commitBatchEditorSelection());
+                batchBox.focusedProperty().addListener((obs, oldVal, focused) -> {
+                    if (!focused) {
+                        commitBatchEditorSelection();
+                    }
+                });
+            }
 
             batchBox.valueProperty().addListener((obs, oldVal, newVal) -> {
-                if (handlingSpecialOption) {
+                if (handlingSpecialOption || syncingSelection) {
                     return;
                 }
 
@@ -976,8 +1237,76 @@ public class DocumentFormController {
                     row.setBatch(newVal);
                 }
 
+                if (!syncingEditor && batchBox.getEditor() != null) {
+                    syncingEditor = true;
+                    batchBox.getEditor().setText(newVal == null || isAddBatchOption(newVal) ? "" : formatBatchNumber(newVal));
+                    syncingEditor = false;
+                }
+
                 Platform.runLater(() -> itemsTable.getSelectionModel().select(row));
             });
+        }
+
+        private void filterBatchOptions(String value) {
+            if (handlingAction) {
+                return;
+            }
+            String normalized = safe(value).toLowerCase();
+            syncingSelection = true;
+            try {
+                if (normalized.isBlank()) {
+                    batchBox.getItems().setAll(batchOptions);
+                } else {
+                    batchBox.getItems().setAll(batchOptions.filtered(batch -> batch != null
+                            && (formatBatchChoice(batch).toLowerCase().contains(normalized)
+                            || formatBatchNumber(batch).toLowerCase().contains(normalized))));
+                }
+            } finally {
+                syncingSelection = false;
+            }
+            if (!batchBox.isShowing() && !batchBox.isDisabled()) {
+                batchBox.show();
+            }
+        }
+
+        private PlantBatch findMatchingBatch(String text) {
+            String normalized = safe(text).toLowerCase();
+            if (normalized.isBlank()) {
+                return null;
+            }
+            for (PlantBatch batch : batchOptions) {
+                if (batch == null || isAddBatchOption(batch)) {
+                    continue;
+                }
+                if (formatBatchNumber(batch).toLowerCase().equals(normalized)
+                        || formatBatchChoice(batch).toLowerCase().equals(normalized)) {
+                    return batch;
+                }
+            }
+            return null;
+        }
+
+        private void commitBatchEditorSelection() {
+            if (handlingAction) {
+                return;
+            }
+
+            PlantBatch match = findMatchingBatch(batchBox.getEditor() != null ? batchBox.getEditor().getText() : "");
+            handlingAction = true;
+            syncingSelection = true;
+            try {
+                batchBox.getItems().setAll(batchOptions);
+                if (match != null) {
+                    batchBox.setValue(match);
+                } else if (batchBox.getEditor() != null) {
+                    syncingEditor = true;
+                    batchBox.getEditor().setText(batchBox.getValue() == null || isAddBatchOption(batchBox.getValue()) ? "" : formatBatchNumber(batchBox.getValue()));
+                    syncingEditor = false;
+                }
+            } finally {
+                syncingSelection = false;
+                handlingAction = false;
+            }
         }
 
         @Override
@@ -995,10 +1324,23 @@ public class DocumentFormController {
             }
 
             handlingSpecialOption = true;
-            batchBox.setItems(FXCollections.observableArrayList(options));
-            batchBox.setDisable(item.getPlant() == null);
-            batchBox.setValue(item.getBatch());
-            handlingSpecialOption = false;
+            handlingAction = true;
+            syncingSelection = true;
+            try {
+                batchOptions.setAll(options);
+                batchBox.getItems().setAll(batchOptions);
+                batchBox.setDisable(item.getPlant() == null);
+                batchBox.setValue(item.getBatch());
+                if (batchBox.getEditor() != null) {
+                    syncingEditor = true;
+                    batchBox.getEditor().setText(item.getBatch() == null ? "" : formatBatchNumber(item.getBatch()));
+                    syncingEditor = false;
+                }
+            } finally {
+                syncingSelection = false;
+                handlingAction = false;
+                handlingSpecialOption = false;
+            }
 
             setGraphic(batchBox);
         }
@@ -1010,24 +1352,42 @@ public class DocumentFormController {
 
     private class QtyEditingCell extends TableCell<DocumentItemRow, Number> {
         private final TextField qtyField = new TextField();
+        private final TextFormatter<String> qtyFormatter = new TextFormatter<>(change -> {
+            String newText = change.getControlNewText();
+            return newText.matches("\\d*") ? change : null;
+        });
+        private boolean syncingText;
 
         QtyEditingCell() {
-            qtyField.textProperty().addListener((obs, oldVal, newVal) -> {
-                DocumentItemRow row = getCurrentRow();
-                if (row == null || internalRowChange) {
-                    return;
+            qtyField.setTextFormatter(qtyFormatter);
+            qtyField.setOnAction(event -> commitQtyValue());
+            qtyField.focusedProperty().addListener((obs, oldVal, focused) -> {
+                if (!focused) {
+                    commitQtyValue();
                 }
-                int parsed = 0;
-                if (newVal != null && !newVal.isBlank()) {
-                    try {
-                        parsed = Integer.parseInt(newVal.trim());
-                    } catch (NumberFormatException ignored) {
-                        parsed = 0;
-                    }
+            });
+        }
+
+        private void commitQtyValue() {
+            DocumentItemRow row = getCurrentRow();
+            if (row == null || internalRowChange || syncingText) {
+                return;
+            }
+
+            String currentText = qtyField.getText() == null ? "" : qtyField.getText().trim();
+            int parsed = 0;
+            if (!currentText.isBlank()) {
+                try {
+                    parsed = Integer.parseInt(currentText);
+                } catch (NumberFormatException ignored) {
+                    parsed = 0;
                 }
+            }
+
+            if (row.getQty() != parsed) {
                 row.setQty(parsed);
                 itemsTable.getSelectionModel().select(row);
-            });
+            }
         }
 
         @Override
@@ -1037,9 +1397,18 @@ public class DocumentFormController {
                 setGraphic(null);
                 return;
             }
-            internalRowChange = true;
-            qtyField.setText(item == null || item.intValue() <= 0 ? "" : String.valueOf(item.intValue()));
-            internalRowChange = false;
+
+            String newValue = item == null || item.intValue() <= 0 ? "" : String.valueOf(item.intValue());
+            if (!qtyField.isFocused() || !Objects.equals(qtyField.getText(), newValue)) {
+                syncingText = true;
+                try {
+                    if (!Objects.equals(qtyField.getText(), newValue)) {
+                        qtyField.setText(newValue);
+                    }
+                } finally {
+                    syncingText = false;
+                }
+            }
             setGraphic(qtyField);
         }
 

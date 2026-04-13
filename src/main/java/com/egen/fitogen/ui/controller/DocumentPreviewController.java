@@ -128,6 +128,16 @@ public class DocumentPreviewController {
         }
     }
 
+    public void setPreview(DocumentPreviewDTO preview) {
+        try {
+            applyPreview(preview);
+        } catch (Exception e) {
+            e.printStackTrace();
+            DialogUtil.showError("Błąd podglądu", "Nie udało się przygotować podglądu dokumentu.");
+            close();
+        }
+    }
+
     private void applyPreview(DocumentPreviewDTO preview) {
         currentPreview = preview;
 
