@@ -40,7 +40,8 @@ public class SqlitePlantRepository
                         rs.getString("latin_species_name"),
                         rs.getString("eppo_code"),
                         rs.getInt("passport_required") == 1,
-                        rs.getString("visibility_status")
+                        rs.getString("visibility_status"),
+                        rs.getString("default_document_type")
                 );
 
                 plants.add(plant);
@@ -83,7 +84,8 @@ public class SqlitePlantRepository
                         rs.getString("latin_species_name"),
                         rs.getString("eppo_code"),
                         rs.getInt("passport_required") == 1,
-                        rs.getString("visibility_status")
+                        rs.getString("visibility_status"),
+                        rs.getString("default_document_type")
                 );
             }
 
@@ -101,8 +103,8 @@ public class SqlitePlantRepository
 
         String sql = """
                 INSERT INTO plants
-                (species, variety, rootstock, latin_species_name, eppo_code, passport_required, visibility_status)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
+                (species, variety, rootstock, latin_species_name, eppo_code, passport_required, visibility_status, default_document_type)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 """;
 
         Connection conn = null;
@@ -120,6 +122,7 @@ public class SqlitePlantRepository
             stmt.setString(5, plant.getEppoCode());
             stmt.setInt(6, plant.isPassportRequired() ? 1 : 0);
             stmt.setString(7, plant.getVisibilityStatus());
+            stmt.setString(8, plant.getDefaultDocumentType());
 
             executeUpdate(stmt);
 
@@ -135,7 +138,7 @@ public class SqlitePlantRepository
 
         String sql = """
                 UPDATE plants
-                SET species=?, variety=?, rootstock=?, latin_species_name=?, eppo_code=?, passport_required=?, visibility_status=?
+                SET species=?, variety=?, rootstock=?, latin_species_name=?, eppo_code=?, passport_required=?, visibility_status=?, default_document_type=?
                 WHERE id=?
                 """;
 
@@ -154,7 +157,8 @@ public class SqlitePlantRepository
             stmt.setString(5, plant.getEppoCode());
             stmt.setInt(6, plant.isPassportRequired() ? 1 : 0);
             stmt.setString(7, plant.getVisibilityStatus());
-            stmt.setInt(8, plant.getId());
+            stmt.setString(8, plant.getDefaultDocumentType());
+            stmt.setInt(9, plant.getId());
 
             executeUpdate(stmt);
 

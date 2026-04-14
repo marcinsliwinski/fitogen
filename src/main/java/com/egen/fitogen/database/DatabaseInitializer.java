@@ -24,7 +24,8 @@ public class DatabaseInitializer {
                     latin_species_name TEXT,
                     eppo_code TEXT,
                     passport_required INTEGER NOT NULL DEFAULT 0,
-                    visibility_status TEXT
+                    visibility_status TEXT,
+                    default_document_type TEXT
                 )
             """);
 
@@ -243,6 +244,7 @@ public class DatabaseInitializer {
             // migrations for older databases
             ensureColumnExists(stmt, "plants", "eppo_code", "TEXT");
             ensureColumnExists(stmt, "plants", "passport_required", "INTEGER NOT NULL DEFAULT 0");
+            ensureColumnExists(stmt, "plants", "default_document_type", "TEXT");
             ensureColumnExists(stmt, "contrahents", "no_street", "INTEGER NOT NULL DEFAULT 0");
             ensureColumnExists(stmt, "contrahents", "is_supplier", "INTEGER NOT NULL DEFAULT 0");
             ensureColumnExists(stmt, "contrahents", "is_client", "INTEGER NOT NULL DEFAULT 0");

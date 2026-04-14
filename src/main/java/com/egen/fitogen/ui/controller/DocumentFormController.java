@@ -45,6 +45,7 @@ import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonBar;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
@@ -979,6 +980,54 @@ public class DocumentFormController {
         return "";
     }
 
+    private boolean confirmPlantSelectionForCurrentDocumentType(Plant currentPlant, Plant selectedPlant) {
+        if (selectedPlant == null || selectedPlant == currentPlant) {
+            return true;
+        }
+
+        String preferredDocumentType = safe(selectedPlant.getDefaultDocumentType());
+        if (preferredDocumentType.isBlank()) {
+            return true;
+        }
+
+        DocumentType selectedDocumentType = documentTypeBox == null ? null : documentTypeBox.getValue();
+        String currentDocumentTypeName = selectedDocumentType == null ? "" : safe(selectedDocumentType.getName());
+        if (currentDocumentTypeName.isBlank()) {
+            return true;
+        }
+
+        String preferredDocumentTypeName = mapPlantDefaultDocumentTypeToDocumentName(preferredDocumentType);
+        if (preferredDocumentTypeName.isBlank() || preferredDocumentTypeName.equalsIgnoreCase(currentDocumentTypeName)) {
+            return true;
+        }
+
+        Alert alert = new Alert(Alert.AlertType.WARNING);
+        alert.setTitle("Domyślny dokument rośliny");
+        alert.setHeaderText("Wybrana roślina ma inny dokument domyślny.");
+        alert.setContentText(
+                "Dla rośliny „" + selectedPlant + "” ustawiono domyślnie: „" + preferredDocumentTypeName + "”.\n\n"
+                        + "Aktualnie wybrany typ dokumentu to: „" + currentDocumentTypeName + "”.\n\n"
+                        + "Czy chcesz kontynuować ten wybór?"
+        );
+
+        ButtonType continueButton = new ButtonType("Kontynuuj");
+        ButtonType cancelButton = new ButtonType("Anuluj wybór", ButtonBar.ButtonData.CANCEL_CLOSE);
+        alert.getButtonTypes().setAll(continueButton, cancelButton);
+
+        Optional<ButtonType> result = alert.showAndWait();
+        return result.isPresent() && result.get() == continueButton;
+    }
+
+    private String mapPlantDefaultDocumentTypeToDocumentName(String defaultDocumentType) {
+        if (Plant.DEFAULT_DOCUMENT_SUPPLIER.equals(defaultDocumentType)) {
+            return "Dokument dostawcy";
+        }
+        if (Plant.DEFAULT_DOCUMENT_NURSERY_SUPPLIER.equals(defaultDocumentType)) {
+            return "Szkółkarski dokument dostawcy";
+        }
+        return "";
+    }
+
     private String safe(String value) {
         return value == null ? "" : value.trim();
     }
@@ -1046,7 +1095,27 @@ public class DocumentFormController {
                 if (row == null) {
                     return;
                 }
-                if (row.getPlant() != newVal) {
+
+                Plant currentPlant = row.getPlant();
+                if (currentPlant != newVal && newVal != null
+                        && !confirmPlantSelectionForCurrentDocumentType(currentPlant, newVal)) {
+                    handlingAction = true;
+                    syncingSelection = true;
+                    try {
+                        plantBox.setValue(currentPlant);
+                        if (!syncingEditor && plantBox.getEditor() != null) {
+                            syncingEditor = true;
+                            plantBox.getEditor().setText(currentPlant == null ? "" : currentPlant.toString());
+                            syncingEditor = false;
+                        }
+                    } finally {
+                        syncingSelection = false;
+                        handlingAction = false;
+                    }
+                    return;
+                }
+
+                if (currentPlant != newVal) {
                     row.setPlant(newVal);
                 }
                 if (!syncingEditor && plantBox.getEditor() != null) {
@@ -1096,13 +1165,38 @@ public class DocumentFormController {
                 return;
             }
 
+            DocumentItemRow row = getCurrentRow();
+            Plant currentPlant = row == null ? null : row.getPlant();
             Plant match = findMatchingPlant(plantBox.getEditor() != null ? plantBox.getEditor().getText() : "");
+
+            if (match != null && !confirmPlantSelectionForCurrentDocumentType(currentPlant, match)) {
+                handlingAction = true;
+                syncingSelection = true;
+                try {
+                    plantBox.getItems().setAll(plantOptions);
+                    plantBox.setValue(currentPlant);
+                    if (plantBox.getEditor() != null) {
+                        syncingEditor = true;
+                        plantBox.getEditor().setText(currentPlant == null ? "" : currentPlant.toString());
+                        syncingEditor = false;
+                    }
+                } finally {
+                    syncingSelection = false;
+                    handlingAction = false;
+                }
+                return;
+            }
+
             handlingAction = true;
             syncingSelection = true;
             try {
                 plantBox.getItems().setAll(plantOptions);
                 if (match != null) {
                     plantBox.setValue(match);
+                    if (row != null && row.getPlant() != match) {
+                        row.setPlant(match);
+                        itemsTable.getSelectionModel().select(row);
+                    }
                 } else if (plantBox.getEditor() != null) {
                     syncingEditor = true;
                     plantBox.getEditor().setText(plantBox.getValue() == null ? "" : plantBox.getValue().toString());

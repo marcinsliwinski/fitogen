@@ -241,7 +241,7 @@ public class PlantsController {
             globalPassportInfoLabel.setManaged(passportRequiredForAll);
             globalPassportInfoLabel.setText(
                     passportRequiredForAll
-                            ? "Globalne ustawienie wymusza paszport dla wszystkich roślin — kolumna Paszport pokazuje stan wynikający z ustawień systemu, niezależnie od lokalnej wartości zapisanej w rekordzie."
+                            ? "Kolumna Paszport pokazuje stan wynikający z ustawień systemu, niezależnie od lokalnej wartości zapisanej w rekordzie."
                             : ""
             );
         }

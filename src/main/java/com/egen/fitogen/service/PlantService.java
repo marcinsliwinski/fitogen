@@ -110,6 +110,7 @@ public class PlantService {
         plant.setRootstock(normalizeText(plant.getRootstock()));
         plant.setLatinSpeciesName(normalizeText(plant.getLatinSpeciesName()));
         plant.setVisibilityStatus(normalizeText(plant.getVisibilityStatus()));
+        plant.setDefaultDocumentType(normalizeDefaultDocumentType(plant.getDefaultDocumentType()));
 
         if (appSettingsService.isPlantPassportRequiredForAll()) {
             plant.setPassportRequired(true);
@@ -118,6 +119,21 @@ public class PlantService {
         if (plant.getEppoCode() != null) {
             plant.setEppoCode(normalizeText(plant.getEppoCode()).toUpperCase());
         }
+    }
+
+
+    private String normalizeDefaultDocumentType(String value) {
+        String normalized = normalizeText(value);
+        if (normalized == null || normalized.isBlank()) {
+            return null;
+        }
+
+        if (Plant.DEFAULT_DOCUMENT_NURSERY_SUPPLIER.equals(normalized)
+                || Plant.DEFAULT_DOCUMENT_SUPPLIER.equals(normalized)) {
+            return normalized;
+        }
+
+        return null;
     }
 
     private boolean hasDuplicateIdentity(Plant candidate) {

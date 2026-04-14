@@ -85,6 +85,14 @@
                        text="Wymaganie paszportu możesz ustawić indywidualnie dla tej rośliny."/>
             </VBox>
 
+            <Label text="Domyślny dokument:" GridPane.rowIndex="6" GridPane.columnIndex="0"/>
+            <ComboBox fx:id="defaultDocumentTypeBox"
+                      promptText="Wybierz domyślny dokument"
+                      editable="true"
+                      maxWidth="1.7976931348623157E308"
+                      GridPane.rowIndex="6"
+                      GridPane.columnIndex="1"/>
+
         </GridPane>
     </VBox>
 

@@ -6,6 +6,7 @@ import com.egen.fitogen.model.Plant;
 import com.egen.fitogen.service.AppSettingsService;
 import com.egen.fitogen.service.EppoCodeService;
 import com.egen.fitogen.service.PlantService;
+import com.egen.fitogen.ui.util.ComboBoxAutoComplete;
 import com.egen.fitogen.ui.util.DialogUtil;
 import com.egen.fitogen.ui.util.ValidationUtil;
 import javafx.application.Platform;
@@ -47,6 +48,9 @@ public class PlantFormController {
     private Label passportRequirementInfoLabel;
 
     @FXML
+    private ComboBox<String> defaultDocumentTypeBox;
+
+    @FXML
     private ComboBox<String> visibilityStatusBox;
 
     private final AppSettingsService appSettingsService = AppContext.getAppSettingsService();
@@ -60,10 +64,18 @@ public class PlantFormController {
     private boolean closeConfirmed;
     private boolean closeGuardInstalled;
 
+    private static final String DEFAULT_DOCUMENT_LABEL_NURSERY_SUPPLIER = "Szkółkarski dokument dostawcy";
+    private static final String DEFAULT_DOCUMENT_LABEL_SUPPLIER = "Dokument dostawcy";
+
     @FXML
     public void initialize() {
-        visibilityStatusBox.getItems().addAll("Używany", "Nieużywany");
+        ComboBoxAutoComplete.bindEditable(visibilityStatusBox, List.of("Używany", "Nieużywany"));
         visibilityStatusBox.setValue("Używany");
+        ComboBoxAutoComplete.bindEditable(defaultDocumentTypeBox, List.of(
+                DEFAULT_DOCUMENT_LABEL_NURSERY_SUPPLIER,
+                DEFAULT_DOCUMENT_LABEL_SUPPLIER
+        ));
+        defaultDocumentTypeBox.setValue(DEFAULT_DOCUMENT_LABEL_NURSERY_SUPPLIER);
         passportRequiredBox.setSelected(false);
 
         configureEditableCombo(speciesField);
@@ -75,6 +87,8 @@ public class PlantFormController {
         installComboTrimSupport(varietyField);
         installComboTrimSupport(rootstockField);
         installComboTrimSupport(latinSpeciesNameField);
+        installComboTrimSupport(defaultDocumentTypeBox);
+        installComboTrimSupport(visibilityStatusBox);
         installFieldTooltips();
 
         configureSpeciesSynchronization();
@@ -102,6 +116,7 @@ public class PlantFormController {
         setComboValue(latinSpeciesNameField, plant.getLatinSpeciesName());
         passportRequiredBox.setSelected(plant.isPassportRequired());
         visibilityStatusBox.setValue(plant.getVisibilityStatus());
+        defaultDocumentTypeBox.setValue(toDocumentLabel(plant.getDefaultDocumentType()));
 
         refreshPassportRequirementPresentation();
         refreshResolvedEppoCodePresentation();
@@ -117,6 +132,7 @@ public class PlantFormController {
             String latinSpeciesName = ValidationUtil.optionalText(getComboValue(latinSpeciesNameField));
             String eppoCode = resolveCurrentEppoCode(species, latinSpeciesName);
             boolean passportRequired = resolveCurrentPassportRequirement();
+            String defaultDocumentType = resolveDefaultDocumentTypeCode();
             String visibilityStatus = ValidationUtil.requireText(
                     visibilityStatusBox.getValue(),
                     "Status widoczności"
@@ -131,7 +147,8 @@ public class PlantFormController {
                         latinSpeciesName,
                         eppoCode,
                         passportRequired,
-                        visibilityStatus
+                        visibilityStatus,
+                        defaultDocumentType
                 );
 
                 plantService.addPlant(newPlant);
@@ -144,6 +161,7 @@ public class PlantFormController {
                 plant.setEppoCode(eppoCode);
                 plant.setPassportRequired(passportRequired);
                 plant.setVisibilityStatus(visibilityStatus);
+                plant.setDefaultDocumentType(defaultDocumentType);
 
                 plantService.updatePlant(plant);
                 DialogUtil.showSuccess("Roślina została zaktualizowana.");
@@ -201,6 +219,7 @@ public class PlantFormController {
         setTooltip(eppoCodeInfoLabel, "Informacja jest wyliczana automatycznie na podstawie gatunku lub nazwy łacińskiej.");
         setTooltip(passportRequiredBox, "Wymaganie paszportu możesz ustawić ręcznie albo pozostawić zgodnie z ustawieniami systemu i słowników EPPO.");
         setTooltip(passportRequirementInfoLabel, "To pole wyjaśnia, czy dla tej rośliny paszport wynika z ustawień globalnych czy z decyzji w formularzu.");
+        setTooltip(defaultDocumentTypeBox, "Wybierz, na którym typie dokumentu ta roślina powinna pojawiać się domyślnie.");
         setTooltip(visibilityStatusBox, "Status wpływa na widoczność rośliny w codziennej pracy. „Nieużywany” ukrywa ją z głównych przepływów bez usuwania danych.");
     }
 
@@ -436,6 +455,35 @@ public class PlantFormController {
         }
     }
 
+    private String resolveDefaultDocumentTypeCode() {
+        String code = mapDocumentLabelToCode(getComboValue(defaultDocumentTypeBox));
+        if (code != null) {
+            return code;
+        }
+        throw new IllegalArgumentException("Domyślny dokument musi być wybrany z listy dostępnych opcji.");
+    }
+
+    private String mapDocumentLabelToCode(String selectedLabel) {
+        String normalized = normalizeText(selectedLabel);
+
+        if (DEFAULT_DOCUMENT_LABEL_NURSERY_SUPPLIER.equals(normalized)) {
+            return Plant.DEFAULT_DOCUMENT_NURSERY_SUPPLIER;
+        }
+
+        if (DEFAULT_DOCUMENT_LABEL_SUPPLIER.equals(normalized)) {
+            return Plant.DEFAULT_DOCUMENT_SUPPLIER;
+        }
+
+        return null;
+    }
+
+    private String toDocumentLabel(String documentTypeCode) {
+        if (Plant.DEFAULT_DOCUMENT_SUPPLIER.equals(documentTypeCode)) {
+            return DEFAULT_DOCUMENT_LABEL_SUPPLIER;
+        }
+        return DEFAULT_DOCUMENT_LABEL_NURSERY_SUPPLIER;
+    }
+
     private void refreshResolvedEppoCodePresentation() {
         EppoCode matchedCode = findMatchingEppoCode(
                 getComboValue(speciesField),
@@ -589,7 +637,8 @@ public class PlantFormController {
                 normalizeText(getComboValue(rootstockField)),
                 normalizeText(getComboValue(latinSpeciesNameField)),
                 String.valueOf(resolveCurrentPassportRequirement()),
-                normalizeText(visibilityStatusBox == null ? null : visibilityStatusBox.getValue())
+                normalizeText(mapDocumentLabelToCode(getComboValue(defaultDocumentTypeBox))),
+                normalizeText(visibilityStatusBox == null ? null : getComboValue(visibilityStatusBox))
         );
     }
 

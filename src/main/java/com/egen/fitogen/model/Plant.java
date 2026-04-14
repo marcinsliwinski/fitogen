@@ -5,6 +5,9 @@ import lombok.Data;
 @Data
 public class Plant {
 
+    public static final String DEFAULT_DOCUMENT_NURSERY_SUPPLIER = "NURSERY_SUPPLIER_DOCUMENT";
+    public static final String DEFAULT_DOCUMENT_SUPPLIER = "SUPPLIER_DOCUMENT";
+
     private int id;
     private String species;
     private String variety;
@@ -13,6 +16,7 @@ public class Plant {
     private String eppoCode;
     private boolean passportRequired;
     private String visibilityStatus; // Używany / Nieużywany
+    private String defaultDocumentType;
 
     public Plant(
             int id,
@@ -24,6 +28,30 @@ public class Plant {
             boolean passportRequired,
             String visibilityStatus
     ) {
+        this(
+                id,
+                species,
+                variety,
+                rootstock,
+                latinSpeciesName,
+                eppoCode,
+                passportRequired,
+                visibilityStatus,
+                null
+        );
+    }
+
+    public Plant(
+            int id,
+            String species,
+            String variety,
+            String rootstock,
+            String latinSpeciesName,
+            String eppoCode,
+            boolean passportRequired,
+            String visibilityStatus,
+            String defaultDocumentType
+    ) {
         this.id = id;
         this.species = species;
         this.variety = variety;
@@ -32,6 +60,7 @@ public class Plant {
         this.eppoCode = eppoCode;
         this.passportRequired = passportRequired;
         this.visibilityStatus = visibilityStatus;
+        this.defaultDocumentType = defaultDocumentType;
     }
 
     @Override
