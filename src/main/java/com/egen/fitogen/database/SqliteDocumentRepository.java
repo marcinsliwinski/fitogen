@@ -21,8 +21,8 @@ public class SqliteDocumentRepository
 
         String sql = """
                 INSERT INTO documents
-                (document_number, document_type, issue_date, contrahent_id, created_by, comments, status)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
+                (document_number, document_type, issue_date, contrahent_id, created_by, comments, print_passports, status)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 """;
 
         Connection conn = null;
@@ -39,7 +39,8 @@ public class SqliteDocumentRepository
             stmt.setInt(4, document.getContrahentId());
             stmt.setString(5, document.getCreatedBy());
             stmt.setString(6, document.getComments());
-            stmt.setString(7, resolveStatus(document).name());
+            stmt.setInt(7, document.isPrintPassports() ? 1 : 0);
+            stmt.setString(8, resolveStatus(document).name());
 
             stmt.executeUpdate();
 
@@ -67,6 +68,7 @@ public class SqliteDocumentRepository
                     contrahent_id = ?,
                     created_by = ?,
                     comments = ?,
+                    print_passports = ?,
                     status = ?
                 WHERE id = ?
                 """;
@@ -84,8 +86,9 @@ public class SqliteDocumentRepository
             stmt.setInt(4, document.getContrahentId());
             stmt.setString(5, document.getCreatedBy());
             stmt.setString(6, document.getComments());
-            stmt.setString(7, resolveStatus(document).name());
-            stmt.setInt(8, document.getId());
+            stmt.setInt(7, document.isPrintPassports() ? 1 : 0);
+            stmt.setString(8, resolveStatus(document).name());
+            stmt.setInt(9, document.getId());
 
             executeUpdate(stmt);
 
@@ -196,6 +199,7 @@ public class SqliteDocumentRepository
         document.setContrahentId(rs.getInt("contrahent_id"));
         document.setCreatedBy(rs.getString("created_by"));
         document.setComments(rs.getString("comments"));
+        document.setPrintPassports(rs.getInt("print_passports") == 1);
         document.setStatus(parseStatus(rs.getString("status")));
 
         return document;

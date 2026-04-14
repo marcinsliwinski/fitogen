@@ -77,6 +77,7 @@ public class DocumentRenderService {
         preview.setStatusLabel(formatStatus(document.getStatus()));
         preview.setCancelled(document.getStatus() == DocumentStatus.CANCELLED);
         preview.setIssueDate(document.getIssueDate());
+        preview.setPrintPassports(document.isPrintPassports());
         preview.setIssueDateLabel(document.getIssueDate() != null ? document.getIssueDate().format(ISSUE_DATE_FORMATTER) : "");
 
         fillIssuer(preview);

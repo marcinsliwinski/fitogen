@@ -16,6 +16,7 @@ public class DocumentDTO {
     private int contrahentId;
     private String createdBy;
     private String comments;
+    private boolean printPassports;
     private DocumentStatus status = DocumentStatus.ACTIVE;
     private List<DocumentItemDTO> items;
 }

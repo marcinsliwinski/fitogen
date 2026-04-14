@@ -19,6 +19,7 @@ public class DocumentPreviewDTO {
     private String issuePlaceLabel;
     private String createdBy;
     private String comments;
+    private boolean printPassports;
 
     private String contrahentName;
     private String contrahentAddress;

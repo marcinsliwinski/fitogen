@@ -254,6 +254,7 @@ public class DocumentService {
         dto.setContrahentId(document.getContrahentId());
         dto.setCreatedBy(document.getCreatedBy());
         dto.setComments(document.getComments());
+        dto.setPrintPassports(document.isPrintPassports());
         dto.setStatus(document.getStatus());
 
         List<DocumentItemDTO> itemDtos = new ArrayList<>();

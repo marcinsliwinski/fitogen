@@ -21,6 +21,7 @@ import com.egen.fitogen.model.PlantBatchStatus;
 import com.egen.fitogen.repository.ContrahentRepository;
 import com.egen.fitogen.repository.PlantBatchRepository;
 import com.egen.fitogen.repository.PlantRepository;
+import com.egen.fitogen.service.AppSettingsService;
 import com.egen.fitogen.service.AppUserService;
 import com.egen.fitogen.service.DocumentService;
 import com.egen.fitogen.service.DocumentTypeService;
@@ -88,6 +89,7 @@ public class DocumentFormController {
     @FXML private ComboBox<AppUser> createdByBox;
     @FXML private TextArea commentsField;
     @FXML private Label statusValueLabel;
+    @FXML private CheckBox printPassportsBox;
     @FXML private TableView<DocumentItemRow> itemsTable;
     @FXML private TableColumn<DocumentItemRow, Number> colLp;
     @FXML private TableColumn<DocumentItemRow, DocumentItemRow> colPlant;
@@ -102,6 +104,7 @@ public class DocumentFormController {
 
     private final DocumentService documentService = AppContext.getDocumentService();
     private final DocumentTypeService documentTypeService = AppContext.getDocumentTypeService();
+    private final AppSettingsService appSettingsService = AppContext.getAppSettingsService();
     private final AppUserService appUserService = AppContext.getAppUserService();
     private final DocumentRenderService documentRenderService = new DocumentRenderService(documentService);
     private final DocumentPdfService documentPdfService = new DocumentPdfService();
@@ -132,6 +135,7 @@ public class DocumentFormController {
         configureUsersBox();
         configureContrahentBox();
         configureTable();
+        configurePrintPassportsBox();
         configureActionButtons();
 
         issueDateField.setValue(LocalDate.now());
@@ -157,6 +161,9 @@ public class DocumentFormController {
         selectUser(dto.getCreatedBy());
         issueDateField.setValue(dto.getIssueDate());
         commentsField.setText(dto.getComments());
+        if (printPassportsBox != null) {
+            printPassportsBox.setSelected(dto.isPrintPassports());
+        }
         selectContrahent(dto.getContrahentId());
         updateStatusLabel(dto.getStatus());
         if (dto.getStatus() == DocumentStatus.CANCELLED) {
@@ -328,6 +335,15 @@ public class DocumentFormController {
         });
     }
 
+    private void configurePrintPassportsBox() {
+        if (printPassportsBox == null) {
+            return;
+        }
+
+        printPassportsBox.setSelected(false);
+        printPassportsBox.selectedProperty().addListener((obs, oldVal, newVal) -> itemsTable.refresh());
+    }
+
     private void configureActionButtons() {
         if (previewButton != null) {
             previewButton.setDisable(false);
@@ -351,6 +367,7 @@ public class DocumentFormController {
             if (currentBatch != null && (newVal == null || currentBatch.getPlantId() != newVal.getId())) {
                 row.setBatch(null);
             }
+            row.setPassportRequired(resolvePlantPassportRequired(newVal));
             autoAppendIfReady(row);
             itemsTable.refresh();
             refreshValidationIndicators();
@@ -428,6 +445,7 @@ public class DocumentFormController {
                 .filter(batch -> batch.getStatus() == null || batch.getStatus() == PlantBatchStatus.ACTIVE)
                 .collect(Collectors.toList()));
         itemsTable.refresh();
+        refreshValidationIndicators();
     }
 
     private void openAddBatchForRow(DocumentItemRow row) {
@@ -649,6 +667,9 @@ public class DocumentFormController {
         issueDateField.setDisable(true);
         createdByBox.setDisable(true);
         commentsField.setDisable(true);
+        if (printPassportsBox != null) {
+            printPassportsBox.setDisable(true);
+        }
         itemsTable.setDisable(true);
         saveButton.setDisable(true);
         saveButton.setText("Dokument anulowany");
@@ -788,8 +809,20 @@ public class DocumentFormController {
         dto.setContrahentId(selectedContrahent.getId());
         dto.setCreatedBy(selectedUser.getDisplayName());
         dto.setComments(commentsField.getText());
+        dto.setPrintPassports(printPassportsBox != null && printPassportsBox.isSelected());
         dto.setItems(items);
         return dto;
+    }
+
+    private boolean isPrintPassportsEnabled() {
+        return printPassportsBox != null && printPassportsBox.isSelected();
+    }
+
+    private boolean resolvePlantPassportRequired(Plant plant) {
+        if (plant == null) {
+            return false;
+        }
+        return appSettingsService.isPlantPassportRequiredForAll() || plant.isPassportRequired();
     }
 
     @FXML
@@ -1547,6 +1580,7 @@ public class DocumentFormController {
         private final Label warningLabel = new Label("!");
         private final Tooltip warningTooltip = new Tooltip();
         private final HBox container = new HBox(8);
+        private boolean syncingState;
 
         PassportEditingCell() {
             warningLabel.getStyleClass().add("eppo-warning-indicator");
@@ -1556,6 +1590,9 @@ public class DocumentFormController {
             container.getChildren().addAll(checkBox, warningLabel);
 
             checkBox.selectedProperty().addListener((obs, oldVal, newVal) -> {
+                if (syncingState) {
+                    return;
+                }
                 DocumentItemRow row = getCurrentRow();
                 if (row == null) {
                     return;
@@ -1573,7 +1610,14 @@ public class DocumentFormController {
                 setGraphic(null);
                 return;
             }
-            checkBox.setSelected(Boolean.TRUE.equals(item));
+
+            syncingState = true;
+            try {
+                checkBox.setSelected(Boolean.TRUE.equals(item));
+                checkBox.setDisable(!isPrintPassportsEnabled());
+            } finally {
+                syncingState = false;
+            }
 
             String validationMessage = row.getValidationMessage();
             boolean hasWarning = validationMessage != null && !validationMessage.isBlank();

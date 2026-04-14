@@ -19,6 +19,7 @@ public class DocumentMapper {
         d.setContrahentId(dto.getContrahentId());
         d.setCreatedBy(dto.getCreatedBy());
         d.setComments(dto.getComments());
+        d.setPrintPassports(dto.isPrintPassports());
         d.setStatus(dto.getStatus());
         return d;
     }
@@ -32,6 +33,7 @@ public class DocumentMapper {
         dto.setContrahentId(document.getContrahentId());
         dto.setCreatedBy(document.getCreatedBy());
         dto.setComments(document.getComments());
+        dto.setPrintPassports(document.isPrintPassports());
         dto.setStatus(document.getStatus());
         return dto;
     }

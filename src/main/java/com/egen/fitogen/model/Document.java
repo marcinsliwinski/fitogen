@@ -18,5 +18,6 @@ public class Document {
     private String comments;
     private LocalDate issueDate;
     private String documentNumber;
+    private boolean printPassports;
     private DocumentStatus status = DocumentStatus.ACTIVE;
 }

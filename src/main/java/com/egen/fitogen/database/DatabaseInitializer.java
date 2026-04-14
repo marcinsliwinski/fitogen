@@ -77,6 +77,7 @@ public class DatabaseInitializer {
                     contrahent_id INTEGER,
                     created_by TEXT,
                     comments TEXT,
+                    print_passports INTEGER NOT NULL DEFAULT 0,
                     status TEXT DEFAULT 'ACTIVE'
                 )
             """);
@@ -252,6 +253,7 @@ public class DatabaseInitializer {
             ensureColumnExists(stmt, "plant_batches", "is_internal_source", "INTEGER NOT NULL DEFAULT 0");
             ensureColumnExists(stmt, "plant_batches", "age_years", "INTEGER NOT NULL DEFAULT 0");
             ensureColumnExists(stmt, "plant_batches", "status", "TEXT DEFAULT 'ACTIVE'");
+            ensureColumnExists(stmt, "documents", "print_passports", "INTEGER NOT NULL DEFAULT 0");
             ensureColumnExists(stmt, "documents", "status", "TEXT DEFAULT 'ACTIVE'");
             ensureColumnExists(stmt, "eppo_codes", "species_name", "TEXT");
             ensureColumnExists(stmt, "eppo_codes", "latin_species_name", "TEXT");
@@ -268,6 +270,7 @@ public class DatabaseInitializer {
             stmt.executeUpdate("UPDATE contrahents SET is_client = COALESCE(is_client, 0)");
             stmt.executeUpdate("UPDATE plant_batches SET is_internal_source = COALESCE(is_internal_source, 0)");
             stmt.executeUpdate("UPDATE plant_batches SET status = 'ACTIVE' WHERE status IS NULL OR TRIM(status) = ''");
+            stmt.executeUpdate("UPDATE documents SET print_passports = COALESCE(print_passports, 0)");
             stmt.executeUpdate("UPDATE documents SET status = 'ACTIVE' WHERE status IS NULL OR TRIM(status) = ''");
             stmt.executeUpdate("UPDATE eppo_codes SET species_name = COALESCE(NULLIF(TRIM(species_name), ''), common_name)");
             stmt.executeUpdate("UPDATE eppo_codes SET latin_species_name = COALESCE(NULLIF(TRIM(latin_species_name), ''), scientific_name)");
