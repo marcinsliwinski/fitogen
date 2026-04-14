@@ -336,7 +336,7 @@
 }
 
 .news-feed-title {
-    -fx-font-size: 14px;
+    -fx-font-size: 12px;
     -fx-font-weight: 700;
     -fx-text-fill: #24303f;
 }
@@ -370,7 +370,7 @@
 }
 
 .form-section-title {
-    -fx-font-size: 14px;
+    -fx-font-size: 12px;
     -fx-font-weight: 700;
     -fx-text-fill: #334155;
 }
@@ -754,40 +754,58 @@
     -fx-padding: 24 24 24 24;
 }
 
-.preview-passport-page-title {
-    -fx-font-size: 18px;
+.preview-passport-block {
+    -fx-padding: 0 0 10 0;
+}
+
+.preview-passport-meta-header {
+    -fx-font-size: 12px;
+    -fx-font-weight: 700;
+    -fx-text-fill: #24303f;
+}
+
+.preview-passport-centered {
+    -fx-alignment: TOP_CENTER;
+}
+
+.preview-passport-card {
+    -fx-pref-width: 378;
+    -fx-min-width: 378;
+    -fx-max-width: 378;
+    -fx-pref-height: 228;
+    -fx-min-height: 228;
+    -fx-max-height: 228;
+    -fx-background-color: white;
+    -fx-border-color: #4b5563;
+    -fx-border-width: 1;
+    -fx-padding: 12 14 12 14;
+    -fx-spacing: 10;
+}
+
+.preview-passport-top {
+    -fx-alignment: TOP_LEFT;
+    -fx-spacing: 10;
+    -fx-padding: 0 0 2 0;
+}
+
+.preview-passport-flag-image {
+    -fx-smooth: true;
+}
+
+.preview-passport-header {
+    -fx-font-size: 12px;
+    -fx-font-weight: 800;
+    -fx-text-fill: #111827;
+}
+
+.preview-passport-subheader {
+    -fx-font-size: 10px;
     -fx-font-weight: 700;
     -fx-text-fill: #111827;
 }
 
-.preview-passport-card {
-    -fx-background-color: #f5f8fc;
-    -fx-border-color: #4b5563;
-    -fx-border-radius: 0;
-    -fx-background-radius: 0;
-    -fx-padding: 18 18 18 18;
-}
-
-.preview-eu-flag-box {
-    -fx-min-width: 120;
-    -fx-pref-width: 120;
-    -fx-min-height: 200;
-    -fx-background-color: #003399;
-    -fx-padding: 18 10 18 10;
-}
-
-.preview-eu-flag-stars {
-    -fx-text-fill: #ffcc00;
-    -fx-font-size: 16px;
-    -fx-font-weight: 700;
-}
-
-.preview-passport-card-content {
-    -fx-padding: 2 0 0 0;
-}
-
-.preview-passport-header {
-    -fx-font-size: 16px;
+.preview-passport-eppo-code {
+    -fx-font-size: 10px;
     -fx-font-weight: 800;
     -fx-text-fill: #111827;
 }
@@ -797,26 +815,22 @@
 }
 
 .preview-passport-code {
-    -fx-min-width: 28;
-    -fx-alignment: CENTER;
-    -fx-background-color: #d9d9d9;
-    -fx-border-color: #4b5563;
-    -fx-padding: 6 8 6 8;
-    -fx-font-size: 13px;
+    -fx-min-width: 20;
+    -fx-padding: 0 6 0 0;
+    -fx-font-size: 12px;
     -fx-font-weight: 700;
     -fx-text-fill: #111827;
 }
 
 .preview-passport-value {
-    -fx-border-color: #4b5563;
-    -fx-padding: 6 10 6 10;
-    -fx-font-size: 13px;
+    -fx-padding: 0;
+    -fx-font-size: 12px;
     -fx-text-fill: #111827;
-    -fx-background-color: white;
+    -fx-background-color: transparent;
 }
 
 .preview-passport-details {
-    -fx-font-size: 12px;
+    -fx-font-size: 11px;
     -fx-text-fill: #374151;
     -fx-line-spacing: 2px;
 }

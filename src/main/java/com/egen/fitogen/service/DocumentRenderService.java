@@ -11,6 +11,8 @@ import com.egen.fitogen.dto.DocumentPreviewItemDTO;
 import com.egen.fitogen.dto.PassportPreviewDTO;
 import com.egen.fitogen.model.Contrahent;
 import com.egen.fitogen.model.DocumentStatus;
+import com.egen.fitogen.model.EppoCode;
+import com.egen.fitogen.model.EppoZone;
 import com.egen.fitogen.model.IssuerProfile;
 import com.egen.fitogen.model.Plant;
 import com.egen.fitogen.model.PlantBatch;
@@ -31,6 +33,8 @@ public class DocumentRenderService {
     private final PlantBatchRepository plantBatchRepository;
     private final PlantRepository plantRepository;
     private final AppSettingsService appSettingsService;
+    private final EppoCodePlantLinkService eppoCodePlantLinkService;
+    private final EppoCodeZoneLinkService eppoCodeZoneLinkService;
 
     public DocumentRenderService(DocumentService documentService) {
         this(
@@ -38,7 +42,9 @@ public class DocumentRenderService {
                 new SqliteContrahentRepository(),
                 new SqlitePlantBatchRepository(),
                 new SqlitePlantRepository(),
-                AppContext.getAppSettingsService()
+                AppContext.getAppSettingsService(),
+                AppContext.getEppoCodePlantLinkService(),
+                AppContext.getEppoCodeZoneLinkService()
         );
     }
 
@@ -47,13 +53,17 @@ public class DocumentRenderService {
             ContrahentRepository contrahentRepository,
             PlantBatchRepository plantBatchRepository,
             PlantRepository plantRepository,
-            AppSettingsService appSettingsService
+            AppSettingsService appSettingsService,
+            EppoCodePlantLinkService eppoCodePlantLinkService,
+            EppoCodeZoneLinkService eppoCodeZoneLinkService
     ) {
         this.documentService = documentService;
         this.contrahentRepository = contrahentRepository;
         this.plantBatchRepository = plantBatchRepository;
         this.plantRepository = plantRepository;
         this.appSettingsService = appSettingsService;
+        this.eppoCodePlantLinkService = eppoCodePlantLinkService;
+        this.eppoCodeZoneLinkService = eppoCodeZoneLinkService;
     }
 
     public DocumentPreviewDTO buildPreview(int documentId) {
@@ -187,6 +197,8 @@ public class DocumentRenderService {
         }
 
         IssuerProfile issuer = appSettingsService.getIssuerProfile();
+        Contrahent client = contrahentRepository.findById(document.getContrahentId());
+        String clientCountryCode = client == null ? "" : safeUpper(client.getCountryCode());
         int itemNo = 1;
         for (DocumentItemDTO item : document.getItems()) {
             if (!item.isPassportRequired()) {
@@ -205,9 +217,14 @@ public class DocumentRenderService {
             passport.setTraceabilityCode(batch != null ? resolveBatchNumber(batch) : "");
             passport.setOriginCountryCode(resolvePassportOriginCountryCode(batch, issuer));
             passport.setQuantityLabel(String.valueOf(Math.max(0, item.getQty())));
-            passport.setEppoCode(plant != null ? safe(plant.getEppoCode()) : "");
+            passport.setEppoCode(resolvePassportEppoCode(plant, batch));
             passport.setCategoryLabel(batch != null ? safe(batch.getFitoQualificationCategory()) : "");
             passport.setDocumentNumber(preview.getDocumentNumber());
+
+            String protectedZoneCode = resolveProtectedZonePassportCode(plant, batch, clientCountryCode);
+            passport.setProtectedZone(!protectedZoneCode.isBlank());
+            passport.setProtectedZoneCode(protectedZoneCode);
+
             preview.getPassports().add(passport);
             itemNo++;
         }
@@ -239,6 +256,49 @@ public class DocumentRenderService {
             return safe(issuer.getCountryCode());
         }
         return "";
+    }
+
+    private String resolvePassportEppoCode(Plant plant, PlantBatch batch) {
+        if (batch != null && !safe(batch.getEppoCode()).isBlank()) {
+            return safeUpper(batch.getEppoCode());
+        }
+        if (plant != null && !safe(plant.getEppoCode()).isBlank()) {
+            return safeUpper(plant.getEppoCode());
+        }
+        return "";
+    }
+
+    private String resolveProtectedZonePassportCode(Plant plant, PlantBatch batch, String clientCountryCode) {
+        if (plant == null || batch == null || safe(clientCountryCode).isBlank()) {
+            return "";
+        }
+
+        String batchZoneMarker = safeUpper(batch.getZpZone());
+        String batchEppoCode = safeUpper(batch.getEppoCode());
+        if (batchZoneMarker.isBlank() || batchEppoCode.isBlank()) {
+            return "";
+        }
+
+        return eppoCodePlantLinkService.getCodesForPlant(plant.getId()).stream()
+                .filter(code -> code != null)
+                .filter(code -> batchEppoCode.equals(safeUpper(code.getCode())))
+                .filter(code -> codeAppliesToCountry(code, clientCountryCode))
+                .map(EppoCode::getCode)
+                .map(this::safeUpper)
+                .filter(code -> !code.isBlank())
+                .findFirst()
+                .orElse("");
+    }
+
+    private boolean codeAppliesToCountry(EppoCode code, String clientCountryCode) {
+        if (code == null || safe(clientCountryCode).isBlank()) {
+            return false;
+        }
+        return eppoCodeZoneLinkService.getZonesForCode(code.getId()).stream()
+                .filter(zone -> zone != null)
+                .map(EppoZone::getCountryCode)
+                .map(this::safeUpper)
+                .anyMatch(clientCountryCode::equals);
     }
 
     private String buildBatchAgeLabel(PlantBatch batch, LocalDate referenceDate) {
@@ -307,5 +367,9 @@ public class DocumentRenderService {
 
     private String safe(String value) {
         return value == null ? "" : value.trim();
+    }
+
+    private String safeUpper(String value) {
+        return safe(value).toUpperCase();
     }
 }

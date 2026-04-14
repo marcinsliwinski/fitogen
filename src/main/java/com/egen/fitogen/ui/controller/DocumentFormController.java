@@ -754,15 +754,15 @@ public class DocumentFormController {
     }
 
     private DocumentDTO buildDocumentDto() {
-        DocumentType selectedType = documentTypeBox.getValue();
+        DocumentType selectedType = resolveSelectedDocumentType();
         if (selectedType == null) {
             throw new IllegalArgumentException("Wybierz typ dokumentu.");
         }
-        AppUser selectedUser = createdByBox.getValue();
+        AppUser selectedUser = resolveSelectedUser();
         if (selectedUser == null) {
             throw new IllegalArgumentException("Wybierz użytkownika w polu „Utworzył”.");
         }
-        Contrahent selectedContrahent = contrahentBox.getValue();
+        Contrahent selectedContrahent = resolveSelectedContrahent();
         if (selectedContrahent == null) {
             throw new IllegalArgumentException("Wybierz klienta.");
         }
@@ -903,6 +903,77 @@ public class DocumentFormController {
             baseName = "dokument";
         }
         return baseName.replaceAll("[\\/:*?\"<>|]", "_") + ".pdf";
+    }
+
+    private DocumentType resolveSelectedDocumentType() {
+        if (documentTypeBox == null) {
+            return null;
+        }
+        DocumentType selected = documentTypeBox.getValue();
+        if (selected != null) {
+            return selected;
+        }
+        String editorText = documentTypeBox.getEditor() == null ? "" : safe(documentTypeBox.getEditor().getText());
+        if (editorText.isBlank()) {
+            return null;
+        }
+        for (DocumentType type : allDocumentTypes) {
+            if (type == null) {
+                continue;
+            }
+            String formatted = safe(formatDocumentType(type));
+            String name = safe(type.getName());
+            String code = safe(type.getCode());
+            if (editorText.equalsIgnoreCase(formatted)
+                    || editorText.equalsIgnoreCase(name)
+                    || (!code.isBlank() && editorText.equalsIgnoreCase(code))) {
+                documentTypeBox.setValue(type);
+                return type;
+            }
+        }
+        return null;
+    }
+
+    private AppUser resolveSelectedUser() {
+        if (createdByBox == null) {
+            return null;
+        }
+        AppUser selected = createdByBox.getValue();
+        if (selected != null) {
+            return selected;
+        }
+        String editorText = createdByBox.getEditor() == null ? "" : safe(createdByBox.getEditor().getText());
+        if (editorText.isBlank()) {
+            return null;
+        }
+        for (AppUser user : allUsers) {
+            if (user != null && editorText.equalsIgnoreCase(safe(user.getDisplayName()))) {
+                createdByBox.setValue(user);
+                return user;
+            }
+        }
+        return null;
+    }
+
+    private Contrahent resolveSelectedContrahent() {
+        if (contrahentBox == null) {
+            return null;
+        }
+        Contrahent selected = contrahentBox.getValue();
+        if (selected != null) {
+            return selected;
+        }
+        String editorText = contrahentBox.getEditor() == null ? "" : safe(contrahentBox.getEditor().getText());
+        if (editorText.isBlank()) {
+            return null;
+        }
+        for (Contrahent contrahent : allContrahents) {
+            if (contrahent != null && editorText.equalsIgnoreCase(safe(contrahent.getName()))) {
+                contrahentBox.setValue(contrahent);
+                return contrahent;
+            }
+        }
+        return null;
     }
 
     private Stage getStage() {

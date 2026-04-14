@@ -14,4 +14,6 @@ public class PassportPreviewDTO {
     private String eppoCode;
     private String categoryLabel;
     private String documentNumber;
+    private boolean protectedZone;
+    private String protectedZoneCode;
 }

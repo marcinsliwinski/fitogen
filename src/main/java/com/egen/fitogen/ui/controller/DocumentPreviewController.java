@@ -4,6 +4,7 @@ import com.egen.fitogen.config.AppContext;
 import com.egen.fitogen.dto.DocumentPreviewDTO;
 import com.egen.fitogen.dto.DocumentPreviewItemDTO;
 import com.egen.fitogen.dto.PassportPreviewDTO;
+import com.egen.fitogen.util.EuFlagRenderer;
 import com.egen.fitogen.service.DocumentPdfService;
 import com.egen.fitogen.service.DocumentRenderService;
 import com.egen.fitogen.ui.util.DialogUtil;
@@ -21,6 +22,7 @@ import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
@@ -188,62 +190,80 @@ public class DocumentPreviewController {
             return;
         }
 
-        int total = preview.getPassports().size();
-        for (PassportPreviewDTO passport : preview.getPassports()) {
-            passportPagesContainer.getChildren().add(buildPassportPage(passport, total));
+        java.util.List<PassportPreviewDTO> passports = preview.getPassports();
+        for (int start = 0; start < passports.size(); start += 2) {
+            int end = Math.min(start + 2, passports.size());
+            passportPagesContainer.getChildren().add(buildPassportPage(passports.subList(start, end)));
         }
 
         passportPagesContainer.setVisible(true);
         passportPagesContainer.setManaged(true);
     }
 
-    private VBox buildPassportPage(PassportPreviewDTO passport, int totalPages) {
+    private VBox buildPassportPage(java.util.List<PassportPreviewDTO> passports) {
         VBox page = new VBox(18);
         page.setMaxWidth(940);
         page.getStyleClass().addAll("preview-sheet", "preview-sheet-a4", "preview-passport-page");
 
-        Label pageTitle = new Label("Paszport roślin — pozycja " + passport.getItemNo() + " / " + totalPages);
-        pageTitle.getStyleClass().add("preview-passport-page-title");
+        for (PassportPreviewDTO passport : passports) {
+            VBox block = new VBox(8);
+            block.getStyleClass().add("preview-passport-block");
 
-        HBox card = new HBox(18);
-        card.setAlignment(Pos.TOP_LEFT);
-        card.getStyleClass().add("preview-passport-card");
+            Label headerLine = new Label(buildPassportHeader(passport));
+            headerLine.setWrapText(true);
+            headerLine.getStyleClass().add("preview-passport-meta-header");
 
-        VBox flagBox = new VBox(4);
-        flagBox.setAlignment(Pos.CENTER);
-        flagBox.getStyleClass().add("preview-eu-flag-box");
-        Label flagStarsTop = new Label("★ ★ ★");
-        Label flagStarsMid = new Label("★ ★ ★");
-        Label flagStarsBottom = new Label("★ ★ ★");
-        flagStarsTop.getStyleClass().add("preview-eu-flag-stars");
-        flagStarsMid.getStyleClass().add("preview-eu-flag-stars");
-        flagStarsBottom.getStyleClass().add("preview-eu-flag-stars");
-        flagBox.getChildren().addAll(flagStarsTop, flagStarsMid, flagStarsBottom);
+            StackPane centeredCard = new StackPane();
+            centeredCard.setAlignment(Pos.TOP_CENTER);
+            centeredCard.getStyleClass().add("preview-passport-centered");
 
-        VBox content = new VBox(12);
-        content.setAlignment(Pos.TOP_LEFT);
-        content.getStyleClass().add("preview-passport-card-content");
+            VBox card = new VBox(0);
+            card.getStyleClass().add("preview-passport-card");
 
-        Label header = new Label("PASZPORT ROŚLIN / PLANT PASSPORT");
-        header.getStyleClass().add("preview-passport-header");
+            HBox topSection = new HBox(12);
+            topSection.setAlignment(Pos.TOP_LEFT);
+            topSection.getStyleClass().add("preview-passport-top");
 
-        GridPane grid = new GridPane();
-        grid.setHgap(10);
-        grid.setVgap(8);
-        grid.getStyleClass().add("preview-passport-grid");
-        addPassportRow(grid, 0, "A", valueOrDash(passport.getBotanicalName()));
-        addPassportRow(grid, 1, "B", valueOrDash(passport.getOperatorNumber()));
-        addPassportRow(grid, 2, "C", valueOrDash(passport.getTraceabilityCode()));
-        addPassportRow(grid, 3, "D", valueOrDash(passport.getOriginCountryCode()));
+            javafx.scene.image.ImageView flagView = new javafx.scene.image.ImageView(EuFlagRenderer.createFxImage(420, 280));
+            flagView.setPreserveRatio(true);
+            flagView.setFitWidth(145);
+            flagView.setFitHeight(82);
+            flagView.getStyleClass().add("preview-passport-flag-image");
 
-        Label details = new Label(buildPassportDetails(passport));
-        details.setWrapText(true);
-        details.getStyleClass().add("preview-passport-details");
+            VBox topText = new VBox(4);
+            topText.setAlignment(Pos.CENTER);
+            HBox.setHgrow(topText, Priority.ALWAYS);
+            Label line1 = new Label("Paszport roślin / Plant passport");
+            line1.getStyleClass().add("preview-passport-header");
+            topText.getChildren().add(line1);
+            if (passport.isProtectedZone()) {
+                Label line2 = new Label("Strefa chroniona / ZP");
+                line2.getStyleClass().add("preview-passport-subheader");
+                Label line3 = new Label(valueOrDash(passport.getProtectedZoneCode()));
+                line3.getStyleClass().add("preview-passport-eppo-code");
+                topText.getChildren().addAll(line2, line3);
+            }
+            topSection.getChildren().addAll(flagView, topText);
 
-        content.getChildren().addAll(header, grid, details);
-        card.getChildren().addAll(flagBox, content);
+            GridPane grid = new GridPane();
+            grid.setHgap(10);
+            grid.setVgap(6);
+            grid.getStyleClass().add("preview-passport-grid");
+            addPassportRow(grid, 0, "A", valueOrDash(passport.getBotanicalName()));
+            addPassportRow(grid, 1, "B", valueOrDash(passport.getOperatorNumber()));
+            addPassportRow(grid, 2, "C", valueOrDash(passport.getTraceabilityCode()));
+            addPassportRow(grid, 3, "D", valueOrDash(passport.getOriginCountryCode()));
 
-        page.getChildren().addAll(pageTitle, card);
+            StackPane bottomCentered = new StackPane(grid);
+            bottomCentered.setAlignment(Pos.CENTER_LEFT);
+            VBox.setVgrow(bottomCentered, Priority.ALWAYS);
+
+            card.getChildren().addAll(topSection, bottomCentered);
+            centeredCard.getChildren().add(card);
+            block.getChildren().addAll(headerLine, centeredCard);
+            page.getChildren().add(block);
+        }
+
         return page;
     }
 
@@ -257,14 +277,12 @@ public class DocumentPreviewController {
         grid.add(valueLabel, 1, rowIndex);
     }
 
-    private String buildPassportDetails(PassportPreviewDTO passport) {
-        StringBuilder sb = new StringBuilder();
-        appendDetail(sb, "Roślina", passport.getPlantName());
-        appendDetail(sb, "Ilość", passport.getQuantityLabel());
-        appendDetail(sb, "Kod EPPO", passport.getEppoCode());
-        appendDetail(sb, "Kategoria", passport.getCategoryLabel());
-        appendDetail(sb, "Dokument", passport.getDocumentNumber());
-        return sb.toString();
+    private String buildPassportHeader(PassportPreviewDTO passport) {
+        return "Paszport roślin do dokumentu nr: " + valueOrDash(passport.getDocumentNumber())
+                + " / Pozycja nr: " + passport.getItemNo()
+                + " / Roślina: " + valueOrDash(passport.getPlantName())
+                + " / Ilość: " + valueOrDash(passport.getQuantityLabel())
+                + " / Kategoria: " + valueOrDash(passport.getCategoryLabel());
     }
 
     private void appendDetail(StringBuilder sb, String label, String value) {

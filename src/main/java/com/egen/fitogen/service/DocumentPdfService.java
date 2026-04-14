@@ -3,6 +3,7 @@ package com.egen.fitogen.service;
 import com.egen.fitogen.dto.DocumentPreviewDTO;
 import com.egen.fitogen.dto.DocumentPreviewItemDTO;
 import com.egen.fitogen.dto.PassportPreviewDTO;
+import com.egen.fitogen.util.EuFlagRenderer;
 import com.lowagie.text.Document;
 import com.lowagie.text.Element;
 import com.lowagie.text.Font;
@@ -199,100 +200,162 @@ public class DocumentPdfService {
             return;
         }
 
-        Font passportHeaderFont = createUnicodeFont(13f, Font.BOLD, TEXT_COLOR);
-        Font passportCodeFont = createUnicodeFont(12f, Font.BOLD, TEXT_COLOR);
-        Font flagFont = createUnicodeFont(11f, Font.BOLD, EU_YELLOW);
+        Font passportHeaderFont = createUnicodeFont(11f, Font.BOLD, TEXT_COLOR);
+        Font passportSubHeaderFont = createUnicodeFont(9f, Font.BOLD, TEXT_COLOR);
+        Font passportEppoFont = createUnicodeFont(8.5f, Font.BOLD, TEXT_COLOR);
+        Font passportCodeFont = createUnicodeFont(11f, Font.BOLD, TEXT_COLOR);
+        Font passportValueFont = createUnicodeFont(11f, Font.NORMAL, TEXT_COLOR);
+        Font passportMetaFont = createUnicodeFont(10f, Font.NORMAL, TEXT_COLOR);
+        Font passportMetaLabelFont = createUnicodeFont(10f, Font.BOLD, TEXT_COLOR);
 
-        for (PassportPreviewDTO passport : preview.getPassports()) {
-            pdf.newPage();
+        final float passportWidth = cmToPt(10f);
+        final float passportHeight = cmToPt(6f);
+        final int passportsPerPage = 2;
 
-            Paragraph pageTitle = new Paragraph("Paszport roślin — pozycja " + passport.getItemNo(), numberFont);
-            pageTitle.setSpacingAfter(10f);
-            pdf.add(pageTitle);
+        boolean firstPassportPage = true;
+        int index = 0;
+        while (index < preview.getPassports().size()) {
+            if (firstPassportPage) {
+                pdf.newPage();
+                firstPassportPage = false;
+            } else {
+                pdf.newPage();
+            }
 
-            PdfPTable card = new PdfPTable(new float[]{1.1f, 4.8f});
-            card.setWidthPercentage(100);
-            card.setSpacingBefore(4f);
-            card.setSpacingAfter(10f);
+            for (int slot = 0; slot < passportsPerPage && index < preview.getPassports().size(); slot++, index++) {
+                PassportPreviewDTO passport = preview.getPassports().get(index);
+                Paragraph metaHeader = new Paragraph(buildPassportMetaHeader(passport), passportMetaFont);
+                metaHeader.setSpacingBefore(slot == 0 ? 6f : 14f);
+                metaHeader.setSpacingAfter(6f);
+                pdf.add(metaHeader);
 
-            PdfPCell flagCell = new PdfPCell();
-            flagCell.setBackgroundColor(EU_BLUE);
-            flagCell.setPadding(12f);
-            flagCell.setBorderColor(GRID_COLOR);
-            flagCell.setFixedHeight(220f);
-            addCenteredLine(flagCell, "★ ★ ★", flagFont);
-            addCenteredLine(flagCell, "★ ★ ★", flagFont);
-            addCenteredLine(flagCell, "★ ★ ★", flagFont);
-            flagCell.setVerticalAlignment(PdfPCell.ALIGN_MIDDLE);
-            card.addCell(flagCell);
-
-            PdfPCell bodyCell = new PdfPCell();
-            bodyCell.setBackgroundColor(PASSPORT_PANEL);
-            bodyCell.setBorderColor(GRID_COLOR);
-            bodyCell.setPadding(12f);
-
-            Paragraph passportHeader = new Paragraph("PASZPORT ROŚLIN / PLANT PASSPORT", passportHeaderFont);
-            passportHeader.setSpacingAfter(10f);
-            bodyCell.addElement(passportHeader);
-
-            PdfPTable details = new PdfPTable(new float[]{0.45f, 4.2f});
-            details.setWidthPercentage(100);
-            details.setSpacingAfter(10f);
-            addPassportDetailRow(details, "A", blankToDash(passport.getBotanicalName()), passportCodeFont, normalFont);
-            addPassportDetailRow(details, "B", blankToDash(passport.getOperatorNumber()), passportCodeFont, normalFont);
-            addPassportDetailRow(details, "C", blankToDash(passport.getTraceabilityCode()), passportCodeFont, normalFont);
-            addPassportDetailRow(details, "D", blankToDash(passport.getOriginCountryCode()), passportCodeFont, normalFont);
-            bodyCell.addElement(details);
-
-            addPassportMeta(bodyCell, "Roślina", passport.getPlantName(), emphasizedFont, normalFont);
-            addPassportMeta(bodyCell, "Ilość", passport.getQuantityLabel(), emphasizedFont, normalFont);
-            addPassportMeta(bodyCell, "Kod EPPO", passport.getEppoCode(), emphasizedFont, normalFont);
-            addPassportMeta(bodyCell, "Kategoria", passport.getCategoryLabel(), emphasizedFont, normalFont);
-            addPassportMeta(bodyCell, "Dokument", passport.getDocumentNumber(), emphasizedFont, normalFont);
-
-            card.addCell(bodyCell);
-            pdf.add(card);
-
-            Paragraph footer = new Paragraph("Fito Gen Essentials Powered by eGen Labs: www.egenlabs.eu", footerFont);
-            footer.setAlignment(Element.ALIGN_CENTER);
-            footer.setSpacingBefore(14f);
-            pdf.add(footer);
+                PdfPTable card = buildPassportCard(passport, passportWidth, passportHeight, passportHeaderFont, passportSubHeaderFont, passportEppoFont, passportCodeFont, passportValueFont);
+                pdf.add(card);
+            }
         }
     }
 
-    private void addCenteredLine(PdfPCell cell, String text, Font font) {
-        Paragraph paragraph = new Paragraph(text, font);
-        paragraph.setAlignment(Element.ALIGN_CENTER);
-        paragraph.setLeading(18f);
-        cell.addElement(paragraph);
+    private PdfPTable buildPassportCard(PassportPreviewDTO passport,
+                                        float passportWidth,
+                                        float passportHeight,
+                                        Font headerFont,
+                                        Font subHeaderFont,
+                                        Font eppoFont,
+                                        Font codeFont,
+                                        Font valueFont) throws Exception {
+        PdfPTable outer = new PdfPTable(1);
+        outer.setTotalWidth(passportWidth);
+        outer.setLockedWidth(true);
+        outer.setHorizontalAlignment(Element.ALIGN_CENTER);
+        outer.setSpacingAfter(8f);
+
+        PdfPTable card = new PdfPTable(new float[]{2.4f, 4.6f});
+        card.setWidthPercentage(100);
+
+        PdfPCell flagCell = new PdfPCell();
+        flagCell.setPadding(6f);
+        flagCell.setFixedHeight(passportHeight * 0.42f);
+        flagCell.setVerticalAlignment(PdfPCell.ALIGN_MIDDLE);
+        flagCell.setHorizontalAlignment(PdfPCell.ALIGN_CENTER);
+        flagCell.setBorderColor(GRID_COLOR);
+        flagCell.setBorderWidthLeft(1f);
+        flagCell.setBorderWidthTop(1f);
+        flagCell.setBorderWidthRight(0f);
+        flagCell.setBorderWidthBottom(0f);
+        com.lowagie.text.Image flagImage = com.lowagie.text.Image.getInstance(EuFlagRenderer.createPngBytes(560, 370));
+        flagImage.scaleToFit(cmToPt(4.0f), cmToPt(1.85f));
+        flagCell.addElement(flagImage);
+        card.addCell(flagCell);
+
+        PdfPCell topTextCell = new PdfPCell();
+        topTextCell.setPadding(5f);
+        topTextCell.setFixedHeight(passportHeight * 0.42f);
+        topTextCell.setVerticalAlignment(PdfPCell.ALIGN_MIDDLE);
+        topTextCell.setHorizontalAlignment(PdfPCell.ALIGN_CENTER);
+        topTextCell.setBorderColor(GRID_COLOR);
+        topTextCell.setBorderWidthLeft(0f);
+        topTextCell.setBorderWidthTop(1f);
+        topTextCell.setBorderWidthRight(1f);
+        topTextCell.setBorderWidthBottom(0f);
+        Paragraph line1 = new Paragraph("Paszport roślin / Plant passport", headerFont);
+        line1.setAlignment(Element.ALIGN_CENTER);
+        line1.setLeading(12f);
+        line1.setSpacingAfter(passport.isProtectedZone() ? 2f : 0f);
+        topTextCell.addElement(line1);
+        if (passport.isProtectedZone()) {
+            Paragraph line2 = new Paragraph("Strefa chroniona / ZP", subHeaderFont);
+            line2.setAlignment(Element.ALIGN_CENTER);
+            line2.setLeading(10f);
+            line2.setSpacingAfter(1f);
+            topTextCell.addElement(line2);
+            Paragraph line3 = new Paragraph(blankToDash(passport.getProtectedZoneCode()), eppoFont);
+            line3.setAlignment(Element.ALIGN_CENTER);
+            line3.setLeading(9f);
+            topTextCell.addElement(line3);
+        }
+        card.addCell(topTextCell);
+
+        PdfPCell bottomCell = new PdfPCell();
+        bottomCell.setColspan(2);
+        bottomCell.setBorderColor(GRID_COLOR);
+        bottomCell.setBorderWidthLeft(1f);
+        bottomCell.setBorderWidthTop(0f);
+        bottomCell.setBorderWidthRight(1f);
+        bottomCell.setBorderWidthBottom(1f);
+        bottomCell.setPadding(8f);
+        bottomCell.setFixedHeight(passportHeight * 0.58f);
+
+        PdfPTable details = new PdfPTable(new float[]{0.38f, 3.62f});
+        details.setWidthPercentage(100);
+        addPassportDetailRow(details, "A", blankToDash(passport.getBotanicalName()), codeFont, valueFont);
+        addPassportDetailRow(details, "B", blankToDash(passport.getOperatorNumber()), codeFont, valueFont);
+        addPassportDetailRow(details, "C", blankToDash(passport.getTraceabilityCode()), codeFont, valueFont);
+        addPassportDetailRow(details, "D", blankToDash(passport.getOriginCountryCode()), codeFont, valueFont);
+
+        PdfPTable detailsWrap = new PdfPTable(1);
+        detailsWrap.setWidthPercentage(100);
+        PdfPCell detailsInnerCell = new PdfPCell();
+        detailsInnerCell.setBorder(Rectangle.NO_BORDER);
+        detailsInnerCell.setFixedHeight(passportHeight * 0.58f - 16f);
+        detailsInnerCell.setVerticalAlignment(PdfPCell.ALIGN_MIDDLE);
+        detailsInnerCell.addElement(details);
+        detailsWrap.addCell(detailsInnerCell);
+        bottomCell.addElement(detailsWrap);
+
+        card.addCell(bottomCell);
+
+        PdfPCell wrapper = new PdfPCell(card);
+        wrapper.setBorder(Rectangle.NO_BORDER);
+        wrapper.setHorizontalAlignment(PdfPCell.ALIGN_CENTER);
+        outer.addCell(wrapper);
+        return outer;
+    }
+
+    private String buildPassportMetaHeader(PassportPreviewDTO passport) {
+        return "Paszport roślin do dokumentu nr: " + blankToDash(passport.getDocumentNumber())
+                + " / Pozycja nr: " + passport.getItemNo()
+                + " / Roślina: " + blankToDash(passport.getPlantName())
+                + " / Ilość: " + blankToDash(passport.getQuantityLabel())
+                + " / Kategoria: " + blankToDash(passport.getCategoryLabel());
     }
 
     private void addPassportDetailRow(PdfPTable table, String code, String value, Font codeFont, Font valueFont) {
         PdfPCell codeCell = new PdfPCell(new Phrase(code, codeFont));
-        codeCell.setPadding(7f);
-        codeCell.setBorderColor(GRID_COLOR);
-        codeCell.setHorizontalAlignment(PdfPCell.ALIGN_CENTER);
-        codeCell.setVerticalAlignment(PdfPCell.ALIGN_MIDDLE);
-        codeCell.setBackgroundColor(STRIP_COLOR);
+        codeCell.setPadding(3f);
+        codeCell.setBorder(Rectangle.NO_BORDER);
+        codeCell.setHorizontalAlignment(PdfPCell.ALIGN_LEFT);
+        codeCell.setVerticalAlignment(PdfPCell.ALIGN_TOP);
         table.addCell(codeCell);
 
         PdfPCell valueCell = new PdfPCell(new Phrase(value, valueFont));
-        valueCell.setPadding(7f);
-        valueCell.setBorderColor(GRID_COLOR);
-        valueCell.setVerticalAlignment(PdfPCell.ALIGN_MIDDLE);
+        valueCell.setPadding(3f);
+        valueCell.setBorder(Rectangle.NO_BORDER);
+        valueCell.setVerticalAlignment(PdfPCell.ALIGN_TOP);
         table.addCell(valueCell);
     }
 
-    private void addPassportMeta(PdfPCell cell, String label, String value, Font labelFont, Font valueFont) {
-        String safeValue = safe(value);
-        if (safeValue.isBlank()) {
-            return;
-        }
-        Paragraph paragraph = new Paragraph();
-        paragraph.setSpacingAfter(4f);
-        paragraph.add(new Phrase(label + ": ", labelFont));
-        paragraph.add(new Phrase(safeValue, valueFont));
-        cell.addElement(paragraph);
+    private float cmToPt(float centimeters) {
+        return centimeters * 28.3464567f;
     }
 
     private Paragraph alignedLine(String text, Font font, int alignment, float spacingAfter) {
