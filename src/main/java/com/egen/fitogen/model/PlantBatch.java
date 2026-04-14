@@ -16,6 +16,7 @@ public class PlantBatch {
     private String interiorBatchNo;
     private String exteriorBatchNo;
     private int qty;
+    private int ageYears;
     private LocalDate creationDate;
     private String manufacturerCountryCode;
     private String fitoQualificationCategory;

@@ -54,6 +54,7 @@ public class DatabaseInitializer {
                     exterior_batch_no TEXT,
                     plant_id INTEGER,
                     qty INTEGER,
+                    age_years INTEGER NOT NULL DEFAULT 0,
                     creation_date TEXT,
                     manufacturer_country_code TEXT,
                     fito_qualification_category TEXT,
@@ -249,6 +250,7 @@ public class DatabaseInitializer {
             ensureColumnExists(stmt, "contrahents", "is_supplier", "INTEGER NOT NULL DEFAULT 0");
             ensureColumnExists(stmt, "contrahents", "is_client", "INTEGER NOT NULL DEFAULT 0");
             ensureColumnExists(stmt, "plant_batches", "is_internal_source", "INTEGER NOT NULL DEFAULT 0");
+            ensureColumnExists(stmt, "plant_batches", "age_years", "INTEGER NOT NULL DEFAULT 0");
             ensureColumnExists(stmt, "plant_batches", "status", "TEXT DEFAULT 'ACTIVE'");
             ensureColumnExists(stmt, "documents", "status", "TEXT DEFAULT 'ACTIVE'");
             ensureColumnExists(stmt, "eppo_codes", "species_name", "TEXT");

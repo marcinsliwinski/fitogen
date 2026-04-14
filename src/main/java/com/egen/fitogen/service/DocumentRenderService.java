@@ -177,7 +177,13 @@ public class DocumentRenderService {
     }
 
     private String buildBatchAgeLabel(PlantBatch batch, LocalDate referenceDate) {
-        if (batch == null || batch.getCreationDate() == null) {
+        if (batch == null) {
+            return "";
+        }
+        if (batch.getAgeYears() > 0) {
+            return String.valueOf(batch.getAgeYears());
+        }
+        if (batch.getCreationDate() == null) {
             return "";
         }
 

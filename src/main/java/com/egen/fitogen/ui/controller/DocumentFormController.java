@@ -448,7 +448,7 @@ public class DocumentFormController {
             stage.setTitle("Dodaj partię roślin");
             stage.setScene(scene);
             stage.initModality(javafx.stage.Modality.APPLICATION_MODAL);
-            WindowSizingUtil.applyStageSize(stage, 960, 780, 860, 700);
+            WindowSizingUtil.applyStageSize(stage, 1000, 840, 900, 760);
 
             PlantBatchFormController controller = loader.getController();
             controller.setPreselectedPlant(row.getPlant());

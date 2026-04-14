@@ -390,8 +390,7 @@
 .table-row-cell.cancelled-row .table-cell {
     -fx-text-fill: #b42318;
     -fx-strikethrough: true;
-    -fx-font-weight: 700;
-    -fx-border-color: rgba(180, 35, 24, 0.22);
+    -fx-border-color: transparent transparent #f0f3f6 transparent;
 }
 
 .table-row-cell.cancelled-row:selected {
@@ -400,7 +399,7 @@
 
 .table-row-cell.cancelled-row:selected .table-cell {
     -fx-text-fill: #7a1d16;
-    -fx-border-color: rgba(180, 35, 24, 0.30);
+    -fx-border-color: transparent transparent #f0f3f6 transparent;
 }
 .preview-sheet {
     -fx-background-color: white;

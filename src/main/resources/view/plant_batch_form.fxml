@@ -12,12 +12,13 @@
 <?import javafx.scene.layout.ColumnConstraints?>
 <?import javafx.scene.layout.GridPane?>
 <?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Priority?>
 <?import javafx.scene.layout.VBox?>
 
 <VBox xmlns:fx="http://javafx.com/fxml"
       fx:controller="com.egen.fitogen.ui.controller.PlantBatchFormController"
       spacing="16"
-      prefWidth="900"
+      prefWidth="960"
       styleClass="content-pane">
 
     <padding>
@@ -31,7 +32,7 @@
 
         <GridPane hgap="12" vgap="12">
             <columnConstraints>
-                <ColumnConstraints minWidth="210" prefWidth="240"/>
+                <ColumnConstraints minWidth="220" prefWidth="250"/>
                 <ColumnConstraints hgrow="ALWAYS"/>
             </columnConstraints>
 
@@ -76,10 +77,17 @@
                        GridPane.rowIndex="5"
                        GridPane.columnIndex="1"/>
 
-            <Label text="Data utworzenia:" GridPane.rowIndex="6" GridPane.columnIndex="0"/>
+            <Label text="Wiek w partii (lata):" GridPane.rowIndex="6" GridPane.columnIndex="0"/>
+            <TextField fx:id="ageYearsField"
+                       promptText="Np. 1"
+                       maxWidth="1.7976931348623157E308"
+                       GridPane.rowIndex="6"
+                       GridPane.columnIndex="1"/>
+
+            <Label text="Data utworzenia:" GridPane.rowIndex="7" GridPane.columnIndex="0"/>
             <DatePicker fx:id="creationDatePicker"
                         maxWidth="1.7976931348623157E308"
-                        GridPane.rowIndex="6"
+                        GridPane.rowIndex="7"
                         GridPane.columnIndex="1"/>
         </GridPane>
     </VBox>
@@ -87,11 +95,11 @@
     <Separator styleClass="form-separator"/>
 
     <VBox spacing="12">
-        <Label text="Dane pochodzenia i kwalifikacji" styleClass="form-section-title"/>
+        <Label text="Dane pochodzenia i obostrzeń" styleClass="form-section-title"/>
 
         <GridPane hgap="12" vgap="12">
             <columnConstraints>
-                <ColumnConstraints minWidth="210" prefWidth="240"/>
+                <ColumnConstraints minWidth="220" prefWidth="250"/>
                 <ColumnConstraints hgrow="ALWAYS"/>
             </columnConstraints>
 
@@ -110,62 +118,43 @@
                        GridPane.columnIndex="1"/>
 
             <Label text="Kod EPPO:" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
-            <TextField fx:id="eppoCodeField"
-                       promptText="Wpisz kod EPPO"
-                       maxWidth="1.7976931348623157E308"
-                       GridPane.rowIndex="2"
-                       GridPane.columnIndex="1"/>
+            <HBox spacing="12"
+                  alignment="CENTER_LEFT"
+                  GridPane.rowIndex="2"
+                  GridPane.columnIndex="1">
+                <TextField fx:id="eppoCodeField"
+                           promptText="Kod EPPO"
+                           HBox.hgrow="ALWAYS"
+                           maxWidth="1.7976931348623157E308"/>
+                <CheckBox fx:id="zpOriginCheckBox" text="Partia pochodzi z ZP"/>
+            </HBox>
 
-            <Label text="Powiązane kody EPPO:" GridPane.rowIndex="3" GridPane.columnIndex="0"/>
-            <TextArea fx:id="eppoLinkedCodesInfoArea"
-                      promptText="Informacje pojawią się po wyborze rośliny"
-                      prefRowCount="3"
-                      wrapText="true"
-                      maxWidth="1.7976931348623157E308"
-                      GridPane.rowIndex="3"
-                      GridPane.columnIndex="1"/>
+            <Label text="" GridPane.rowIndex="3" GridPane.columnIndex="0"/>
+            <Label fx:id="zpEligibilityHintLabel"
+                   text="Kraj pochodzenia lub roślina nie znajdują się w słownikach EPPO i ZP."
+                   wrapText="true"
+                   managed="false"
+                   visible="false"
+                   style="-fx-text-fill: #b42318; -fx-font-weight: 700;"
+                   GridPane.rowIndex="3"
+                   GridPane.columnIndex="1"/>
 
-            <Label text="Strefy chronione EPPO:" GridPane.rowIndex="4" GridPane.columnIndex="0"/>
-            <TextArea fx:id="eppoProtectedZonesInfoArea"
-                      promptText="Informacje pojawią się po wyborze rośliny"
-                      prefRowCount="4"
+            <Label text="Obostrzenia:" GridPane.rowIndex="4" GridPane.columnIndex="0"/>
+            <TextArea fx:id="restrictionsInfoArea"
+                      promptText="Informacje pojawią się po wyborze rośliny i kraju pochodzenia"
+                      prefRowCount="6"
                       wrapText="true"
                       maxWidth="1.7976931348623157E308"
                       GridPane.rowIndex="4"
                       GridPane.columnIndex="1"/>
 
-            <Label text="ZP:" GridPane.rowIndex="5" GridPane.columnIndex="0"/>
-            <TextField fx:id="zpZoneField"
-                       promptText="Wpisz strefę ZP"
-                       maxWidth="1.7976931348623157E308"
-                       GridPane.rowIndex="5"
-                       GridPane.columnIndex="1"/>
-
-            <Label text="Sugestia ZP:" GridPane.rowIndex="6" GridPane.columnIndex="0"/>
-            <TextArea fx:id="eppoZpSuggestionInfoArea"
-                      promptText="Sugestia pojawi się po wyborze rośliny i kraju pochodzenia"
-                      prefRowCount="4"
-                      wrapText="true"
-                      maxWidth="1.7976931348623157E308"
-                      GridPane.rowIndex="6"
-                      GridPane.columnIndex="1"/>
-
-            <Label text="Informacja paszportowa:" GridPane.rowIndex="7" GridPane.columnIndex="0"/>
-            <TextArea fx:id="passportAdvisoryInfoArea"
-                      promptText="Informacja pojawi się po wyborze rośliny"
-                      prefRowCount="4"
-                      wrapText="true"
-                      maxWidth="1.7976931348623157E308"
-                      GridPane.rowIndex="7"
-                      GridPane.columnIndex="1"/>
-
-            <Label text="Uwagi:" GridPane.rowIndex="8" GridPane.columnIndex="0"/>
+            <Label text="Uwagi:" GridPane.rowIndex="5" GridPane.columnIndex="0"/>
             <TextArea fx:id="commentsArea"
                       promptText="Dodatkowe uwagi"
                       prefRowCount="4"
                       wrapText="true"
                       maxWidth="1.7976931348623157E308"
-                      GridPane.rowIndex="8"
+                      GridPane.rowIndex="5"
                       GridPane.columnIndex="1"/>
         </GridPane>
     </VBox>
