@@ -27,6 +27,7 @@
         <ScrollPane fitToWidth="true" BorderPane.alignment="CENTER" styleClass="dashboard-scroll">
             <content>
                 <VBox spacing="18" alignment="TOP_CENTER" style="-fx-padding: 20 20 20 20;">
+                    <VBox fx:id="printablePagesContainer" spacing="18" alignment="TOP_CENTER">
                     <VBox fx:id="printableRoot" spacing="14" maxWidth="940" styleClass="preview-sheet preview-sheet-a4 preview-invoice-sheet">
                         <padding>
                             <Insets top="24" right="24" bottom="18" left="24"/>
@@ -125,6 +126,9 @@
                         <Label text="Fito Gen Essentials Powered by eGen Labs: www.egenlabs.eu"
                                styleClass="preview-document-footer"
                                maxWidth="1.7976931348623157E308"/>
+                    </VBox>
+
+                    <VBox fx:id="passportPagesContainer" spacing="18" alignment="TOP_CENTER"/>
                     </VBox>
                 </VBox>
             </content>

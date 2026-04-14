@@ -63,8 +63,8 @@
         <TableView fx:id="itemsTable" VBox.vgrow="ALWAYS">
             <columns>
                 <TableColumn fx:id="colLp" text="LP" prefWidth="55"/>
-                <TableColumn fx:id="colPlant" text="Roślina" prefWidth="300"/>
-                <TableColumn fx:id="colBatch" text="Partia" prefWidth="470"/>
+                <TableColumn fx:id="colPlant" text="Roślina" prefWidth="360"/>
+                <TableColumn fx:id="colBatch" text="Partia" prefWidth="235"/>
                 <TableColumn fx:id="colQty" text="Ilość" prefWidth="130"/>
                 <TableColumn fx:id="colPassport" text="Paszport" prefWidth="150"/>
                 <TableColumn fx:id="colActions" text="Usuń" prefWidth="90"/>

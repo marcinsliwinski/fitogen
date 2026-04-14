@@ -2,6 +2,7 @@ package com.egen.fitogen.service;
 
 import com.egen.fitogen.dto.DocumentPreviewDTO;
 import com.egen.fitogen.dto.DocumentPreviewItemDTO;
+import com.egen.fitogen.dto.PassportPreviewDTO;
 import com.lowagie.text.Document;
 import com.lowagie.text.Element;
 import com.lowagie.text.Font;
@@ -25,6 +26,9 @@ public class DocumentPdfService {
     private static final java.awt.Color STRIP_COLOR = new java.awt.Color(217, 217, 217);
     private static final java.awt.Color FOOTER_COLOR = new java.awt.Color(107, 114, 128);
     private static final java.awt.Color TEXT_COLOR = new java.awt.Color(17, 24, 39);
+    private static final java.awt.Color EU_BLUE = new java.awt.Color(0, 51, 153);
+    private static final java.awt.Color EU_YELLOW = new java.awt.Color(255, 204, 0);
+    private static final java.awt.Color PASSPORT_PANEL = new java.awt.Color(245, 248, 252);
 
     private static final String[] REGULAR_FONT_CANDIDATES = {
             "C:/Windows/Fonts/segoeui.ttf",
@@ -169,6 +173,8 @@ public class DocumentPdfService {
             footer.setAlignment(Element.ALIGN_CENTER);
             footer.setSpacingBefore(12f);
             pdf.add(footer);
+
+            addPassportPages(pdf, preview, titleFont, numberFont, boxHeaderFont, normalFont, emphasizedFont, footerFont);
         } catch (Exception e) {
             throw new IllegalStateException("Nie udało się wyeksportować dokumentu do PDF.", e);
         } finally {
@@ -185,6 +191,108 @@ public class DocumentPdfService {
                 }
             }
         }
+    }
+
+
+    private void addPassportPages(Document pdf, DocumentPreviewDTO preview, Font titleFont, Font numberFont, Font boxHeaderFont, Font normalFont, Font emphasizedFont, Font footerFont) throws Exception {
+        if (preview == null || !preview.isPrintPassports() || preview.getPassports() == null || preview.getPassports().isEmpty()) {
+            return;
+        }
+
+        Font passportHeaderFont = createUnicodeFont(13f, Font.BOLD, TEXT_COLOR);
+        Font passportCodeFont = createUnicodeFont(12f, Font.BOLD, TEXT_COLOR);
+        Font flagFont = createUnicodeFont(11f, Font.BOLD, EU_YELLOW);
+
+        for (PassportPreviewDTO passport : preview.getPassports()) {
+            pdf.newPage();
+
+            Paragraph pageTitle = new Paragraph("Paszport roślin — pozycja " + passport.getItemNo(), numberFont);
+            pageTitle.setSpacingAfter(10f);
+            pdf.add(pageTitle);
+
+            PdfPTable card = new PdfPTable(new float[]{1.1f, 4.8f});
+            card.setWidthPercentage(100);
+            card.setSpacingBefore(4f);
+            card.setSpacingAfter(10f);
+
+            PdfPCell flagCell = new PdfPCell();
+            flagCell.setBackgroundColor(EU_BLUE);
+            flagCell.setPadding(12f);
+            flagCell.setBorderColor(GRID_COLOR);
+            flagCell.setFixedHeight(220f);
+            addCenteredLine(flagCell, "★ ★ ★", flagFont);
+            addCenteredLine(flagCell, "★ ★ ★", flagFont);
+            addCenteredLine(flagCell, "★ ★ ★", flagFont);
+            flagCell.setVerticalAlignment(PdfPCell.ALIGN_MIDDLE);
+            card.addCell(flagCell);
+
+            PdfPCell bodyCell = new PdfPCell();
+            bodyCell.setBackgroundColor(PASSPORT_PANEL);
+            bodyCell.setBorderColor(GRID_COLOR);
+            bodyCell.setPadding(12f);
+
+            Paragraph passportHeader = new Paragraph("PASZPORT ROŚLIN / PLANT PASSPORT", passportHeaderFont);
+            passportHeader.setSpacingAfter(10f);
+            bodyCell.addElement(passportHeader);
+
+            PdfPTable details = new PdfPTable(new float[]{0.45f, 4.2f});
+            details.setWidthPercentage(100);
+            details.setSpacingAfter(10f);
+            addPassportDetailRow(details, "A", blankToDash(passport.getBotanicalName()), passportCodeFont, normalFont);
+            addPassportDetailRow(details, "B", blankToDash(passport.getOperatorNumber()), passportCodeFont, normalFont);
+            addPassportDetailRow(details, "C", blankToDash(passport.getTraceabilityCode()), passportCodeFont, normalFont);
+            addPassportDetailRow(details, "D", blankToDash(passport.getOriginCountryCode()), passportCodeFont, normalFont);
+            bodyCell.addElement(details);
+
+            addPassportMeta(bodyCell, "Roślina", passport.getPlantName(), emphasizedFont, normalFont);
+            addPassportMeta(bodyCell, "Ilość", passport.getQuantityLabel(), emphasizedFont, normalFont);
+            addPassportMeta(bodyCell, "Kod EPPO", passport.getEppoCode(), emphasizedFont, normalFont);
+            addPassportMeta(bodyCell, "Kategoria", passport.getCategoryLabel(), emphasizedFont, normalFont);
+            addPassportMeta(bodyCell, "Dokument", passport.getDocumentNumber(), emphasizedFont, normalFont);
+
+            card.addCell(bodyCell);
+            pdf.add(card);
+
+            Paragraph footer = new Paragraph("Fito Gen Essentials Powered by eGen Labs: www.egenlabs.eu", footerFont);
+            footer.setAlignment(Element.ALIGN_CENTER);
+            footer.setSpacingBefore(14f);
+            pdf.add(footer);
+        }
+    }
+
+    private void addCenteredLine(PdfPCell cell, String text, Font font) {
+        Paragraph paragraph = new Paragraph(text, font);
+        paragraph.setAlignment(Element.ALIGN_CENTER);
+        paragraph.setLeading(18f);
+        cell.addElement(paragraph);
+    }
+
+    private void addPassportDetailRow(PdfPTable table, String code, String value, Font codeFont, Font valueFont) {
+        PdfPCell codeCell = new PdfPCell(new Phrase(code, codeFont));
+        codeCell.setPadding(7f);
+        codeCell.setBorderColor(GRID_COLOR);
+        codeCell.setHorizontalAlignment(PdfPCell.ALIGN_CENTER);
+        codeCell.setVerticalAlignment(PdfPCell.ALIGN_MIDDLE);
+        codeCell.setBackgroundColor(STRIP_COLOR);
+        table.addCell(codeCell);
+
+        PdfPCell valueCell = new PdfPCell(new Phrase(value, valueFont));
+        valueCell.setPadding(7f);
+        valueCell.setBorderColor(GRID_COLOR);
+        valueCell.setVerticalAlignment(PdfPCell.ALIGN_MIDDLE);
+        table.addCell(valueCell);
+    }
+
+    private void addPassportMeta(PdfPCell cell, String label, String value, Font labelFont, Font valueFont) {
+        String safeValue = safe(value);
+        if (safeValue.isBlank()) {
+            return;
+        }
+        Paragraph paragraph = new Paragraph();
+        paragraph.setSpacingAfter(4f);
+        paragraph.add(new Phrase(label + ": ", labelFont));
+        paragraph.add(new Phrase(safeValue, valueFont));
+        cell.addElement(paragraph);
     }
 
     private Paragraph alignedLine(String text, Font font, int alignment, float spacingAfter) {

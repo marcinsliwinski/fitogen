@@ -8,6 +8,7 @@ import com.egen.fitogen.dto.DocumentDTO;
 import com.egen.fitogen.dto.DocumentItemDTO;
 import com.egen.fitogen.dto.DocumentPreviewDTO;
 import com.egen.fitogen.dto.DocumentPreviewItemDTO;
+import com.egen.fitogen.dto.PassportPreviewDTO;
 import com.egen.fitogen.model.Contrahent;
 import com.egen.fitogen.model.DocumentStatus;
 import com.egen.fitogen.model.IssuerProfile;
@@ -83,6 +84,7 @@ public class DocumentRenderService {
         fillIssuer(preview);
         fillCustomer(preview, document.getContrahentId());
         fillItems(preview, document);
+        fillPassports(preview, document);
 
         return preview;
     }
@@ -175,6 +177,68 @@ public class DocumentRenderService {
         }
 
         preview.setTotalQty(totalQty);
+    }
+
+
+    private void fillPassports(DocumentPreviewDTO preview, DocumentDTO document) {
+        preview.getPassports().clear();
+        if (preview == null || document == null || !document.isPrintPassports() || document.getItems() == null) {
+            return;
+        }
+
+        IssuerProfile issuer = appSettingsService.getIssuerProfile();
+        int itemNo = 1;
+        for (DocumentItemDTO item : document.getItems()) {
+            if (!item.isPassportRequired()) {
+                itemNo++;
+                continue;
+            }
+
+            PlantBatch batch = plantBatchRepository.findById(item.getPlantBatchId());
+            Plant plant = batch != null ? plantRepository.findById(batch.getPlantId()) : null;
+
+            PassportPreviewDTO passport = new PassportPreviewDTO();
+            passport.setItemNo(itemNo);
+            passport.setPlantName(plant != null ? safe(plant.toString()) : "");
+            passport.setBotanicalName(resolvePassportBotanicalName(plant));
+            passport.setOperatorNumber(resolvePassportOperatorNumber(issuer));
+            passport.setTraceabilityCode(batch != null ? resolveBatchNumber(batch) : "");
+            passport.setOriginCountryCode(resolvePassportOriginCountryCode(batch, issuer));
+            passport.setQuantityLabel(String.valueOf(Math.max(0, item.getQty())));
+            passport.setEppoCode(plant != null ? safe(plant.getEppoCode()) : "");
+            passport.setCategoryLabel(batch != null ? safe(batch.getFitoQualificationCategory()) : "");
+            passport.setDocumentNumber(preview.getDocumentNumber());
+            preview.getPassports().add(passport);
+            itemNo++;
+        }
+    }
+
+    private String resolvePassportBotanicalName(Plant plant) {
+        if (plant == null) {
+            return "";
+        }
+        String latin = safe(plant.getLatinSpeciesName());
+        if (!latin.isBlank()) {
+            return latin;
+        }
+        return safe(plant.toString());
+    }
+
+    private String resolvePassportOperatorNumber(IssuerProfile issuer) {
+        if (issuer == null) {
+            return "";
+        }
+        return safe(issuer.getPhytosanitaryNumber());
+    }
+
+    private String resolvePassportOriginCountryCode(PlantBatch batch, IssuerProfile issuer) {
+        if (batch != null && !safe(batch.getManufacturerCountryCode()).isBlank()) {
+            return safe(batch.getManufacturerCountryCode());
+        }
+        if (issuer != null) {
+            return safe(issuer.getCountryCode());
+        }
+        return "";
     }
 
     private String buildBatchAgeLabel(PlantBatch batch, LocalDate referenceDate) {

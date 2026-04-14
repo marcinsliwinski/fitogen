@@ -37,4 +37,5 @@ public class DocumentPreviewDTO {
     private int totalQty;
 
     private List<DocumentPreviewItemDTO> items = new ArrayList<>();
+    private List<PassportPreviewDTO> passports = new ArrayList<>();
 }

@@ -3,6 +3,7 @@ package com.egen.fitogen.ui.controller;
 import com.egen.fitogen.config.AppContext;
 import com.egen.fitogen.dto.DocumentPreviewDTO;
 import com.egen.fitogen.dto.DocumentPreviewItemDTO;
+import com.egen.fitogen.dto.PassportPreviewDTO;
 import com.egen.fitogen.service.DocumentPdfService;
 import com.egen.fitogen.service.DocumentRenderService;
 import com.egen.fitogen.ui.util.DialogUtil;
@@ -13,12 +14,15 @@ import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.print.PageLayout;
 import javafx.print.PrinterJob;
+import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
+import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Region;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
@@ -30,7 +34,9 @@ public class DocumentPreviewController {
     private static final double TABLE_ROW_HEIGHT = 40;
     private static final double TABLE_HEADER_HEIGHT = 42;
 
+    @FXML private VBox printablePagesContainer;
     @FXML private VBox printableRoot;
+    @FXML private VBox passportPagesContainer;
     @FXML private Label documentTypeTitleLabel;
     @FXML private Label documentNumberTitleLabel;
     @FXML private Label issueDateLabel;
@@ -166,6 +172,125 @@ public class DocumentPreviewController {
         customerNameLabel.setText(valueOrDash(preview.getCustomerName()));
         customerAddressLabel.setText(customerAddress);
         customerPhytosanitaryNumberLabel.setText(buildPhytosanitaryLabel(preview.getCustomerPhytosanitaryNumber()));
+        rebuildPassportPages(preview);
+    }
+
+
+    private void rebuildPassportPages(DocumentPreviewDTO preview) {
+        if (passportPagesContainer == null) {
+            return;
+        }
+        passportPagesContainer.getChildren().clear();
+
+        if (preview == null || !preview.isPrintPassports() || preview.getPassports() == null || preview.getPassports().isEmpty()) {
+            passportPagesContainer.setVisible(false);
+            passportPagesContainer.setManaged(false);
+            return;
+        }
+
+        int total = preview.getPassports().size();
+        for (PassportPreviewDTO passport : preview.getPassports()) {
+            passportPagesContainer.getChildren().add(buildPassportPage(passport, total));
+        }
+
+        passportPagesContainer.setVisible(true);
+        passportPagesContainer.setManaged(true);
+    }
+
+    private VBox buildPassportPage(PassportPreviewDTO passport, int totalPages) {
+        VBox page = new VBox(18);
+        page.setMaxWidth(940);
+        page.getStyleClass().addAll("preview-sheet", "preview-sheet-a4", "preview-passport-page");
+
+        Label pageTitle = new Label("Paszport roślin — pozycja " + passport.getItemNo() + " / " + totalPages);
+        pageTitle.getStyleClass().add("preview-passport-page-title");
+
+        HBox card = new HBox(18);
+        card.setAlignment(Pos.TOP_LEFT);
+        card.getStyleClass().add("preview-passport-card");
+
+        VBox flagBox = new VBox(4);
+        flagBox.setAlignment(Pos.CENTER);
+        flagBox.getStyleClass().add("preview-eu-flag-box");
+        Label flagStarsTop = new Label("★ ★ ★");
+        Label flagStarsMid = new Label("★ ★ ★");
+        Label flagStarsBottom = new Label("★ ★ ★");
+        flagStarsTop.getStyleClass().add("preview-eu-flag-stars");
+        flagStarsMid.getStyleClass().add("preview-eu-flag-stars");
+        flagStarsBottom.getStyleClass().add("preview-eu-flag-stars");
+        flagBox.getChildren().addAll(flagStarsTop, flagStarsMid, flagStarsBottom);
+
+        VBox content = new VBox(12);
+        content.setAlignment(Pos.TOP_LEFT);
+        content.getStyleClass().add("preview-passport-card-content");
+
+        Label header = new Label("PASZPORT ROŚLIN / PLANT PASSPORT");
+        header.getStyleClass().add("preview-passport-header");
+
+        GridPane grid = new GridPane();
+        grid.setHgap(10);
+        grid.setVgap(8);
+        grid.getStyleClass().add("preview-passport-grid");
+        addPassportRow(grid, 0, "A", valueOrDash(passport.getBotanicalName()));
+        addPassportRow(grid, 1, "B", valueOrDash(passport.getOperatorNumber()));
+        addPassportRow(grid, 2, "C", valueOrDash(passport.getTraceabilityCode()));
+        addPassportRow(grid, 3, "D", valueOrDash(passport.getOriginCountryCode()));
+
+        Label details = new Label(buildPassportDetails(passport));
+        details.setWrapText(true);
+        details.getStyleClass().add("preview-passport-details");
+
+        content.getChildren().addAll(header, grid, details);
+        card.getChildren().addAll(flagBox, content);
+
+        page.getChildren().addAll(pageTitle, card);
+        return page;
+    }
+
+    private void addPassportRow(GridPane grid, int rowIndex, String code, String value) {
+        Label codeLabel = new Label(code);
+        codeLabel.getStyleClass().add("preview-passport-code");
+        Label valueLabel = new Label(value);
+        valueLabel.setWrapText(true);
+        valueLabel.getStyleClass().add("preview-passport-value");
+        grid.add(codeLabel, 0, rowIndex);
+        grid.add(valueLabel, 1, rowIndex);
+    }
+
+    private String buildPassportDetails(PassportPreviewDTO passport) {
+        StringBuilder sb = new StringBuilder();
+        appendDetail(sb, "Roślina", passport.getPlantName());
+        appendDetail(sb, "Ilość", passport.getQuantityLabel());
+        appendDetail(sb, "Kod EPPO", passport.getEppoCode());
+        appendDetail(sb, "Kategoria", passport.getCategoryLabel());
+        appendDetail(sb, "Dokument", passport.getDocumentNumber());
+        return sb.toString();
+    }
+
+    private void appendDetail(StringBuilder sb, String label, String value) {
+        String safeValue = safe(value);
+        if (safeValue.isBlank()) {
+            return;
+        }
+        if (!sb.isEmpty()) {
+            sb.append("\n");
+        }
+        sb.append(label).append(": ").append(safeValue);
+    }
+
+    private java.util.List<Region> collectPrintablePages() {
+        java.util.List<Region> pages = new java.util.ArrayList<>();
+        if (printableRoot != null) {
+            pages.add(printableRoot);
+        }
+        if (passportPagesContainer != null) {
+            for (Node child : passportPagesContainer.getChildren()) {
+                if (child instanceof Region region && child.isManaged()) {
+                    pages.add(region);
+                }
+            }
+        }
+        return pages;
     }
 
     private ObservableList<DocumentPreviewItemDTO> buildDisplayItems(DocumentPreviewDTO preview) {
@@ -201,28 +326,38 @@ public class DocumentPreviewController {
             return;
         }
 
-        Region nodeToPrint = printableRoot;
-        double originalScaleX = nodeToPrint.getScaleX();
-        double originalScaleY = nodeToPrint.getScaleY();
-
         try {
-            nodeToPrint.applyCss();
-            nodeToPrint.layout();
-
-            double nodeWidth = computeNodeWidth(nodeToPrint);
-            double nodeHeight = computeNodeHeight(nodeToPrint);
             PageLayout pageLayout = job.getJobSettings().getPageLayout();
-            double printableWidth = pageLayout.getPrintableWidth();
-            double printableHeight = pageLayout.getPrintableHeight();
+            boolean success = true;
+            for (Region page : collectPrintablePages()) {
+                double originalScaleX = page.getScaleX();
+                double originalScaleY = page.getScaleY();
+                try {
+                    page.applyCss();
+                    page.layout();
 
-            double widthScale = nodeWidth <= 0 ? 1 : printableWidth / nodeWidth;
-            double heightScale = nodeHeight <= 0 ? 1 : printableHeight / nodeHeight;
-            double scale = Math.min(1, Math.min(widthScale, heightScale));
+                    double nodeWidth = computeNodeWidth(page);
+                    double nodeHeight = computeNodeHeight(page);
+                    double printableWidth = pageLayout.getPrintableWidth();
+                    double printableHeight = pageLayout.getPrintableHeight();
 
-            nodeToPrint.setScaleX(scale);
-            nodeToPrint.setScaleY(scale);
+                    double widthScale = nodeWidth <= 0 ? 1 : printableWidth / nodeWidth;
+                    double heightScale = nodeHeight <= 0 ? 1 : printableHeight / nodeHeight;
+                    double scale = Math.min(1, Math.min(widthScale, heightScale));
 
-            boolean success = job.printPage(nodeToPrint);
+                    page.setScaleX(scale);
+                    page.setScaleY(scale);
+
+                    if (!job.printPage(page)) {
+                        success = false;
+                        break;
+                    }
+                } finally {
+                    page.setScaleX(originalScaleX);
+                    page.setScaleY(originalScaleY);
+                }
+            }
+
             if (success) {
                 job.endJob();
             } else {
@@ -231,9 +366,6 @@ public class DocumentPreviewController {
         } catch (Exception e) {
             e.printStackTrace();
             DialogUtil.showError("Błąd drukowania", "Nie udało się wydrukować dokumentu.");
-        } finally {
-            nodeToPrint.setScaleX(originalScaleX);
-            nodeToPrint.setScaleY(originalScaleY);
         }
     }
 

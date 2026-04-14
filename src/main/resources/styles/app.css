@@ -748,3 +748,75 @@
     -fx-font-size: 12px;
     -fx-font-weight: 700;
 }
+
+
+.preview-passport-page {
+    -fx-padding: 24 24 24 24;
+}
+
+.preview-passport-page-title {
+    -fx-font-size: 18px;
+    -fx-font-weight: 700;
+    -fx-text-fill: #111827;
+}
+
+.preview-passport-card {
+    -fx-background-color: #f5f8fc;
+    -fx-border-color: #4b5563;
+    -fx-border-radius: 0;
+    -fx-background-radius: 0;
+    -fx-padding: 18 18 18 18;
+}
+
+.preview-eu-flag-box {
+    -fx-min-width: 120;
+    -fx-pref-width: 120;
+    -fx-min-height: 200;
+    -fx-background-color: #003399;
+    -fx-padding: 18 10 18 10;
+}
+
+.preview-eu-flag-stars {
+    -fx-text-fill: #ffcc00;
+    -fx-font-size: 16px;
+    -fx-font-weight: 700;
+}
+
+.preview-passport-card-content {
+    -fx-padding: 2 0 0 0;
+}
+
+.preview-passport-header {
+    -fx-font-size: 16px;
+    -fx-font-weight: 800;
+    -fx-text-fill: #111827;
+}
+
+.preview-passport-grid {
+    -fx-background-color: transparent;
+}
+
+.preview-passport-code {
+    -fx-min-width: 28;
+    -fx-alignment: CENTER;
+    -fx-background-color: #d9d9d9;
+    -fx-border-color: #4b5563;
+    -fx-padding: 6 8 6 8;
+    -fx-font-size: 13px;
+    -fx-font-weight: 700;
+    -fx-text-fill: #111827;
+}
+
+.preview-passport-value {
+    -fx-border-color: #4b5563;
+    -fx-padding: 6 10 6 10;
+    -fx-font-size: 13px;
+    -fx-text-fill: #111827;
+    -fx-background-color: white;
+}
+
+.preview-passport-details {
+    -fx-font-size: 12px;
+    -fx-text-fill: #374151;
+    -fx-line-spacing: 2px;
+}
