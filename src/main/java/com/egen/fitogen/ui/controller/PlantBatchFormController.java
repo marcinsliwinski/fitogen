@@ -16,10 +16,10 @@ import com.egen.fitogen.service.AppSettingsService;
 import com.egen.fitogen.service.EppoCodePlantLinkService;
 import com.egen.fitogen.service.EppoCodeZoneLinkService;
 import com.egen.fitogen.service.PlantBatchService;
-import com.egen.fitogen.ui.util.ComboBoxAutoComplete;
 import com.egen.fitogen.ui.util.DialogUtil;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
@@ -32,6 +32,7 @@ import javafx.scene.control.TextField;
 import javafx.scene.control.TextFormatter;
 import javafx.scene.control.Tooltip;
 import javafx.stage.Stage;
+import javafx.util.StringConverter;
 
 import java.time.LocalDate;
 import java.time.Period;
@@ -43,6 +44,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class PlantBatchFormController {
@@ -322,8 +324,145 @@ public class PlantBatchFormController {
     }
 
     private void configureComboBoxes() {
-        ComboBoxAutoComplete.bindSelectionAutocomplete(plantComboBox, availablePlants, this::formatPlantSummary);
-        ComboBoxAutoComplete.bindSelectionAutocomplete(sourceOriginComboBox, availableSourceOrigins, contrahent -> contrahent == null ? "" : safe(contrahent.getName()));
+        bindSelectionAutocompleteSafely(plantComboBox, availablePlants, this::formatPlantSummary);
+        bindSelectionAutocompleteSafely(sourceOriginComboBox, availableSourceOrigins, contrahent -> contrahent == null ? "" : safe(contrahent.getName()));
+    }
+
+    private <T> void bindSelectionAutocompleteSafely(
+            ComboBox<T> comboBox,
+            List<T> sourceValues,
+            Function<T, String> textProvider
+    ) {
+        if (comboBox == null || textProvider == null) {
+            return;
+        }
+
+        ObservableList<T> masterItems = FXCollections.observableArrayList(sourceValues == null ? List.of() : sourceValues);
+        boolean[] syncing = {false};
+
+        comboBox.setEditable(true);
+        comboBox.setItems(FXCollections.observableArrayList(masterItems));
+        comboBox.setMaxWidth(Double.MAX_VALUE);
+        comboBox.setConverter(new StringConverter<>() {
+            @Override
+            public String toString(T object) {
+                return object == null ? "" : safe(textProvider.apply(object));
+            }
+
+            @Override
+            public T fromString(String string) {
+                return findBestMatch(masterItems, string, textProvider);
+            }
+        });
+
+        if (comboBox.getEditor() == null) {
+            return;
+        }
+
+        comboBox.getSelectionModel().selectedItemProperty().addListener((obs, oldValue, newValue) -> {
+            if (syncing[0]) {
+                return;
+            }
+
+            syncing[0] = true;
+            try {
+                if (newValue != null) {
+                    comboBox.getEditor().setText(safe(textProvider.apply(newValue)));
+                } else if (!comboBox.isFocused()) {
+                    comboBox.getEditor().clear();
+                }
+            } finally {
+                syncing[0] = false;
+            }
+        });
+
+        comboBox.getEditor().textProperty().addListener((obs, oldValue, newValue) -> {
+            if (syncing[0] || !comboBox.isFocused()) {
+                return;
+            }
+
+            T selected = comboBox.getSelectionModel().getSelectedItem();
+            if (selected != null && normalizeKey(textProvider.apply(selected)).equals(normalizeKey(newValue))) {
+                return;
+            }
+
+            ObservableList<T> filteredItems;
+            String normalized = normalizeKey(newValue);
+            if (normalized.isBlank()) {
+                filteredItems = FXCollections.observableArrayList(masterItems);
+            } else {
+                filteredItems = masterItems.filtered(item -> normalizeKey(textProvider.apply(item)).contains(normalized));
+            }
+
+            syncing[0] = true;
+            try {
+                comboBox.setItems(filteredItems);
+            } finally {
+                syncing[0] = false;
+            }
+
+            if (!comboBox.isShowing() && !filteredItems.isEmpty()) {
+                comboBox.show();
+            }
+        });
+
+        Runnable commitSelection = () -> {
+            if (syncing[0]) {
+                return;
+            }
+
+            syncing[0] = true;
+            try {
+                comboBox.setItems(FXCollections.observableArrayList(masterItems));
+
+                String editorText = comboBox.getEditor().getText();
+                T exactMatch = findBestMatch(masterItems, editorText, textProvider);
+                if (exactMatch != null) {
+                    comboBox.getSelectionModel().select(exactMatch);
+                    comboBox.setValue(exactMatch);
+                    comboBox.getEditor().setText(safe(textProvider.apply(exactMatch)));
+                    return;
+                }
+
+                T selected = comboBox.getSelectionModel().getSelectedItem();
+                if (selected != null) {
+                    comboBox.getEditor().setText(safe(textProvider.apply(selected)));
+                    return;
+                }
+
+                comboBox.getSelectionModel().clearSelection();
+                comboBox.setValue(null);
+                comboBox.getEditor().clear();
+            } finally {
+                syncing[0] = false;
+            }
+        };
+
+        comboBox.focusedProperty().addListener((obs, oldValue, focused) -> {
+            if (!focused) {
+                commitSelection.run();
+            }
+        });
+
+        comboBox.getEditor().setOnAction(event -> commitSelection.run());
+    }
+
+    private <T> T findBestMatch(List<T> items, String value, Function<T, String> textProvider) {
+        String normalized = normalizeKey(value);
+        if (normalized.isBlank() || items == null || textProvider == null) {
+            return null;
+        }
+
+        for (T item : items) {
+            if (normalizeKey(textProvider.apply(item)).equals(normalized)) {
+                return item;
+            }
+        }
+        return null;
+    }
+
+    private String normalizeKey(String value) {
+        return safe(value).toLowerCase();
     }
 
     private void selectPlant(int plantId) {

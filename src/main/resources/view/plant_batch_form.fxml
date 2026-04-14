@@ -106,8 +106,10 @@
 
         <GridPane hgap="12" vgap="12">
             <columnConstraints>
-                <ColumnConstraints minWidth="220" prefWidth="250"/>
-                <ColumnConstraints hgrow="ALWAYS"/>
+                <ColumnConstraints minWidth="180" prefWidth="210"/>
+                <ColumnConstraints hgrow="ALWAYS" minWidth="180" prefWidth="260"/>
+                <ColumnConstraints minWidth="180" prefWidth="210"/>
+                <ColumnConstraints hgrow="ALWAYS" minWidth="180" prefWidth="260"/>
             </columnConstraints>
 
             <Label text="Kraj pochodzenia:" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
@@ -117,18 +119,19 @@
                        GridPane.rowIndex="0"
                        GridPane.columnIndex="1"/>
 
-            <Label text="Kategoria kwalifikacji:" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+            <Label text="Kategoria kwalifikacji:" GridPane.rowIndex="0" GridPane.columnIndex="2"/>
             <TextField fx:id="fitoQualificationCategoryField"
                        promptText="Wpisz kategorię kwalifikacji"
                        maxWidth="1.7976931348623157E308"
-                       GridPane.rowIndex="1"
-                       GridPane.columnIndex="1"/>
+                       GridPane.rowIndex="0"
+                       GridPane.columnIndex="3"/>
 
-            <Label text="Kod EPPO:" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
+            <Label text="Kod EPPO:" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
             <HBox spacing="12"
                   alignment="CENTER_LEFT"
-                  GridPane.rowIndex="2"
-                  GridPane.columnIndex="1">
+                  GridPane.rowIndex="1"
+                  GridPane.columnIndex="1"
+                  GridPane.columnSpan="3">
                 <TextField fx:id="eppoCodeField"
                            promptText="Kod EPPO"
                            HBox.hgrow="ALWAYS"
@@ -136,33 +139,36 @@
                 <CheckBox fx:id="zpOriginCheckBox" text="Partia pochodzi z ZP"/>
             </HBox>
 
-            <Label text="" GridPane.rowIndex="3" GridPane.columnIndex="0"/>
+            <Label text="" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
             <Label fx:id="zpEligibilityHintLabel"
                    text="Kraj pochodzenia lub roślina nie znajdują się w słownikach EPPO i ZP."
                    wrapText="true"
                    managed="false"
                    visible="false"
                    style="-fx-text-fill: #b42318; -fx-font-weight: 700;"
-                   GridPane.rowIndex="3"
-                   GridPane.columnIndex="1"/>
+                   GridPane.rowIndex="2"
+                   GridPane.columnIndex="1"
+                   GridPane.columnSpan="3"/>
 
-            <Label text="Obostrzenia:" GridPane.rowIndex="4" GridPane.columnIndex="0"/>
+            <Label text="Obostrzenia:" GridPane.rowIndex="3" GridPane.columnIndex="0"/>
             <TextArea fx:id="restrictionsInfoArea"
                       promptText="Informacje pojawią się po wyborze rośliny i kraju pochodzenia"
                       prefRowCount="6"
                       wrapText="true"
                       maxWidth="1.7976931348623157E308"
-                      GridPane.rowIndex="4"
-                      GridPane.columnIndex="1"/>
+                      GridPane.rowIndex="3"
+                      GridPane.columnIndex="1"
+                      GridPane.columnSpan="3"/>
 
-            <Label text="Uwagi:" GridPane.rowIndex="5" GridPane.columnIndex="0"/>
+            <Label text="Uwagi:" GridPane.rowIndex="4" GridPane.columnIndex="0"/>
             <TextArea fx:id="commentsArea"
                       promptText="Dodatkowe uwagi"
                       prefRowCount="4"
                       wrapText="true"
                       maxWidth="1.7976931348623157E308"
-                      GridPane.rowIndex="5"
-                      GridPane.columnIndex="1"/>
+                      GridPane.rowIndex="4"
+                      GridPane.columnIndex="1"
+                      GridPane.columnSpan="3"/>
         </GridPane>
     </VBox>
 

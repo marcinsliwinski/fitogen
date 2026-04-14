@@ -11,6 +11,8 @@ import com.egen.fitogen.dto.DocumentItemDTO;
 import com.egen.fitogen.model.AppUser;
 import com.egen.fitogen.model.Contrahent;
 import com.egen.fitogen.model.Document;
+import com.egen.fitogen.model.EppoCode;
+import com.egen.fitogen.model.EppoZone;
 import com.egen.fitogen.model.DocumentStatus;
 import com.egen.fitogen.model.DocumentType;
 import com.egen.fitogen.model.Plant;
@@ -24,6 +26,7 @@ import com.egen.fitogen.service.DocumentService;
 import com.egen.fitogen.service.DocumentTypeService;
 import com.egen.fitogen.service.EppoAdvisoryService;
 import com.egen.fitogen.service.EppoCodePlantLinkService;
+import com.egen.fitogen.service.EppoCodeZoneLinkService;
 import com.egen.fitogen.service.DocumentPdfService;
 import com.egen.fitogen.service.DocumentRenderService;
 import com.egen.fitogen.service.PassportAdvisoryService;
@@ -59,6 +62,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.control.TextFormatter;
+import javafx.scene.control.Tooltip;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.stage.FileChooser;
@@ -73,6 +77,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
+
 
 public class DocumentFormController {
 
@@ -94,8 +99,6 @@ public class DocumentFormController {
     @FXML private Button cancelButton;
     @FXML private Button previewButton;
     @FXML private Button pdfButton;
-    @FXML private Label eppoInfoSummaryLabel;
-    @FXML private TextArea eppoInfoArea;
 
     private final DocumentService documentService = AppContext.getDocumentService();
     private final DocumentTypeService documentTypeService = AppContext.getDocumentTypeService();
@@ -103,6 +106,7 @@ public class DocumentFormController {
     private final DocumentRenderService documentRenderService = new DocumentRenderService(documentService);
     private final DocumentPdfService documentPdfService = new DocumentPdfService();
     private final EppoCodePlantLinkService eppoCodePlantLinkService = AppContext.getEppoCodePlantLinkService();
+    private final EppoCodeZoneLinkService eppoCodeZoneLinkService = AppContext.getEppoCodeZoneLinkService();
     private final EppoAdvisoryService eppoAdvisoryService = AppContext.getEppoAdvisoryService();
     private final PassportAdvisoryService passportAdvisoryService = AppContext.getPassportAdvisoryService();
     private final ContrahentRepository contrahentRepository = new SqliteContrahentRepository();
@@ -137,8 +141,7 @@ public class DocumentFormController {
 
         selectDefaultUser();
         ensureTrailingBlankRow();
-        configureEppoInfoArea();
-        refreshEppoInfo();
+        refreshValidationIndicators();
     }
 
     public void setDocument(Document document) {
@@ -177,7 +180,7 @@ public class DocumentFormController {
         }
         internalRowChange = false;
         ensureTrailingBlankRow();
-        refreshEppoInfo();
+        refreshValidationIndicators();
     }
 
     @FXML
@@ -294,7 +297,7 @@ public class DocumentFormController {
             }
         });
         ComboBoxAutoComplete.bindSelectionAutocomplete(contrahentBox, allContrahents, contrahent -> contrahent == null ? "" : safe(contrahent.getName()));
-        contrahentBox.valueProperty().addListener((obs, oldVal, newVal) -> refreshEppoInfo());
+        contrahentBox.valueProperty().addListener((obs, oldVal, newVal) -> refreshValidationIndicators());
     }
 
     private void configureTable() {
@@ -350,22 +353,23 @@ public class DocumentFormController {
             }
             autoAppendIfReady(row);
             itemsTable.refresh();
-            refreshEppoInfo();
+            refreshValidationIndicators();
         });
 
         row.batchProperty().addListener((obs, oldVal, newVal) -> {
             autoAppendIfReady(row);
             itemsTable.refresh();
+            refreshValidationIndicators();
         });
 
         row.qtyProperty().addListener((obs, oldVal, newVal) -> {
             autoAppendIfReady(row);
-            refreshEppoInfo();
+            refreshValidationIndicators();
         });
 
         row.passportRequiredProperty().addListener((obs, oldVal, newVal) -> {
             autoAppendIfReady(row);
-            refreshEppoInfo();
+            refreshValidationIndicators();
         });
     }
 
@@ -464,10 +468,12 @@ public class DocumentFormController {
                 }
 
                 itemsTable.refresh();
+                refreshValidationIndicators();
             });
 
             stage.showAndWait();
             itemsTable.refresh();
+            refreshValidationIndicators();
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -475,57 +481,82 @@ public class DocumentFormController {
         }
     }
 
-    private void configureEppoInfoArea() {
-        if (eppoInfoArea != null) {
-            eppoInfoArea.setEditable(false);
-            eppoInfoArea.setWrapText(true);
+    private void refreshValidationIndicators() {
+        if (rows == null || itemsTable == null) {
+            return;
         }
+
+        for (DocumentItemRow row : rows) {
+            if (row == null) {
+                continue;
+            }
+            row.setValidationMessage(buildEppoValidationMessage(row));
+        }
+
+        itemsTable.refresh();
     }
 
-    private void refreshEppoInfo() {
-        if (eppoInfoArea == null || eppoInfoSummaryLabel == null) {
-            return;
+    private String buildEppoValidationMessage(DocumentItemRow row) {
+        if (row == null || row.isBlank()) {
+            return "";
         }
 
-        Contrahent contrahent = contrahentBox.getValue();
-        String clientCountryCode = contrahent != null ? safe(contrahent.getCountryCode()).toUpperCase() : "";
-
-        List<String> messages = new ArrayList<>();
-
-        if (contrahent == null) {
-            eppoInfoSummaryLabel.setText("Informacje EPPO dla klienta");
-            eppoInfoArea.setText("Wybierz klienta, aby zobaczyć informacyjne dopasowanie EPPO dla pozycji dokumentu.");
-            return;
+        Contrahent contrahent = contrahentBox == null ? null : contrahentBox.getValue();
+        String clientCountryCode = contrahent == null ? "" : safe(contrahent.getCountryCode()).toUpperCase();
+        if (clientCountryCode.isBlank()) {
+            return "";
         }
 
-        boolean missingCountryCode = clientCountryCode.isBlank();
-
-        for (int i = 0; i < rows.size(); i++) {
-            DocumentItemRow row = rows.get(i);
-            if (row == null || row.isBlank()) {
-                continue;
-            }
-
-            Plant plant = resolvePlantForRow(row);
-            if (plant == null) {
-                messages.add("Pozycja " + (i + 1) + ": brak wybranej rośliny.");
-                continue;
-            }
-
-            messages.add(buildRowAdvisoryMessage(i + 1, row, plant, clientCountryCode, missingCountryCode));
+        Plant plant = resolvePlantForRow(row);
+        PlantBatch batch = row.getBatch();
+        if (plant == null || batch == null) {
+            return "";
         }
 
-        String summarySuffix = missingCountryCode
-                ? " [brak kodu kraju klienta]"
-                : " [" + clientCountryCode + "]";
-        eppoInfoSummaryLabel.setText("Informacje EPPO dla klienta: " + safe(contrahent.getName()) + summarySuffix);
-
-        if (messages.isEmpty()) {
-            eppoInfoArea.setText("Dodaj pozycje dokumentu, aby zobaczyć informacyjne dopasowanie EPPO dla kraju klienta.");
-            return;
+        List<EppoCode> plantCodes = eppoCodePlantLinkService.getCodesForPlant(plant.getId());
+        if (plantCodes == null || plantCodes.isEmpty()) {
+            return "";
         }
 
-        eppoInfoArea.setText(UiTextUtil.joinParagraphs(messages));
+        List<EppoCode> requiredCodes = plantCodes.stream()
+                .filter(code -> code != null)
+                .filter(code -> codeMatchesClientCountry(code, clientCountryCode))
+                .toList();
+
+        if (requiredCodes.isEmpty()) {
+            return "";
+        }
+
+        String batchCode = safe(batch.getEppoCode()).toUpperCase();
+        boolean matchesRequiredCode = requiredCodes.stream()
+                .map(EppoCode::getCode)
+                .map(this::safe)
+                .map(String::toUpperCase)
+                .anyMatch(required -> !required.isBlank() && required.equals(batchCode));
+
+        if (matchesRequiredCode) {
+            return "";
+        }
+
+        return "Brak wymaganego kodu EPPO w partii dla wybranego gatunku i kraju klienta.";
+    }
+
+    private boolean codeMatchesClientCountry(EppoCode code, String clientCountryCode) {
+        if (code == null || safe(clientCountryCode).isBlank()) {
+            return false;
+        }
+
+        List<EppoZone> zones = eppoCodeZoneLinkService.getZonesForCode(code.getId());
+        if (zones == null || zones.isEmpty()) {
+            return false;
+        }
+
+        return zones.stream()
+                .filter(Objects::nonNull)
+                .map(EppoZone::getCountryCode)
+                .map(this::safe)
+                .map(String::toUpperCase)
+                .anyMatch(countryCode -> countryCode.equals(clientCountryCode));
     }
 
     private Plant resolvePlantForRow(DocumentItemRow row) {
@@ -1513,8 +1544,17 @@ public class DocumentFormController {
 
     private class PassportEditingCell extends TableCell<DocumentItemRow, Boolean> {
         private final CheckBox checkBox = new CheckBox();
+        private final Label warningLabel = new Label("!");
+        private final Tooltip warningTooltip = new Tooltip();
+        private final HBox container = new HBox(8);
 
         PassportEditingCell() {
+            warningLabel.getStyleClass().add("eppo-warning-indicator");
+            warningLabel.setManaged(false);
+            warningLabel.setVisible(false);
+            Tooltip.install(warningLabel, warningTooltip);
+            container.getChildren().addAll(checkBox, warningLabel);
+
             checkBox.selectedProperty().addListener((obs, oldVal, newVal) -> {
                 DocumentItemRow row = getCurrentRow();
                 if (row == null) {
@@ -1528,12 +1568,20 @@ public class DocumentFormController {
         @Override
         protected void updateItem(Boolean item, boolean empty) {
             super.updateItem(item, empty);
-            if (empty || getTableRow() == null || getTableRow().getItem() == null) {
+            DocumentItemRow row = getCurrentRow();
+            if (empty || row == null) {
                 setGraphic(null);
                 return;
             }
             checkBox.setSelected(Boolean.TRUE.equals(item));
-            setGraphic(checkBox);
+
+            String validationMessage = row.getValidationMessage();
+            boolean hasWarning = validationMessage != null && !validationMessage.isBlank();
+            warningLabel.setManaged(hasWarning);
+            warningLabel.setVisible(hasWarning);
+            warningTooltip.setText(hasWarning ? validationMessage : "");
+
+            setGraphic(container);
         }
 
         private DocumentItemRow getCurrentRow() {
@@ -1553,7 +1601,7 @@ public class DocumentFormController {
                 }
                 rows.remove(row);
                 ensureTrailingBlankRow();
-                refreshEppoInfo();
+                refreshValidationIndicators();
             });
         }
 
@@ -1601,6 +1649,10 @@ public class DocumentFormController {
         public boolean isCommitted() { return committed.get(); }
         public void setCommitted(boolean value) { committed.set(value); }
         public BooleanProperty committedProperty() { return committed; }
+
+        public String getValidationMessage() { return validationMessage.get(); }
+        public void setValidationMessage(String value) { validationMessage.set(value); }
+        public StringProperty validationMessageProperty() { return validationMessage; }
 
         public boolean isBlank() {
             return getPlant() == null && getBatch() == null && getQty() <= 0 && !isPassportRequired();

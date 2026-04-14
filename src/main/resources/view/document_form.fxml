@@ -63,7 +63,7 @@
                 <TableColumn fx:id="colPlant" text="Roślina" prefWidth="300"/>
                 <TableColumn fx:id="colBatch" text="Partia" prefWidth="470"/>
                 <TableColumn fx:id="colQty" text="Ilość" prefWidth="130"/>
-                <TableColumn fx:id="colPassport" text="Paszport" prefWidth="110"/>
+                <TableColumn fx:id="colPassport" text="Paszport" prefWidth="150"/>
                 <TableColumn fx:id="colActions" text="Usuń" prefWidth="90"/>
             </columns>
         </TableView>
@@ -71,16 +71,6 @@
 
 
     <Separator styleClass="form-separator"/>
-
-    <VBox spacing="8">
-        <Label fx:id="eppoInfoSummaryLabel" text="Informacje EPPO dla klienta" styleClass="form-section-title"/>
-        <TextArea fx:id="eppoInfoArea"
-                  prefRowCount="5"
-                  wrapText="true"
-                  editable="false"
-                  focusTraversable="false"
-                  promptText="Tutaj pojawią się informacyjne dopasowania EPPO dla kraju klienta i pozycji dokumentu."/>
-    </VBox>
 
     <VBox spacing="12">
         <Label text="Dane dodatkowe" styleClass="form-section-title"/>

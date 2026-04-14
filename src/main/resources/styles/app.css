@@ -401,6 +401,14 @@
     -fx-text-fill: #7a1d16;
     -fx-border-color: transparent transparent #f0f3f6 transparent;
 }
+
+.eppo-warning-indicator {
+    -fx-text-fill: #b42318;
+    -fx-font-weight: 800;
+    -fx-font-size: 15px;
+    -fx-padding: 0 0 0 2;
+}
+
 .preview-sheet {
     -fx-background-color: white;
     -fx-background-radius: 16;
