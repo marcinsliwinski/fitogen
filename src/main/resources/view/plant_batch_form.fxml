@@ -32,8 +32,12 @@
 
         <GridPane hgap="12" vgap="12">
             <columnConstraints>
-                <ColumnConstraints minWidth="220" prefWidth="250"/>
-                <ColumnConstraints hgrow="ALWAYS"/>
+                <ColumnConstraints minWidth="160" prefWidth="180"/>
+                <ColumnConstraints hgrow="ALWAYS" minWidth="180" prefWidth="240"/>
+                <ColumnConstraints minWidth="120" prefWidth="140"/>
+                <ColumnConstraints hgrow="ALWAYS" minWidth="150" prefWidth="220"/>
+                <ColumnConstraints minWidth="160" prefWidth="190"/>
+                <ColumnConstraints hgrow="ALWAYS" minWidth="140" prefWidth="200"/>
             </columnConstraints>
 
             <Label text="Roślina:" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
@@ -41,54 +45,57 @@
                       promptText="Wybierz roślinę"
                       maxWidth="1.7976931348623157E308"
                       GridPane.rowIndex="0"
-                      GridPane.columnIndex="1"/>
+                      GridPane.columnIndex="1"
+                      GridPane.columnSpan="5"/>
 
-            <Label text="Wewnętrzne:" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
-            <CheckBox fx:id="internalSourceCheckBox"
-                      text="Tak, partia pochodzi z własnej szkółki"
-                      GridPane.rowIndex="1"
-                      GridPane.columnIndex="1"/>
-
-            <Label text="Źródło pochodzenia:" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
+            <Label text="Źródło pochodzenia:" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
             <ComboBox fx:id="sourceOriginComboBox"
                       promptText="Wybierz dostawcę"
                       maxWidth="1.7976931348623157E308"
-                      GridPane.rowIndex="2"
+                      GridPane.rowIndex="1"
                       GridPane.columnIndex="1"/>
 
-            <Label text="Nr partii wewnętrzny:" GridPane.rowIndex="3" GridPane.columnIndex="0"/>
+            <Label text="Wewnętrzne:" GridPane.rowIndex="1" GridPane.columnIndex="2"/>
+            <CheckBox fx:id="internalSourceCheckBox"
+                      text="Tak, partia pochodzi z własnej szkółki"
+                      GridPane.rowIndex="1"
+                      GridPane.columnIndex="3"
+                      GridPane.columnSpan="3"/>
+
+            <Label text="Nr partii wewnętrzny:" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
             <TextField fx:id="interiorBatchNoField"
                        promptText="Zostanie nadany automatycznie"
+                       maxWidth="1.7976931348623157E308"
+                       GridPane.rowIndex="2"
+                       GridPane.columnIndex="1"/>
+
+            <Label text="Nr partii zewnętrzny:" GridPane.rowIndex="2" GridPane.columnIndex="2"/>
+            <TextField fx:id="exteriorBatchNoField"
+                       promptText="Wpisz numer partii zewnętrzny"
+                       maxWidth="1.7976931348623157E308"
+                       GridPane.rowIndex="2"
+                       GridPane.columnIndex="3"
+                       GridPane.columnSpan="3"/>
+
+            <Label text="Ilość:" GridPane.rowIndex="3" GridPane.columnIndex="0"/>
+            <TextField fx:id="qtyField"
+                       promptText="Wpisz ilość"
                        maxWidth="1.7976931348623157E308"
                        GridPane.rowIndex="3"
                        GridPane.columnIndex="1"/>
 
-            <Label text="Nr partii zewnętrzny:" GridPane.rowIndex="4" GridPane.columnIndex="0"/>
-            <TextField fx:id="exteriorBatchNoField"
-                       promptText="Wpisz numer partii zewnętrzny"
-                       maxWidth="1.7976931348623157E308"
-                       GridPane.rowIndex="4"
-                       GridPane.columnIndex="1"/>
-
-            <Label text="Ilość:" GridPane.rowIndex="5" GridPane.columnIndex="0"/>
-            <TextField fx:id="qtyField"
-                       promptText="Wpisz ilość"
-                       maxWidth="1.7976931348623157E308"
-                       GridPane.rowIndex="5"
-                       GridPane.columnIndex="1"/>
-
-            <Label text="Wiek w partii (lata):" GridPane.rowIndex="6" GridPane.columnIndex="0"/>
+            <Label text="Wiek partii (w latach):" GridPane.rowIndex="3" GridPane.columnIndex="2"/>
             <TextField fx:id="ageYearsField"
                        promptText="Np. 1"
                        maxWidth="1.7976931348623157E308"
-                       GridPane.rowIndex="6"
-                       GridPane.columnIndex="1"/>
+                       GridPane.rowIndex="3"
+                       GridPane.columnIndex="3"/>
 
-            <Label text="Data utworzenia:" GridPane.rowIndex="7" GridPane.columnIndex="0"/>
+            <Label text="Data utworzenia:" GridPane.rowIndex="3" GridPane.columnIndex="4"/>
             <DatePicker fx:id="creationDatePicker"
                         maxWidth="1.7976931348623157E308"
-                        GridPane.rowIndex="7"
-                        GridPane.columnIndex="1"/>
+                        GridPane.rowIndex="3"
+                        GridPane.columnIndex="5"/>
         </GridPane>
     </VBox>
 
