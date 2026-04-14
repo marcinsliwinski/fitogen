@@ -30,8 +30,10 @@
 
         <GridPane hgap="12" vgap="12">
             <columnConstraints>
-                <ColumnConstraints minWidth="180" prefWidth="220"/>
-                <ColumnConstraints hgrow="ALWAYS"/>
+                <ColumnConstraints minWidth="160" prefWidth="190"/>
+                <ColumnConstraints hgrow="ALWAYS" minWidth="220" prefWidth="320"/>
+                <ColumnConstraints minWidth="160" prefWidth="190"/>
+                <ColumnConstraints hgrow="ALWAYS" minWidth="220" prefWidth="320"/>
             </columnConstraints>
 
             <Label text="Gatunek:" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
@@ -40,42 +42,45 @@
                       editable="true"
                       maxWidth="1.7976931348623157E308"
                       GridPane.rowIndex="0"
-                      GridPane.columnIndex="1"/>
+                      GridPane.columnIndex="1"
+                      GridPane.columnSpan="3"/>
 
-            <Label text="Odmiana:" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
-            <ComboBox fx:id="varietyField"
-                      promptText="Wpisz lub wybierz odmianę"
+            <Label text="Nazwa łacińska:" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+            <ComboBox fx:id="latinSpeciesNameField"
+                      promptText="Wpisz lub wybierz nazwę łacińską"
                       editable="true"
                       maxWidth="1.7976931348623157E308"
                       GridPane.rowIndex="1"
-                      GridPane.columnIndex="1"/>
+                      GridPane.columnIndex="1"
+                      GridPane.columnSpan="3"/>
 
-            <Label text="Podkładka:" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
-            <ComboBox fx:id="rootstockField"
-                      promptText="Wpisz lub wybierz podkładkę"
+            <Label text="Odmiana:" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
+            <ComboBox fx:id="varietyField"
+                      promptText="Wpisz lub wybierz odmianę"
                       editable="true"
                       maxWidth="1.7976931348623157E308"
                       GridPane.rowIndex="2"
                       GridPane.columnIndex="1"/>
 
-            <Label text="Nazwa łacińska:" GridPane.rowIndex="3" GridPane.columnIndex="0"/>
-            <ComboBox fx:id="latinSpeciesNameField"
-                      promptText="Wpisz lub wybierz nazwę łacińską"
+            <Label text="Podkładka:" GridPane.rowIndex="2" GridPane.columnIndex="2"/>
+            <ComboBox fx:id="rootstockField"
+                      promptText="Wpisz lub wybierz podkładkę"
                       editable="true"
                       maxWidth="1.7976931348623157E308"
-                      GridPane.rowIndex="3"
-                      GridPane.columnIndex="1"/>
+                      GridPane.rowIndex="2"
+                      GridPane.columnIndex="3"/>
 
-            <Label text="Kod EPPO:" GridPane.rowIndex="4" GridPane.columnIndex="0"/>
+            <Label text="Kod EPPO:" GridPane.rowIndex="3" GridPane.columnIndex="0"/>
             <Label fx:id="eppoCodeInfoLabel"
                    wrapText="true"
                    styleClass="form-info-label form-info-box"
                    text="Brak wpisów dla tego gatunku w Słownikach EPPO"
-                   GridPane.rowIndex="4"
-                   GridPane.columnIndex="1"/>
+                   GridPane.rowIndex="3"
+                   GridPane.columnIndex="1"
+                   GridPane.columnSpan="3"/>
 
-            <Label text="Paszport wymagany:" GridPane.rowIndex="5" GridPane.columnIndex="0"/>
-            <VBox spacing="6" GridPane.rowIndex="5" GridPane.columnIndex="1">
+            <Label text="Paszport wymagany:" GridPane.rowIndex="4" GridPane.columnIndex="0"/>
+            <VBox spacing="6" GridPane.rowIndex="4" GridPane.columnIndex="1" GridPane.columnSpan="3">
                 <CheckBox fx:id="passportRequiredBox"
                           text="Tak, wymagany paszport"
                           styleClass="form-info-box"/>
@@ -85,13 +90,14 @@
                        text="Wymaganie paszportu możesz ustawić indywidualnie dla tej rośliny."/>
             </VBox>
 
-            <Label text="Domyślny dokument:" GridPane.rowIndex="6" GridPane.columnIndex="0"/>
+            <Label text="Domyślny dokument:" GridPane.rowIndex="5" GridPane.columnIndex="0"/>
             <ComboBox fx:id="defaultDocumentTypeBox"
                       promptText="Wybierz domyślny dokument"
                       editable="true"
                       maxWidth="1.7976931348623157E308"
-                      GridPane.rowIndex="6"
-                      GridPane.columnIndex="1"/>
+                      GridPane.rowIndex="5"
+                      GridPane.columnIndex="1"
+                      GridPane.columnSpan="3"/>
 
         </GridPane>
     </VBox>

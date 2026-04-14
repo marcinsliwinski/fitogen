@@ -57,6 +57,7 @@ public class PlantFormController {
     private PlantService plantService;
     private Plant plant;
     private boolean syncingSpeciesFields;
+    private boolean refreshingDependentSuggestions;
     private String initialSnapshot = "";
     private boolean saveCompleted;
     private boolean closeConfirmed;
@@ -116,6 +117,7 @@ public class PlantFormController {
         visibilityStatusBox.setValue(plant.getVisibilityStatus());
         defaultDocumentTypeBox.setValue(toDocumentLabel(plant.getDefaultDocumentType()));
 
+        refreshDependentPlantSuggestions();
         refreshPassportRequirementPresentation();
         refreshResolvedEppoCodePresentation();
         markCurrentStateAsClean();
@@ -199,9 +201,12 @@ public class PlantFormController {
         }
 
         ComboBoxAutoComplete.bindEditable(speciesField, plantService::getSpeciesSuggestions);
-        ComboBoxAutoComplete.bindEditable(varietyField, plantService::getVarietySuggestions);
-        ComboBoxAutoComplete.bindEditable(rootstockField, plantService::getRootstockSuggestions);
+        ComboBoxAutoComplete.bindEditable(varietyField,
+                () -> plantService.getVarietySuggestionsForSpecies(getSelectedSpeciesForSuggestions()));
+        ComboBoxAutoComplete.bindEditable(rootstockField,
+                () -> plantService.getRootstockSuggestionsForSpecies(getSelectedSpeciesForSuggestions()));
         ComboBoxAutoComplete.bindEditable(latinSpeciesNameField, plantService::getLatinSpeciesNameSuggestions);
+        refreshDependentPlantSuggestions();
     }
 
     private void configureEditableCombo(ComboBox<String> comboBox) {
@@ -254,12 +259,18 @@ public class PlantFormController {
 
         comboBox.valueProperty().addListener((obs, oldValue, newValue) -> {
             synchronizeSpeciesFields(comboBox);
+            if (comboBox == speciesField) {
+                refreshDependentPlantSuggestions();
+            }
             refreshResolvedEppoCodePresentation();
         });
 
         if (comboBox.getEditor() != null) {
             comboBox.getEditor().textProperty().addListener((obs, oldValue, newValue) -> {
                 synchronizeSpeciesFields(comboBox);
+                if (comboBox == speciesField) {
+                    refreshDependentPlantSuggestions();
+                }
                 refreshResolvedEppoCodePresentation();
             });
         }
@@ -314,6 +325,30 @@ public class PlantFormController {
         }
     }
 
+
+    private void refreshDependentPlantSuggestions() {
+        if (plantService == null || refreshingDependentSuggestions) {
+            return;
+        }
+
+        refreshingDependentSuggestions = true;
+        try {
+            ComboBoxAutoComplete.refreshSource(
+                    varietyField,
+                    plantService.getVarietySuggestionsForSpecies(getSelectedSpeciesForSuggestions())
+            );
+            ComboBoxAutoComplete.refreshSource(
+                    rootstockField,
+                    plantService.getRootstockSuggestionsForSpecies(getSelectedSpeciesForSuggestions())
+            );
+        } finally {
+            refreshingDependentSuggestions = false;
+        }
+    }
+
+    private String getSelectedSpeciesForSuggestions() {
+        return normalizeText(getComboValue(speciesField));
+    }
 
     private boolean isDuplicatePlantViolation(IllegalArgumentException exception) {
         if (exception == null || exception.getMessage() == null) {

@@ -57,7 +57,13 @@ public class PlantService {
     }
 
     public List<String> getVarietySuggestions() {
+        return getVarietySuggestionsForSpecies(null);
+    }
+
+    public List<String> getVarietySuggestionsForSpecies(String species) {
+        String normalizedSpecies = normalizeText(species);
         return repository.findAll().stream()
+                .filter(plant -> matchesSpeciesFilter(plant, normalizedSpecies))
                 .map(Plant::getVariety)
                 .filter(this::notBlank)
                 .map(String::trim)
@@ -67,7 +73,13 @@ public class PlantService {
     }
 
     public List<String> getRootstockSuggestions() {
+        return getRootstockSuggestionsForSpecies(null);
+    }
+
+    public List<String> getRootstockSuggestionsForSpecies(String species) {
+        String normalizedSpecies = normalizeText(species);
         return repository.findAll().stream()
+                .filter(plant -> matchesSpeciesFilter(plant, normalizedSpecies))
                 .map(Plant::getRootstock)
                 .filter(this::notBlank)
                 .map(String::trim)
@@ -84,6 +96,17 @@ public class PlantService {
                 .distinct()
                 .sorted(String.CASE_INSENSITIVE_ORDER)
                 .toList();
+    }
+
+
+    private boolean matchesSpeciesFilter(Plant plant, String normalizedSpecies) {
+        if (plant == null) {
+            return false;
+        }
+        if (normalizedSpecies == null || normalizedSpecies.isBlank()) {
+            return true;
+        }
+        return normalizedSpecies.equalsIgnoreCase(normalizeText(plant.getSpecies()));
     }
 
     private void validate(Plant plant) {
