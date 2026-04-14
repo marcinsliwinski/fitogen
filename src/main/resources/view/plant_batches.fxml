@@ -17,7 +17,7 @@
 
     <HBox spacing="10" alignment="CENTER_LEFT">
         <TextField fx:id="searchField"
-                   promptText="Szukaj po roślinie, numerze partii, źródle pochodzenia, statusie i polach dodatkowych..."
+                   promptText="Szukaj po roślinie, numerze partii, źródle pochodzenia i polach dodatkowych..."
                    HBox.hgrow="ALWAYS"/>
         <Button text="Wyczyść filtr" onAction="#clearFilters" styleClass="button-secondary"/>
     </HBox>
@@ -33,8 +33,7 @@
             <TableColumn text="Nr partii zewnętrzny" fx:id="colExteriorBatchNo" prefWidth="170"/>
             <TableColumn text="Ilość" fx:id="colQty" prefWidth="80"/>
             <TableColumn text="Data" fx:id="colCreationDate" prefWidth="110"/>
-            <TableColumn text="Źródło pochodzenia" fx:id="colSourceOrigin" prefWidth="220"/>
-            <TableColumn text="Status" fx:id="colStatus" prefWidth="110"/>
+            <TableColumn text="Źródło pochodzenia" fx:id="colSourceOrigin" prefWidth="270"/>
         </columns>
     </TableView>
 

@@ -41,7 +41,6 @@ public class PlantBatchController {
     @FXML private TableColumn<PlantBatch, Integer> colQty;
     @FXML private TableColumn<PlantBatch, String> colCreationDate;
     @FXML private TableColumn<PlantBatch, String> colSourceOrigin;
-    @FXML private TableColumn<PlantBatch, String> colStatus;
     @FXML private TextField searchField;
     @FXML private Label filterStatusLabel;
     @FXML private Label filterSummaryLabel;
@@ -77,9 +76,6 @@ public class PlantBatchController {
         );
         colSourceOrigin.setCellValueFactory(cell ->
                 new SimpleStringProperty(getSourceOriginLabel(cell.getValue()))
-        );
-        colStatus.setCellValueFactory(cell ->
-                new SimpleStringProperty(formatStatus(cell.getValue().getStatus()))
         );
     }
 
