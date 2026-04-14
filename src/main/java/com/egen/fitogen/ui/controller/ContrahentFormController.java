@@ -4,10 +4,10 @@ import com.egen.fitogen.config.AppContext;
 import com.egen.fitogen.model.Contrahent;
 import com.egen.fitogen.service.ContrahentService;
 import com.egen.fitogen.service.CountryDirectoryService;
+import com.egen.fitogen.ui.util.ComboBoxAutoComplete;
 import com.egen.fitogen.ui.util.DialogUtil;
 import com.egen.fitogen.ui.util.ValidationUtil;
 import javafx.application.Platform;
-import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
@@ -16,11 +16,8 @@ import javafx.scene.control.TextField;
 import javafx.scene.control.Tooltip;
 import javafx.stage.Stage;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
-import java.util.function.Supplier;
 
 public class ContrahentFormController {
 
@@ -63,8 +60,8 @@ public class ContrahentFormController {
             noStreetCheckBox.selectedProperty().addListener((obs, oldVal, newVal) -> updateStreetPrompt());
         }
 
-        attachAutocomplete(countryField, countryDirectoryService::getCountries);
-        attachAutocomplete(countryCodeField, countryDirectoryService::getCodes);
+        ComboBoxAutoComplete.bindEditable(countryField, countryDirectoryService::getCountries);
+        ComboBoxAutoComplete.bindEditable(countryCodeField, countryDirectoryService::getCodes);
 
         if (countryField != null && countryField.getEditor() != null) {
             countryField.getEditor().textProperty().addListener((obs, oldVal, newVal) -> syncCodeFromCountry());
@@ -253,81 +250,6 @@ public class ContrahentFormController {
         }
     }
 
-    private void attachAutocomplete(ComboBox<String> comboBox, Supplier<List<String>> sourceSupplier) {
-        comboBox.setItems(FXCollections.observableArrayList(sourceSupplier.get()));
-
-        comboBox.getEditor().textProperty().addListener((obs, oldValue, newValue) -> {
-            if (isAutocompleteUpdating(comboBox)) {
-                return;
-            }
-            if (!comboBox.isFocused() && !comboBox.getEditor().isFocused()) {
-                return;
-            }
-
-            runAutocompleteUpdate(comboBox, () -> {
-                String typedText = newValue == null ? "" : newValue;
-                int caretPosition = comboBox.getEditor().getCaretPosition();
-                List<String> filtered = filterValues(sourceSupplier.get(), typedText);
-                comboBox.setItems(FXCollections.observableArrayList(filtered));
-
-                if (!Objects.equals(typedText, comboBox.getEditor().getText())) {
-                    comboBox.getEditor().setText(typedText);
-                }
-                comboBox.getEditor().positionCaret(Math.min(caretPosition, comboBox.getEditor().getText().length()));
-            });
-        });
-
-        comboBox.focusedProperty().addListener((obs, oldValue, focused) -> {
-            if (focused) {
-                runAutocompleteUpdate(comboBox, () ->
-                        comboBox.setItems(FXCollections.observableArrayList(sourceSupplier.get()))
-                );
-            }
-        });
-
-        comboBox.setOnMouseClicked(event ->
-                runAutocompleteUpdate(comboBox, () ->
-                        comboBox.setItems(FXCollections.observableArrayList(sourceSupplier.get()))
-                )
-        );
-
-        comboBox.setOnAction(event -> {
-            String selected = comboBox.getSelectionModel().getSelectedItem();
-            if (selected != null) {
-                runAutocompleteUpdate(comboBox, () -> comboBox.getEditor().setText(selected));
-            }
-        });
-    }
-
-    private boolean isAutocompleteUpdating(ComboBox<String> comboBox) {
-        return Boolean.TRUE.equals(comboBox.getProperties().get("autocompleteUpdating"));
-    }
-
-    private void runAutocompleteUpdate(ComboBox<String> comboBox, Runnable action) {
-        comboBox.getProperties().put("autocompleteUpdating", Boolean.TRUE);
-        try {
-            action.run();
-        } finally {
-            comboBox.getProperties().put("autocompleteUpdating", Boolean.FALSE);
-        }
-    }
-
-    private List<String> filterValues(List<String> source, String typedValue) {
-        String keyword = typedValue == null ? "" : typedValue.trim().toLowerCase();
-        List<String> result = new ArrayList<>();
-
-        for (String value : source) {
-            if (value == null || value.isBlank()) {
-                continue;
-            }
-
-            if (keyword.isBlank() || value.toLowerCase().contains(keyword)) {
-                result.add(value);
-            }
-        }
-
-        return result;
-    }
 
     private String getComboValue(ComboBox<String> comboBox) {
         if (comboBox == null) {

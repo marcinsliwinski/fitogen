@@ -27,6 +27,7 @@ import com.egen.fitogen.service.DocumentTypeService;
 import com.egen.fitogen.service.NumberingConfigService;
 import com.egen.fitogen.service.PlantCsvExportService;
 import com.egen.fitogen.service.PlantCsvImportService;
+import com.egen.fitogen.ui.util.ComboBoxAutoComplete;
 import com.egen.fitogen.ui.util.CountryDirectory;
 import com.egen.fitogen.ui.util.DialogUtil;
 import com.egen.fitogen.ui.router.ViewManager;
@@ -65,7 +66,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import java.util.function.Supplier;
 import com.egen.fitogen.ui.util.UiTextUtil;
 import com.egen.fitogen.database.SqliteDocumentItemRepository;
 import com.egen.fitogen.database.SqliteDocumentRepository;
@@ -313,8 +313,8 @@ public class SettingsController {
         configureEditableCombo(issuerCountryField);
         configureEditableCombo(issuerCountryCodeField);
 
-        attachAutocomplete(issuerCountryField, countryDirectoryService::getCountries);
-        attachAutocomplete(issuerCountryCodeField, countryDirectoryService::getCodes);
+        ComboBoxAutoComplete.bindEditable(issuerCountryField, countryDirectoryService::getCountries);
+        ComboBoxAutoComplete.bindEditable(issuerCountryCodeField, countryDirectoryService::getCodes);
 
         if (issuerCountryField != null && issuerCountryField.getEditor() != null) {
             issuerCountryField.getEditor().textProperty().addListener((obs, oldVal, newVal) -> syncIssuerCodeFromCountry());
@@ -2024,58 +2024,6 @@ public class SettingsController {
         comboBox.setMaxWidth(Double.MAX_VALUE);
     }
 
-    private void attachAutocomplete(ComboBox<String> comboBox, Supplier<List<String>> sourceSupplier) {
-        comboBox.setItems(FXCollections.observableArrayList(sourceSupplier.get()));
-
-        comboBox.getEditor().textProperty().addListener((obs, oldValue, newValue) -> {
-            if (!comboBox.isFocused() && !comboBox.getEditor().isFocused()) {
-                return;
-            }
-
-            String currentText = comboBox.getEditor().getText();
-            List<String> filtered = filterValues(sourceSupplier.get(), newValue);
-            comboBox.setItems(FXCollections.observableArrayList(filtered));
-
-            if (comboBox.getEditor() != null && currentText != null && !currentText.equals(comboBox.getEditor().getText())) {
-                comboBox.getEditor().setText(currentText);
-                comboBox.getEditor().positionCaret(currentText.length());
-            }
-        });
-
-        comboBox.focusedProperty().addListener((obs, oldValue, focused) -> {
-            if (focused) {
-                comboBox.setItems(FXCollections.observableArrayList(sourceSupplier.get()));
-            }
-        });
-
-        comboBox.setOnMouseClicked(event ->
-                comboBox.setItems(FXCollections.observableArrayList(sourceSupplier.get()))
-        );
-
-        comboBox.setOnAction(event -> {
-            String selected = comboBox.getSelectionModel().getSelectedItem();
-            if (selected != null) {
-                comboBox.getEditor().setText(selected);
-            }
-        });
-    }
-
-    private List<String> filterValues(List<String> source, String typedValue) {
-        String keyword = typedValue == null ? "" : typedValue.trim().toLowerCase();
-        List<String> result = new ArrayList<>();
-
-        for (String value : source) {
-            if (value == null || value.isBlank()) {
-                continue;
-            }
-
-            if (keyword.isBlank() || value.toLowerCase().contains(keyword)) {
-                result.add(value);
-            }
-        }
-
-        return result;
-    }
 
     private String getComboValue(ComboBox<String> comboBox) {
         if (comboBox == null) {

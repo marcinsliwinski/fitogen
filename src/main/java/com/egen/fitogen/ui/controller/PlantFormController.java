@@ -19,10 +19,8 @@ import javafx.scene.control.Label;
 import javafx.scene.control.Tooltip;
 import javafx.stage.Stage;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.function.Supplier;
 
 public class PlantFormController {
 
@@ -200,10 +198,10 @@ public class PlantFormController {
             return;
         }
 
-        attachAutocomplete(speciesField, plantService::getSpeciesSuggestions);
-        attachAutocomplete(varietyField, plantService::getVarietySuggestions);
-        attachAutocomplete(rootstockField, plantService::getRootstockSuggestions);
-        attachAutocomplete(latinSpeciesNameField, plantService::getLatinSpeciesNameSuggestions);
+        ComboBoxAutoComplete.bindEditable(speciesField, plantService::getSpeciesSuggestions);
+        ComboBoxAutoComplete.bindEditable(varietyField, plantService::getVarietySuggestions);
+        ComboBoxAutoComplete.bindEditable(rootstockField, plantService::getRootstockSuggestions);
+        ComboBoxAutoComplete.bindEditable(latinSpeciesNameField, plantService::getLatinSpeciesNameSuggestions);
     }
 
     private void configureEditableCombo(ComboBox<String> comboBox) {
@@ -316,82 +314,6 @@ public class PlantFormController {
         }
     }
 
-    private void attachAutocomplete(ComboBox<String> comboBox, Supplier<List<String>> sourceSupplier) {
-        ObservableList<String> baseItems = FXCollections.observableArrayList(sourceSupplier.get());
-        comboBox.setItems(baseItems);
-
-        comboBox.getEditor().textProperty().addListener((obs, oldValue, newValue) -> {
-            if (isAutocompleteUpdating(comboBox)) {
-                return;
-            }
-            if (!comboBox.isFocused() && !comboBox.getEditor().isFocused()) {
-                return;
-            }
-
-            runAutocompleteUpdate(comboBox, () -> {
-                String typedText = newValue == null ? "" : newValue;
-                int caretPosition = comboBox.getEditor().getCaretPosition();
-                List<String> filtered = filterValues(sourceSupplier.get(), typedText);
-                comboBox.setItems(FXCollections.observableArrayList(filtered));
-
-                if (!Objects.equals(typedText, comboBox.getEditor().getText())) {
-                    comboBox.getEditor().setText(typedText);
-                }
-                comboBox.getEditor().positionCaret(Math.min(caretPosition, comboBox.getEditor().getText().length()));
-            });
-        });
-
-        comboBox.focusedProperty().addListener((obs, oldValue, focused) -> {
-            if (focused) {
-                runAutocompleteUpdate(comboBox, () ->
-                        comboBox.setItems(FXCollections.observableArrayList(sourceSupplier.get()))
-                );
-            }
-        });
-
-        comboBox.setOnMouseClicked(event ->
-                runAutocompleteUpdate(comboBox, () ->
-                        comboBox.setItems(FXCollections.observableArrayList(sourceSupplier.get()))
-                )
-        );
-
-        comboBox.setOnAction(event -> {
-            String selected = comboBox.getSelectionModel().getSelectedItem();
-            if (selected != null) {
-                runAutocompleteUpdate(comboBox, () -> comboBox.getEditor().setText(selected));
-            }
-        });
-    }
-
-    private boolean isAutocompleteUpdating(ComboBox<String> comboBox) {
-        return Boolean.TRUE.equals(comboBox.getProperties().get("autocompleteUpdating"));
-    }
-
-    private void runAutocompleteUpdate(ComboBox<String> comboBox, Runnable action) {
-        comboBox.getProperties().put("autocompleteUpdating", Boolean.TRUE);
-        try {
-            action.run();
-        } finally {
-            comboBox.getProperties().put("autocompleteUpdating", Boolean.FALSE);
-        }
-    }
-
-    private List<String> filterValues(List<String> source, String typedValue) {
-        String keyword = typedValue == null ? "" : typedValue.trim().toLowerCase();
-        List<String> result = new ArrayList<>();
-
-        for (String value : source) {
-            if (value == null || value.isBlank()) {
-                continue;
-            }
-
-            if (keyword.isBlank() || value.toLowerCase().contains(keyword)) {
-                result.add(value);
-            }
-        }
-
-        return result;
-    }
 
     private boolean isDuplicatePlantViolation(IllegalArgumentException exception) {
         if (exception == null || exception.getMessage() == null) {

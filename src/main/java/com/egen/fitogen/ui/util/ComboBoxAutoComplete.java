@@ -10,28 +10,88 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 public final class ComboBoxAutoComplete {
+
+    private static final String INTERNAL_CHANGE_KEY = "comboBoxAutoCompleteInternalChange";
 
     private ComboBoxAutoComplete() {
     }
 
     public static void bindEditable(ComboBox<String> comboBox, List<String> sourceValues) {
+        bindEditable(comboBox, () -> sourceValues);
+    }
+
+    public static void bindEditable(ComboBox<String> comboBox, Supplier<List<String>> sourceSupplier) {
         if (comboBox == null) {
             return;
         }
 
-        ObservableList<String> masterItems = FXCollections.observableArrayList(normalize(sourceValues));
-        comboBox.setItems(masterItems);
+        Supplier<List<String>> safeSupplier = sourceSupplier == null ? List::of : sourceSupplier;
         comboBox.setEditable(true);
+        comboBox.setMaxWidth(Double.MAX_VALUE);
+        restoreStringItems(comboBox, safeSupplier);
 
-        comboBox.focusedProperty().addListener((obs, wasFocused, isFocused) -> {
-            if (!isFocused) {
-                commitEditorValue(comboBox);
+        if (comboBox.getEditor() == null) {
+            return;
+        }
+
+        comboBox.getEditor().textProperty().addListener((obs, oldValue, newValue) -> {
+            if (isInternalChange(comboBox)) {
+                return;
             }
+            if (!comboBox.isFocused() && !comboBox.getEditor().isFocused()) {
+                return;
+            }
+
+            runInternalChange(comboBox, () -> {
+                String typedText = safe(newValue);
+                int caretPosition = comboBox.getEditor().getCaretPosition();
+                comboBox.setItems(FXCollections.observableArrayList(filterStrings(safeSupplier.get(), typedText)));
+
+                if (!Objects.equals(typedText, comboBox.getEditor().getText())) {
+                    comboBox.getEditor().setText(typedText);
+                }
+                comboBox.getEditor().positionCaret(Math.min(caretPosition, comboBox.getEditor().getText().length()));
+            });
         });
 
-        comboBox.setOnAction(event -> commitEditorValue(comboBox));
+        comboBox.focusedProperty().addListener((obs, oldValue, focused) -> {
+            if (focused) {
+                restoreStringItems(comboBox, safeSupplier);
+                return;
+            }
+            restoreStringItems(comboBox, safeSupplier);
+            commitEditorValue(comboBox);
+        });
+
+        comboBox.setOnMouseClicked(event -> restoreStringItems(comboBox, safeSupplier));
+
+        comboBox.setOnAction(event -> {
+            if (isInternalChange(comboBox)) {
+                return;
+            }
+
+            String selected = comboBox.getSelectionModel().getSelectedItem();
+            if (selected != null) {
+                runInternalChange(comboBox, () -> {
+                    comboBox.setValue(selected);
+                    comboBox.getEditor().setText(selected);
+                    comboBox.getEditor().positionCaret(selected.length());
+                    restoreStringItems(comboBox, safeSupplier);
+                });
+                return;
+            }
+
+            restoreStringItems(comboBox, safeSupplier);
+            commitEditorValue(comboBox);
+        });
+
+        comboBox.getEditor().setOnAction(event -> {
+            restoreStringItems(comboBox, safeSupplier);
+            commitEditorValue(comboBox);
+        });
     }
 
     public static <T> void bindSelectionAutocomplete(
@@ -129,6 +189,10 @@ public final class ComboBoxAutoComplete {
         comboBox.setItems(FXCollections.observableArrayList(masterItems));
     }
 
+    private static void restoreStringItems(ComboBox<String> comboBox, Supplier<List<String>> sourceSupplier) {
+        runInternalChange(comboBox, () -> comboBox.setItems(FXCollections.observableArrayList(normalize(sourceSupplier.get()))));
+    }
+
     private static <T> void commitSelection(
             ComboBox<T> comboBox,
             ObservableList<T> masterItems,
@@ -167,14 +231,31 @@ public final class ComboBoxAutoComplete {
             return;
         }
 
-        String text = comboBox.getEditor().getText();
-        if (text == null) {
-            comboBox.setValue(null);
-            return;
-        }
+        runInternalChange(comboBox, () -> {
+            String text = comboBox.getEditor().getText();
+            if (text == null) {
+                comboBox.setValue(null);
+                return;
+            }
 
-        String trimmed = text.trim();
-        comboBox.setValue(trimmed.isBlank() ? null : trimmed);
+            String trimmed = text.trim();
+            comboBox.setValue(trimmed.isBlank() ? null : trimmed);
+            comboBox.getEditor().setText(trimmed);
+            comboBox.getEditor().positionCaret(trimmed.length());
+        });
+    }
+
+    private static boolean isInternalChange(ComboBox<?> comboBox) {
+        return Boolean.TRUE.equals(comboBox.getProperties().get(INTERNAL_CHANGE_KEY));
+    }
+
+    private static void runInternalChange(ComboBox<?> comboBox, Runnable action) {
+        comboBox.getProperties().put(INTERNAL_CHANGE_KEY, Boolean.TRUE);
+        try {
+            action.run();
+        } finally {
+            comboBox.getProperties().put(INTERNAL_CHANGE_KEY, Boolean.FALSE);
+        }
     }
 
     private static <T> T findBestMatch(List<T> items, String value, Function<T, String> textProvider) {
@@ -209,6 +290,19 @@ public final class ComboBoxAutoComplete {
                 result.add(trimmed);
             }
         }
+        return result;
+    }
+
+    private static List<String> filterStrings(List<String> values, String typedValue) {
+        String keyword = normalizeKey(typedValue);
+        List<String> result = new ArrayList<>();
+
+        for (String value : normalize(values)) {
+            if (keyword.isBlank() || normalizeKey(value).contains(keyword)) {
+                result.add(value);
+            }
+        }
+
         return result;
     }
 
