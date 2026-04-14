@@ -14,8 +14,8 @@ import javafx.collections.transformation.SortedList;
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableView;
 import javafx.scene.control.TableRow;
+import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.control.cell.PropertyValueFactory;
 import com.egen.fitogen.ui.util.UiTextUtil;
@@ -30,9 +30,9 @@ public class PlantsController {
     @FXML private TableColumn<Plant, String> colLatin;
     @FXML private TableColumn<Plant, String> colEppo;
     @FXML private TableColumn<Plant, String> colPassportRequired;
-    @FXML private TableColumn<Plant, String> colVisibility;
     @FXML private TextField searchField;
     @FXML private Label catalogModeInfoLabel;
+    @FXML private Label globalPassportInfoLabel;
     @FXML private Label filterStatusLabel;
     @FXML private Label filterSummaryLabel;
 
@@ -59,9 +59,8 @@ public class PlantsController {
         colLatin.setCellValueFactory(new PropertyValueFactory<>("latinSpeciesName"));
         colEppo.setCellValueFactory(new PropertyValueFactory<>("eppoCode"));
         colPassportRequired.setCellValueFactory(cell ->
-                new SimpleStringProperty(cell.getValue().isPassportRequired() ? "Tak" : "Nie")
+                new SimpleStringProperty(resolvePassportColumnText(cell.getValue()))
         );
-        colVisibility.setCellValueFactory(new PropertyValueFactory<>("visibilityStatus"));
     }
 
 
@@ -75,21 +74,32 @@ public class PlantsController {
         table.setPlaceholder(new Label("Brak roślin do wyświetlenia."));
     }
     private void configureRowFactory() {
-        table.setRowFactory(tv -> new TableRow<>() {
-            @Override
-            protected void updateItem(Plant item, boolean empty) {
-                super.updateItem(item, empty);
-                getStyleClass().removeAll("inactive-row");
+        table.setRowFactory(tv -> {
+            TableRow<Plant> row = new TableRow<>() {
+                @Override
+                protected void updateItem(Plant item, boolean empty) {
+                    super.updateItem(item, empty);
+                    getStyleClass().removeAll("inactive-row");
 
-                if (empty || item == null) {
-                    setStyle("");
-                    return;
-                }
+                    if (empty || item == null) {
+                        setStyle("");
+                        return;
+                    }
 
-                if (isUnusedPlant(item)) {
-                    getStyleClass().add("inactive-row");
+                    if (isUnusedPlant(item)) {
+                        getStyleClass().add("inactive-row");
+                    }
                 }
-            }
+            };
+
+            row.setOnMouseClicked(event -> {
+                if (event.getClickCount() == 2 && !row.isEmpty()) {
+                    table.getSelectionModel().select(row.getItem());
+                    editPlant();
+                }
+            });
+
+            return row;
         });
     }
 
@@ -130,7 +140,7 @@ public class PlantsController {
                     || safeContains(plant.getRootstock(), keyword)
                     || safeContains(plant.getLatinSpeciesName(), keyword)
                     || safeContains(plant.getEppoCode(), keyword)
-                    || safeContains(plant.isPassportRequired() ? "tak" : "nie", keyword)
+                    || safeContains(resolvePassportColumnText(plant), keyword)
                     || safeContains(plant.getVisibilityStatus(), keyword);
         });
 
@@ -149,7 +159,10 @@ public class PlantsController {
         boolean fullCatalogEnabled = appSettingsService.isPlantFullCatalogEnabled();
         long usedCount = filteredData.stream().filter(plant -> !isUnusedPlant(plant)).count();
         long unusedCount = filteredData.stream().filter(this::isUnusedPlant).count();
-        long passportRequiredCount = filteredData.stream().filter(Plant::isPassportRequired).count();
+        boolean passportRequiredForAll = appSettingsService.isPlantPassportRequiredForAll();
+        long passportRequiredCount = passportRequiredForAll
+                ? filteredData.size()
+                : filteredData.stream().filter(Plant::isPassportRequired).count();
 
         StringBuilder statusBuilder = new StringBuilder();
         statusBuilder.append("Łącznie roślin: ").append(totalCount)
@@ -157,6 +170,7 @@ public class PlantsController {
                 .append(". Używane: ").append(usedCount)
                 .append(". Nieużywane: ").append(unusedCount)
                 .append(". Wymagają paszportu: ").append(passportRequiredCount)
+                .append(passportRequiredForAll ? " (ustawienie globalne)" : "")
                 .append(". Tryb pełnej bazy: ").append(fullCatalogEnabled ? "włączony" : "wyłączony").append('.');
         if (!keyword.isBlank()) {
             statusBuilder.append(UiTextUtil.buildQuotedFilterSuffix("Fraza", keyword));
@@ -180,7 +194,7 @@ public class PlantsController {
         return "Podgląd rośliny: " + buildPlantLabel(plant)
                 + ", nazwa łacińska " + firstNonBlank(safe(plant.getLatinSpeciesName()).trim(), "—")
                 + ", kod EPPO " + firstNonBlank(safe(plant.getEppoCode()).trim(), "—")
-                + ", paszport " + (plant.isPassportRequired() ? "wymagany" : "niewymagany")
+                + ", paszport " + resolvePassportSummaryText(plant)
                 + ", status indeksu " + firstNonBlank(safe(plant.getVisibilityStatus()).trim(), "—")
                 + ".";
     }
@@ -220,6 +234,42 @@ public class PlantsController {
                             : "Tryb pełnej bazy roślin jest wyłączony — lista ukrywa pozycje oznaczone jako „Nieużywany”."
             );
         }
+
+        boolean passportRequiredForAll = appSettingsService.isPlantPassportRequiredForAll();
+        if (globalPassportInfoLabel != null) {
+            globalPassportInfoLabel.setVisible(passportRequiredForAll);
+            globalPassportInfoLabel.setManaged(passportRequiredForAll);
+            globalPassportInfoLabel.setText(
+                    passportRequiredForAll
+                            ? "Globalne ustawienie wymusza paszport dla wszystkich roślin — kolumna Paszport pokazuje stan wynikający z ustawień systemu, niezależnie od lokalnej wartości zapisanej w rekordzie."
+                            : ""
+            );
+        }
+    }
+
+
+    private String resolvePassportColumnText(Plant plant) {
+        if (plant == null) {
+            return "";
+        }
+
+        if (appSettingsService.isPlantPassportRequiredForAll()) {
+            return "Tak (globalnie)";
+        }
+
+        return plant.isPassportRequired() ? "Tak" : "Nie";
+    }
+
+    private String resolvePassportSummaryText(Plant plant) {
+        if (plant == null) {
+            return "niewymagany";
+        }
+
+        if (appSettingsService.isPlantPassportRequiredForAll()) {
+            return "wymagany globalnie";
+        }
+
+        return plant.isPassportRequired() ? "wymagany" : "niewymagany";
     }
 
     private String buildPlantLabel(Plant plant) {

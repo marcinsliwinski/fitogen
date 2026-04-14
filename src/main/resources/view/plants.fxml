@@ -15,6 +15,7 @@
 
     <Label text="Rośliny" styleClass="section-title"/>
     <Label fx:id="catalogModeInfoLabel" styleClass="page-subtitle" wrapText="true"/>
+    <Label fx:id="globalPassportInfoLabel" styleClass="plant-passport-global-warning" wrapText="true" visible="false" managed="false"/>
 
     <HBox spacing="10" alignment="CENTER_LEFT">
         <TextField fx:id="searchField"
@@ -34,8 +35,7 @@
             <TableColumn text="Podkładka" fx:id="colRootstock" prefWidth="160"/>
             <TableColumn text="Nazwa łacińska" fx:id="colLatin" prefWidth="210"/>
             <TableColumn text="Kod EPPO" fx:id="colEppo" prefWidth="120"/>
-            <TableColumn text="Paszport" fx:id="colPassportRequired" prefWidth="110"/>
-            <TableColumn text="Status indeksu" fx:id="colVisibility" prefWidth="130"/>
+            <TableColumn text="Paszport" fx:id="colPassportRequired" prefWidth="150"/>
         </columns>
     </TableView>
 

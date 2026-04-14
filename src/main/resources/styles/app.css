@@ -714,3 +714,15 @@
 .sidebar-link:hover {
     -fx-text-fill: white;
 }
+
+
+.plant-passport-global-warning {
+    -fx-text-fill: #b42318;
+    -fx-background-color: #fff1f1;
+    -fx-background-radius: 10;
+    -fx-border-color: #f0b7b7;
+    -fx-border-radius: 10;
+    -fx-padding: 10 12 10 12;
+    -fx-font-size: 12px;
+    -fx-font-weight: 700;
+}
