@@ -13,6 +13,7 @@ import javafx.collections.transformation.SortedList;
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.control.cell.PropertyValueFactory;
@@ -26,6 +27,8 @@ public class ContrahentController {
     @FXML private TableColumn<Contrahent, String> colCountry;
     @FXML private TableColumn<Contrahent, String> colCity;
     @FXML private TableColumn<Contrahent, String> colPhyto;
+    @FXML private TableColumn<Contrahent, String> colClient;
+    @FXML private TableColumn<Contrahent, String> colSupplier;
     @FXML private TextField searchField;
     @FXML private Label filterStatusLabel;
     @FXML private Label filterSummaryLabel;
@@ -39,6 +42,7 @@ public class ContrahentController {
     public void initialize() {
         configureColumns();
         configureTableBehavior();
+        configureRowFactory();
         configureSearch();
         refresh();
     }
@@ -49,6 +53,8 @@ public class ContrahentController {
         colCountry.setCellValueFactory(new PropertyValueFactory<>("country"));
         colCity.setCellValueFactory(new PropertyValueFactory<>("city"));
         colPhyto.setCellValueFactory(new PropertyValueFactory<>("phytosanitaryNumber"));
+        colClient.setCellValueFactory(cell -> new SimpleStringProperty(formatBoolean(cell.getValue().isClient())));
+        colSupplier.setCellValueFactory(cell -> new SimpleStringProperty(formatBoolean(cell.getValue().isSupplier())));
     }
 
     private void configureTableBehavior() {
@@ -58,6 +64,24 @@ public class ContrahentController {
 
         table.setColumnResizePolicy(TableView.UNCONSTRAINED_RESIZE_POLICY);
         table.setPlaceholder(new Label("Brak kontrahentów do wyświetlenia."));
+    }
+
+
+    private void configureRowFactory() {
+        if (table == null) {
+            return;
+        }
+
+        table.setRowFactory(tv -> {
+            TableRow<Contrahent> row = new TableRow<>();
+            row.setOnMouseClicked(event -> {
+                if (event.getClickCount() == 2 && !row.isEmpty()) {
+                    table.getSelectionModel().select(row.getItem());
+                    editContrahent();
+                }
+            });
+            return row;
+        });
     }
 
     private void configureSearch() {
@@ -95,7 +119,9 @@ public class ContrahentController {
                     || safeContains(contrahent.getCity(), keyword)
                     || safeContains(contrahent.getPostalCode(), keyword)
                     || safeContains(contrahent.getStreet(), keyword)
-                    || safeContains(contrahent.getPhytosanitaryNumber(), keyword);
+                    || safeContains(contrahent.getPhytosanitaryNumber(), keyword)
+                    || safeContains(formatBoolean(contrahent.isClient()), keyword)
+                    || safeContains(formatBoolean(contrahent.isSupplier()), keyword);
         });
 
         updateFilterSummary();
@@ -119,7 +145,7 @@ public class ContrahentController {
         statusBuilder.append("Łącznie kontrahentów: ").append(totalCount)
                 .append(". Widoczne po filtrze: ").append(visibleCount)
                 .append(". Dostawcy: ").append(supplierCount)
-                .append(". Odbiorcy: ").append(clientCount).append('.');
+                .append(". Klienci: ").append(clientCount).append('.');
         if (!keyword.isBlank()) {
             statusBuilder.append(UiTextUtil.buildQuotedFilterSuffix("Fraza", keyword));
         }
@@ -150,13 +176,13 @@ public class ContrahentController {
 
     private String buildRoleLabel(Contrahent contrahent) {
         if (contrahent.isSupplier() && contrahent.isClient()) {
-            return "dostawca i odbiorca";
+            return "dostawca i klient";
         }
         if (contrahent.isSupplier()) {
             return "dostawca";
         }
         if (contrahent.isClient()) {
-            return "odbiorca";
+            return "klient";
         }
         return "brak przypisanej roli";
     }
@@ -176,6 +202,10 @@ public class ContrahentController {
 
     private boolean safeContains(String value, String keyword) {
         return value != null && value.toLowerCase().contains(keyword);
+    }
+
+    private String formatBoolean(boolean value) {
+        return value ? "Tak" : "Nie";
     }
 
     private void refresh() {
