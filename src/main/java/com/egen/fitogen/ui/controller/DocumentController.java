@@ -90,24 +90,35 @@ public class DocumentController {
     }
 
     private void configureRowFactory() {
-        table.setRowFactory(tv -> new TableRow<>() {
-            @Override
-            protected void updateItem(Document item, boolean empty) {
-                super.updateItem(item, empty);
+        table.setRowFactory(tv -> {
+            TableRow<Document> row = new TableRow<>() {
+                @Override
+                protected void updateItem(Document item, boolean empty) {
+                    super.updateItem(item, empty);
 
-                getStyleClass().remove("cancelled-row");
+                    getStyleClass().remove("cancelled-row");
 
-                if (empty || item == null) {
-                    setStyle("");
+                    if (empty || item == null) {
+                        setStyle("");
+                        return;
+                    }
+
+                    if (item.getStatus() == DocumentStatus.CANCELLED) {
+                        getStyleClass().add("cancelled-row");
+                    } else {
+                        setStyle("");
+                    }
+                }
+            };
+
+            row.setOnMouseClicked(event -> {
+                if (event.getClickCount() != 2 || row.isEmpty()) {
                     return;
                 }
+                editDocument();
+            });
 
-                if (item.getStatus() == DocumentStatus.CANCELLED) {
-                    getStyleClass().add("cancelled-row");
-                } else {
-                    setStyle("");
-                }
-            }
+            return row;
         });
     }
 

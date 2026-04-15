@@ -278,6 +278,48 @@
                                 </HBox>
                                 <TextArea fx:id="documentsCsvPreviewArea" editable="false" wrapText="true" prefRowCount="12"/>
                             </VBox>
+
+                            <Separator/>
+
+                            <VBox spacing="12" styleClass="stat-card">
+                                <Label text="EPPO CSV — eksport słowników" styleClass="stat-title"/>
+                                <Label text="Pierwszy bezpieczny krok dla słowników EPPO: eksport aktualnego stanu do lokalnych plików CSV bez zmiany bazy. Import z podglądem i apply będzie kolejnym etapem." wrapText="true" styleClass="page-subtitle"/>
+
+                                <Label text="Kody EPPO" styleClass="stat-title"/>
+                                <Label fx:id="eppoCodesCsvColumnsLabel" wrapText="true" styleClass="page-subtitle"/>
+                                <Label fx:id="eppoCodesCsvStatusLabel" wrapText="true" styleClass="page-subtitle"/>
+                                <HBox spacing="10">
+                                    <Button text="Eksport CSV kodów EPPO" onAction="#exportEppoCodesCsv" styleClass="button-secondary"/>
+                                </HBox>
+
+                                <Label text="Strefy EPPO" styleClass="stat-title"/>
+                                <Label fx:id="eppoZonesCsvColumnsLabel" wrapText="true" styleClass="page-subtitle"/>
+                                <Label fx:id="eppoZonesCsvStatusLabel" wrapText="true" styleClass="page-subtitle"/>
+                                <HBox spacing="10">
+                                    <Button text="Eksport CSV stref EPPO" onAction="#exportEppoZonesCsv" styleClass="button-secondary"/>
+                                </HBox>
+
+                                <Label text="Powiązania kod EPPO → gatunek" styleClass="stat-title"/>
+                                <Label fx:id="eppoCodeSpeciesLinksCsvColumnsLabel" wrapText="true" styleClass="page-subtitle"/>
+                                <Label fx:id="eppoCodeSpeciesLinksCsvStatusLabel" wrapText="true" styleClass="page-subtitle"/>
+                                <HBox spacing="10">
+                                    <Button text="Eksport CSV powiązań kod → gatunek" onAction="#exportEppoCodeSpeciesLinksCsv" styleClass="button-secondary"/>
+                                </HBox>
+
+                                <Label text="Powiązania kod EPPO → roślina" styleClass="stat-title"/>
+                                <Label fx:id="eppoCodePlantLinksCsvColumnsLabel" wrapText="true" styleClass="page-subtitle"/>
+                                <Label fx:id="eppoCodePlantLinksCsvStatusLabel" wrapText="true" styleClass="page-subtitle"/>
+                                <HBox spacing="10">
+                                    <Button text="Eksport CSV powiązań kod → roślina" onAction="#exportEppoCodePlantLinksCsv" styleClass="button-secondary"/>
+                                </HBox>
+
+                                <Label text="Powiązania kod EPPO → strefa" styleClass="stat-title"/>
+                                <Label fx:id="eppoCodeZoneLinksCsvColumnsLabel" wrapText="true" styleClass="page-subtitle"/>
+                                <Label fx:id="eppoCodeZoneLinksCsvStatusLabel" wrapText="true" styleClass="page-subtitle"/>
+                                <HBox spacing="10">
+                                    <Button text="Eksport CSV powiązań kod → strefa" onAction="#exportEppoCodeZoneLinksCsv" styleClass="button-secondary"/>
+                                </HBox>
+                            </VBox>
                         </VBox>
                     </content>
                 </ScrollPane>

@@ -24,6 +24,11 @@ import com.egen.fitogen.service.CountryDirectoryService;
 import com.egen.fitogen.service.DocumentCsvExportService;
 import com.egen.fitogen.service.DocumentCsvImportService;
 import com.egen.fitogen.service.DocumentTypeService;
+import com.egen.fitogen.service.EppoCodeCsvExportService;
+import com.egen.fitogen.service.EppoCodePlantLinkCsvExportService;
+import com.egen.fitogen.service.EppoCodeSpeciesLinkCsvExportService;
+import com.egen.fitogen.service.EppoCodeZoneLinkCsvExportService;
+import com.egen.fitogen.service.EppoZoneCsvExportService;
 import com.egen.fitogen.service.NumberingConfigService;
 import com.egen.fitogen.service.PlantCsvExportService;
 import com.egen.fitogen.service.PlantCsvImportService;
@@ -146,6 +151,16 @@ public class SettingsController {
     @FXML private Label documentsCsvStatusLabel;
     @FXML private TextArea documentsCsvPreviewArea;
     @FXML private Button documentsCsvApplyButton;
+    @FXML private Label eppoCodesCsvColumnsLabel;
+    @FXML private Label eppoCodesCsvStatusLabel;
+    @FXML private Label eppoZonesCsvColumnsLabel;
+    @FXML private Label eppoZonesCsvStatusLabel;
+    @FXML private Label eppoCodeSpeciesLinksCsvColumnsLabel;
+    @FXML private Label eppoCodeSpeciesLinksCsvStatusLabel;
+    @FXML private Label eppoCodePlantLinksCsvColumnsLabel;
+    @FXML private Label eppoCodePlantLinksCsvStatusLabel;
+    @FXML private Label eppoCodeZoneLinksCsvColumnsLabel;
+    @FXML private Label eppoCodeZoneLinksCsvStatusLabel;
 
     @FXML private Label auditLogStatusLabel;
     @FXML private TextField auditLogSearchField;
@@ -172,6 +187,11 @@ public class SettingsController {
     private final ContrahentCsvExportService contrahentCsvExportService = new ContrahentCsvExportService(AppContext.getContrahentService());
     private final DocumentCsvImportService documentCsvImportService = new DocumentCsvImportService(AppContext.getDocumentService(), AppContext.getContrahentService(), AppContext.getPlantBatchService(), AppContext.getAuditLogService());
     private final DocumentCsvExportService documentCsvExportService = new DocumentCsvExportService(new SqliteDocumentRepository(), new SqliteDocumentItemRepository(), AppContext.getContrahentService(), AppContext.getPlantBatchService());
+    private final EppoCodeCsvExportService eppoCodeCsvExportService = new EppoCodeCsvExportService(AppContext.getEppoCodeService());
+    private final EppoZoneCsvExportService eppoZoneCsvExportService = new EppoZoneCsvExportService(AppContext.getEppoZoneService());
+    private final EppoCodeSpeciesLinkCsvExportService eppoCodeSpeciesLinkCsvExportService = new EppoCodeSpeciesLinkCsvExportService(AppContext.getEppoCodeSpeciesLinkService(), AppContext.getEppoCodeService());
+    private final EppoCodePlantLinkCsvExportService eppoCodePlantLinkCsvExportService = new EppoCodePlantLinkCsvExportService(AppContext.getEppoCodePlantLinkService(), AppContext.getEppoCodeService(), AppContext.getPlantService());
+    private final EppoCodeZoneLinkCsvExportService eppoCodeZoneLinkCsvExportService = new EppoCodeZoneLinkCsvExportService(AppContext.getEppoCodeZoneLinkService(), AppContext.getEppoCodeService(), AppContext.getEppoZoneService());
 
     private boolean loading;
     private boolean updatingDefaultUserSelection;
@@ -2214,6 +2234,36 @@ public class SettingsController {
         if (documentsCsvStatusLabel != null) {
             documentsCsvStatusLabel.setText(buildCsvInitialStatus("dokumentów"));
         }
+        if (eppoCodesCsvColumnsLabel != null) {
+            eppoCodesCsvColumnsLabel.setText(eppoCodeCsvExportService.getSupportedColumnsSummary());
+        }
+        if (eppoZonesCsvColumnsLabel != null) {
+            eppoZonesCsvColumnsLabel.setText(eppoZoneCsvExportService.getSupportedColumnsSummary());
+        }
+        if (eppoCodeSpeciesLinksCsvColumnsLabel != null) {
+            eppoCodeSpeciesLinksCsvColumnsLabel.setText(eppoCodeSpeciesLinkCsvExportService.getSupportedColumnsSummary());
+        }
+        if (eppoCodePlantLinksCsvColumnsLabel != null) {
+            eppoCodePlantLinksCsvColumnsLabel.setText(eppoCodePlantLinkCsvExportService.getSupportedColumnsSummary());
+        }
+        if (eppoCodeZoneLinksCsvColumnsLabel != null) {
+            eppoCodeZoneLinksCsvColumnsLabel.setText(eppoCodeZoneLinkCsvExportService.getSupportedColumnsSummary());
+        }
+        if (eppoCodesCsvStatusLabel != null) {
+            eppoCodesCsvStatusLabel.setText(buildCsvExportOnlyInitialStatus("kodów EPPO"));
+        }
+        if (eppoZonesCsvStatusLabel != null) {
+            eppoZonesCsvStatusLabel.setText(buildCsvExportOnlyInitialStatus("stref EPPO"));
+        }
+        if (eppoCodeSpeciesLinksCsvStatusLabel != null) {
+            eppoCodeSpeciesLinksCsvStatusLabel.setText(buildCsvExportOnlyInitialStatus("powiązań kod EPPO → gatunek"));
+        }
+        if (eppoCodePlantLinksCsvStatusLabel != null) {
+            eppoCodePlantLinksCsvStatusLabel.setText(buildCsvExportOnlyInitialStatus("powiązań kod EPPO → roślina"));
+        }
+        if (eppoCodeZoneLinksCsvStatusLabel != null) {
+            eppoCodeZoneLinksCsvStatusLabel.setText(buildCsvExportOnlyInitialStatus("powiązań kod EPPO → strefa"));
+        }
         clearPlantsCsvPreviewState();
         clearContrahentsCsvPreviewState();
         clearDocumentsCsvPreviewState();
@@ -2592,6 +2642,14 @@ public class SettingsController {
         return entityNominativePlural + " zostały wyeksportowane do pliku:\n" + exportedPath;
     }
 
+    private String buildCsvExportFailureStatus(String entityGenitivePlural) {
+        return "Nie udało się wyeksportować " + entityGenitivePlural + " do pliku CSV.";
+    }
+
+    private String buildCsvExportFailureDialogMessage(String entityGenitivePlural) {
+        return "Nie udało się wyeksportować " + entityGenitivePlural + " do pliku CSV.";
+    }
+
     private String buildCsvExportErrorStatus(String entityGenitivePlural) {
         return "Nie udało się wyeksportować " + entityGenitivePlural + " do pliku CSV.";
     }
@@ -2607,6 +2665,92 @@ public class SettingsController {
     private String buildCsvPreviewClearedStatus(String entityGenitivePlural) {
         return "Podgląd importu " + entityGenitivePlural
                 + " został wyczyszczony. Wybierz plik CSV, aby przygotować go ponownie.";
+    }
+
+    @FXML
+    private void exportEppoCodesCsv() {
+        exportEppoCsv(
+                "Eksportuj kody EPPO do CSV",
+                "eppo-kody-eksport.csv",
+                "kody EPPO",
+                eppoCodeCsvExportService::export,
+                eppoCodesCsvStatusLabel
+        );
+    }
+
+    @FXML
+    private void exportEppoZonesCsv() {
+        exportEppoCsv(
+                "Eksportuj strefy EPPO do CSV",
+                "eppo-strefy-eksport.csv",
+                "strefy EPPO",
+                eppoZoneCsvExportService::export,
+                eppoZonesCsvStatusLabel
+        );
+    }
+
+    @FXML
+    private void exportEppoCodeSpeciesLinksCsv() {
+        exportEppoCsv(
+                "Eksportuj powiązania kod EPPO → gatunek do CSV",
+                "eppo-kody-gatunki-eksport.csv",
+                "powiązania kod EPPO → gatunek",
+                eppoCodeSpeciesLinkCsvExportService::export,
+                eppoCodeSpeciesLinksCsvStatusLabel
+        );
+    }
+
+    @FXML
+    private void exportEppoCodePlantLinksCsv() {
+        exportEppoCsv(
+                "Eksportuj powiązania kod EPPO → roślina do CSV",
+                "eppo-kody-rosliny-eksport.csv",
+                "powiązania kod EPPO → roślina",
+                eppoCodePlantLinkCsvExportService::export,
+                eppoCodePlantLinksCsvStatusLabel
+        );
+    }
+
+    @FXML
+    private void exportEppoCodeZoneLinksCsv() {
+        exportEppoCsv(
+                "Eksportuj powiązania kod EPPO → strefa do CSV",
+                "eppo-kody-strefy-eksport.csv",
+                "powiązania kod EPPO → strefa",
+                eppoCodeZoneLinkCsvExportService::export,
+                eppoCodeZoneLinksCsvStatusLabel
+        );
+    }
+
+    private void exportEppoCsv(
+            String dialogTitle,
+            String defaultFileName,
+            String entityGenitivePlural,
+            java.util.function.Function<Path, Path> exporter,
+            Label statusLabel
+    ) {
+        Path selectedPath = chooseCsvToSave(dialogTitle, defaultFileName);
+        if (selectedPath == null) {
+            return;
+        }
+
+        try {
+            Path exported = exporter.apply(selectedPath);
+            if (statusLabel != null) {
+                statusLabel.setText(buildCsvExportSuccessStatus(entityGenitivePlural, exported));
+            }
+            DialogUtil.showSuccess(buildCsvExportSuccessDialogMessage(entityGenitivePlural.substring(0, 1).toUpperCase(Locale.ROOT) + entityGenitivePlural.substring(1), exported));
+        } catch (Exception e) {
+            e.printStackTrace();
+            if (statusLabel != null) {
+                statusLabel.setText(buildCsvExportFailureStatus(entityGenitivePlural));
+            }
+            DialogUtil.showError("Eksport CSV", buildCsvExportFailureDialogMessage(entityGenitivePlural));
+        }
+    }
+
+    private String buildCsvExportOnlyInitialStatus(String entityGenitivePlural) {
+        return "Eksport " + entityGenitivePlural + " jest gotowy. Ten etap obejmuje bezpieczny eksport lokalnego stanu słowników bez modyfikacji bazy.";
     }
 
     private Path chooseCsvToOpen(String title) {
