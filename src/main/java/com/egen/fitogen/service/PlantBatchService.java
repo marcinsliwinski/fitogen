@@ -74,11 +74,11 @@ public class PlantBatchService {
             throw new IllegalArgumentException("Partia roślin nie może być pusta.");
         }
 
-        if (numberingService != null
-                && (batch.getInteriorBatchNo() == null || batch.getInteriorBatchNo().isBlank())) {
-            String generatedNumber = numberingService.generateNextNumber(NumberingType.BATCH, batch);
-            batch.setInteriorBatchNo(generatedNumber);
+        if (batch.isInternalSource() && numberingService != null) {
+            batch.setInteriorBatchNo(generateUniqueInternalBatchNumber(batch));
         }
+
+        validateInteriorBatchNumberUniqueness(batch);
 
         if (batch.getStatus() == null) {
             batch.setStatus(PlantBatchStatus.ACTIVE);
@@ -98,6 +98,8 @@ public class PlantBatchService {
         if (batch.getStatus() == null) {
             batch.setStatus(PlantBatchStatus.ACTIVE);
         }
+
+        validateInteriorBatchNumberUniqueness(batch);
 
         logger.info("Aktualizacja partii o identyfikatorze {}", batch.getId());
         repository.update(batch);
@@ -132,6 +134,57 @@ public class PlantBatchService {
 
     private String buildBatchUsedMessage(List<String> documentNumbers) {
         return "Partia została użyta w aktywnych dokumentach: " + String.join(", ", documentNumbers);
+    }
+
+    private String generateUniqueInternalBatchNumber(PlantBatch batch) {
+        if (numberingService == null) {
+            return safe(batch == null ? null : batch.getInteriorBatchNo());
+        }
+
+        for (int attempt = 0; attempt < 100; attempt++) {
+            String candidate = safe(numberingService.generateNextNumber(NumberingType.BATCH, batch));
+            if (!candidate.isBlank() && !interiorBatchNumberExists(candidate, null)) {
+                return candidate;
+            }
+        }
+
+        throw new IllegalStateException("Nie udało się nadać unikalnego numeru partii wewnętrznej.");
+    }
+
+    private void validateInteriorBatchNumberUniqueness(PlantBatch batch) {
+        if (batch == null) {
+            return;
+        }
+
+        String number = safe(batch.getInteriorBatchNo());
+        if (number.isBlank()) {
+            return;
+        }
+
+        Integer excludedId = batch.getId() > 0 ? batch.getId() : null;
+        if (interiorBatchNumberExists(number, excludedId)) {
+            throw new IllegalStateException("Numer partii wewnętrznej już istnieje: " + number);
+        }
+    }
+
+    private boolean interiorBatchNumberExists(String candidate, Integer excludedId) {
+        String normalizedCandidate = safe(candidate);
+        if (normalizedCandidate.isBlank()) {
+            return false;
+        }
+
+        for (PlantBatch existing : repository.findAll()) {
+            if (existing == null) {
+                continue;
+            }
+            if (excludedId != null && existing.getId() == excludedId) {
+                continue;
+            }
+            if (normalizedCandidate.equalsIgnoreCase(safe(existing.getInteriorBatchNo()))) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void logChange(String entityType, Integer entityId, String actionType, String description) {

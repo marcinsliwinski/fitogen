@@ -19,20 +19,14 @@
 
     <HBox spacing="10" alignment="CENTER_LEFT">
         <TextField fx:id="searchField"
-                   prefHeight="38"
                    promptText="Szukaj po numerze, typie, kontrahencie, statusie, dacie, utworzył i uwagach..."
                    HBox.hgrow="ALWAYS"/>
-        <ComboBox fx:id="statusFilterBox" prefWidth="160" prefHeight="38"/>
+        <ComboBox fx:id="statusFilterBox" prefWidth="160"/>
         <Button text="Wyczyść filtry" onAction="#clearFilters" styleClass="button-secondary"/>
     </HBox>
 
     <Label fx:id="filterStatusLabel" wrapText="true" styleClass="page-subtitle"/>
-    <Label fx:id="filterSummaryLabel"
-           wrapText="true"
-           minHeight="42"
-           prefHeight="42"
-           maxHeight="42"
-           styleClass="page-subtitle"/>
+    <Label fx:id="filterSummaryLabel" wrapText="true" styleClass="page-subtitle"/>
 
     <TableView fx:id="table" VBox.vgrow="ALWAYS">
         <columns>

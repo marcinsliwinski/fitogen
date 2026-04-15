@@ -18,7 +18,7 @@
 
     <HBox spacing="10" alignment="CENTER_LEFT">
         <TextField fx:id="searchField"
-                   promptText="Szukaj po nazwie, kraju, mieście, roli lub numerze fitosanitarnym..."
+                   promptText="Szukaj po nazwie, kraju, mieście lub numerze fitosanitarnym..."
                    HBox.hgrow="ALWAYS"/>
             <Button text="Wyczyść filtr" onAction="#clearFilters" styleClass="button-secondary"/>
     </HBox>
@@ -31,10 +31,8 @@
             <TableColumn text="ID" fx:id="colId" prefWidth="70"/>
             <TableColumn text="Nazwa" fx:id="colName" prefWidth="260"/>
             <TableColumn text="Kraj" fx:id="colCountry" prefWidth="160"/>
-            <TableColumn text="Miasto" fx:id="colCity" prefWidth="160"/>
-            <TableColumn text="Klient" fx:id="colClient" prefWidth="90"/>
-            <TableColumn text="Dostawca" fx:id="colSupplier" prefWidth="100"/>
-            <TableColumn text="Nr fitosanitarny" fx:id="colPhyto" prefWidth="210"/>
+            <TableColumn text="Miasto" fx:id="colCity" prefWidth="180"/>
+            <TableColumn text="Nr fitosanitarny" fx:id="colPhyto" prefWidth="220"/>
         </columns>
     </TableView>
 

@@ -32,10 +32,12 @@
 
         <GridPane hgap="12" vgap="12">
             <columnConstraints>
-                <ColumnConstraints minWidth="170" prefWidth="180"/>
-                <ColumnConstraints hgrow="ALWAYS" minWidth="240" prefWidth="280"/>
-                <ColumnConstraints minWidth="170" prefWidth="180"/>
-                <ColumnConstraints hgrow="ALWAYS" minWidth="240" prefWidth="280"/>
+                <ColumnConstraints minWidth="160" prefWidth="180"/>
+                <ColumnConstraints hgrow="ALWAYS" minWidth="180" prefWidth="240"/>
+                <ColumnConstraints minWidth="120" prefWidth="140"/>
+                <ColumnConstraints hgrow="ALWAYS" minWidth="150" prefWidth="220"/>
+                <ColumnConstraints minWidth="160" prefWidth="190"/>
+                <ColumnConstraints hgrow="ALWAYS" minWidth="140" prefWidth="200"/>
             </columnConstraints>
 
             <Label text="Roślina:" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
@@ -44,7 +46,7 @@
                       maxWidth="1.7976931348623157E308"
                       GridPane.rowIndex="0"
                       GridPane.columnIndex="1"
-                      GridPane.columnSpan="3"/>
+                      GridPane.columnSpan="5"/>
 
             <Label text="Źródło pochodzenia:" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
             <ComboBox fx:id="sourceOriginComboBox"
@@ -56,9 +58,9 @@
             <Label text="Wewnętrzne:" GridPane.rowIndex="1" GridPane.columnIndex="2"/>
             <CheckBox fx:id="internalSourceCheckBox"
                       text="Tak, partia pochodzi z własnej szkółki"
-                      wrapText="true"
                       GridPane.rowIndex="1"
-                      GridPane.columnIndex="3"/>
+                      GridPane.columnIndex="3"
+                      GridPane.columnSpan="3"/>
 
             <Label text="Nr partii wewnętrzny:" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
             <TextField fx:id="interiorBatchNoField"
@@ -72,7 +74,8 @@
                        promptText="Wpisz numer partii zewnętrzny"
                        maxWidth="1.7976931348623157E308"
                        GridPane.rowIndex="2"
-                       GridPane.columnIndex="3"/>
+                       GridPane.columnIndex="3"
+                       GridPane.columnSpan="3"/>
 
             <Label text="Ilość:" GridPane.rowIndex="3" GridPane.columnIndex="0"/>
             <TextField fx:id="qtyField"
@@ -81,18 +84,18 @@
                        GridPane.rowIndex="3"
                        GridPane.columnIndex="1"/>
 
-            <Label text="Wiek partii (l):" GridPane.rowIndex="3" GridPane.columnIndex="2"/>
+            <Label text="Wiek partii (w latach):" GridPane.rowIndex="3" GridPane.columnIndex="2"/>
             <TextField fx:id="ageYearsField"
                        promptText="Np. 1"
                        maxWidth="1.7976931348623157E308"
                        GridPane.rowIndex="3"
                        GridPane.columnIndex="3"/>
 
-            <Label text="Data utworzenia:" GridPane.rowIndex="4" GridPane.columnIndex="0"/>
+            <Label text="Data utworzenia:" GridPane.rowIndex="3" GridPane.columnIndex="4"/>
             <DatePicker fx:id="creationDatePicker"
                         maxWidth="1.7976931348623157E308"
-                        GridPane.rowIndex="4"
-                        GridPane.columnIndex="1"/>
+                        GridPane.rowIndex="3"
+                        GridPane.columnIndex="5"/>
         </GridPane>
     </VBox>
 
@@ -124,16 +127,17 @@
                        GridPane.columnIndex="3"/>
 
             <Label text="Kod EPPO:" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
-            <TextField fx:id="eppoCodeField"
-                       promptText="Kod EPPO"
-                       maxWidth="1.7976931348623157E308"
-                       GridPane.rowIndex="1"
-                       GridPane.columnIndex="1"/>
-            <CheckBox fx:id="zpOriginCheckBox"
-                      text="Partia pochodzi z ZP"
-                      GridPane.rowIndex="1"
-                      GridPane.columnIndex="2"
-                      GridPane.columnSpan="2"/>
+            <HBox spacing="12"
+                  alignment="CENTER_LEFT"
+                  GridPane.rowIndex="1"
+                  GridPane.columnIndex="1"
+                  GridPane.columnSpan="3">
+                <TextField fx:id="eppoCodeField"
+                           promptText="Kod EPPO"
+                           HBox.hgrow="ALWAYS"
+                           maxWidth="1.7976931348623157E308"/>
+                <CheckBox fx:id="zpOriginCheckBox" text="Partia pochodzi z ZP"/>
+            </HBox>
 
             <Label text="" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
             <Label fx:id="zpEligibilityHintLabel"

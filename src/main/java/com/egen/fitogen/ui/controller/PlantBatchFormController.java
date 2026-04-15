@@ -22,7 +22,9 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.Node;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.DatePicker;
@@ -86,6 +88,12 @@ public class PlantBatchFormController {
     private boolean closeConfirmed;
     private boolean closeGuardInstalled;
     private boolean loadingExistingBatch;
+    private boolean applyingEppoSuggestion;
+    private boolean manualEppoOverride;
+    private String lastAutoSuggestedEppoCode = "";
+    private String lastEppoSuggestionContextKey = "";
+    private Boolean lastEppoSuggestionDecision;
+    private String lastAutoDerivedOriginCountryCode = "";
 
     @FXML
     public void initialize() {
@@ -142,7 +150,19 @@ public class PlantBatchFormController {
         }
 
         if (manufacturerCountryCodeField != null) {
-            manufacturerCountryCodeField.textProperty().addListener((obs, oldVal, newVal) -> refreshRestrictionsState());
+            manufacturerCountryCodeField.textProperty().addListener((obs, oldVal, newVal) -> {
+                refreshRestrictionsState();
+                refreshSuggestedEppoCode();
+            });
+        }
+
+        if (eppoCodeField != null) {
+            eppoCodeField.textProperty().addListener((obs, oldVal, newVal) -> {
+                if (applyingEppoSuggestion || loadingExistingBatch || editingBatchId != null || !eppoCodeField.isFocused()) {
+                    return;
+                }
+                manualEppoOverride = true;
+            });
         }
 
         if (creationDatePicker != null) {
@@ -225,6 +245,9 @@ public class PlantBatchFormController {
 
             refreshOriginDerivedFields();
             refreshPlantDerivedFields();
+            if (manufacturerCountryCodeField != null && !isBlank(manufacturerCountryCodeField.getText())) {
+                lastAutoDerivedOriginCountryCode = safeUpper(manufacturerCountryCodeField.getText());
+            }
 
             if (currentStatus == PlantBatchStatus.CANCELLED) {
                 applyCancelledMode();
@@ -315,8 +338,10 @@ public class PlantBatchFormController {
 
     private void loadSourceOrigins() {
         availableSourceOrigins = contrahentRepository.findAll().stream()
-                .filter(Contrahent::isSupplier)
-                .sorted(Comparator.comparing(Contrahent::getName, Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER)))
+                .filter(contrahent -> contrahent != null && !isBlank(contrahent.getName()))
+                .sorted(Comparator
+                        .comparing(Contrahent::isSupplier, Comparator.reverseOrder())
+                        .thenComparing(Contrahent::getName, Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER)))
                 .toList();
         if (sourceOriginComboBox != null) {
             sourceOriginComboBox.setItems(FXCollections.observableArrayList(availableSourceOrigins));
@@ -444,6 +469,7 @@ public class PlantBatchFormController {
             }
         });
 
+        comboBox.setOnAction(event -> commitSelection.run());
         comboBox.getEditor().setOnAction(event -> commitSelection.run());
     }
 
@@ -510,33 +536,40 @@ public class PlantBatchFormController {
             return;
         }
 
-        if (editingBatchId != null && !isBlank(manufacturerCountryCodeField.getText())) {
-            return;
-        }
-
+        String desiredCountryCode = "";
         if (internalSourceCheckBox != null && internalSourceCheckBox.isSelected()) {
             IssuerProfile issuerProfile = appSettingsService.getIssuerProfile();
             if (issuerProfile != null && !isBlank(issuerProfile.getCountryCode())) {
-                manufacturerCountryCodeField.setText(issuerProfile.getCountryCode().trim().toUpperCase());
+                desiredCountryCode = issuerProfile.getCountryCode().trim().toUpperCase();
+            }
+        } else {
+            Contrahent selectedSource = sourceOriginComboBox != null ? sourceOriginComboBox.getValue() : null;
+            if (selectedSource != null && !isBlank(selectedSource.getCountryCode())) {
+                desiredCountryCode = selectedSource.getCountryCode().trim().toUpperCase();
+            }
+        }
+
+        String currentCountryCode = safeUpper(manufacturerCountryCodeField.getText());
+        boolean canReplaceCurrentValue = currentCountryCode.isBlank()
+                || currentCountryCode.equals(safeUpper(lastAutoDerivedOriginCountryCode));
+
+        if (desiredCountryCode.isBlank()) {
+            if (canReplaceCurrentValue && !currentCountryCode.isBlank()) {
+                manufacturerCountryCodeField.clear();
+                lastAutoDerivedOriginCountryCode = "";
             }
             return;
         }
 
-        Contrahent selectedSource = sourceOriginComboBox != null ? sourceOriginComboBox.getValue() : null;
-        if (selectedSource != null && !isBlank(selectedSource.getCountryCode())) {
-            manufacturerCountryCodeField.setText(selectedSource.getCountryCode().trim().toUpperCase());
+        if (canReplaceCurrentValue && !desiredCountryCode.equals(currentCountryCode)) {
+            manufacturerCountryCodeField.setText(desiredCountryCode);
         }
+        lastAutoDerivedOriginCountryCode = desiredCountryCode;
     }
 
     private void refreshPlantDerivedFields() {
-        Plant selectedPlant = plantComboBox != null ? plantComboBox.getValue() : null;
-        List<EppoCode> linkedCodes = getLinkedCodes(selectedPlant);
-
-        if (eppoCodeField != null && (editingBatchId == null || isBlank(eppoCodeField.getText()))) {
-            eppoCodeField.setText(resolveSuggestedEppoCode(selectedPlant, linkedCodes));
-        }
-
         refreshRestrictionsState();
+        refreshSuggestedEppoCode();
     }
 
     private void refreshRestrictionsState() {
@@ -656,14 +689,147 @@ public class PlantBatchFormController {
         return codeValue + ": " + countries;
     }
 
-    private String resolveSuggestedEppoCode(Plant selectedPlant, List<EppoCode> linkedCodes) {
-        if (linkedCodes != null && !linkedCodes.isEmpty()) {
-            return safeUpper(linkedCodes.get(0).getCode());
+    private void refreshSuggestedEppoCode() {
+        if (eppoCodeField == null) {
+            return;
         }
-        if (selectedPlant != null && !isBlank(selectedPlant.getEppoCode())) {
-            return safeUpper(selectedPlant.getEppoCode());
+
+        Plant selectedPlant = plantComboBox == null ? null : plantComboBox.getValue();
+        String originCountryCode = manufacturerCountryCodeField == null ? "" : safeUpper(manufacturerCountryCodeField.getText());
+        EppoCode matchedCode = resolveMatchedEppoCodeForOrigin(selectedPlant, originCountryCode);
+        String matchedCodeValue = matchedCode == null ? "" : safeUpper(matchedCode.getCode());
+        String contextKey = buildEppoSuggestionContextKey(selectedPlant, originCountryCode, matchedCodeValue);
+
+        if (!Objects.equals(lastEppoSuggestionContextKey, contextKey)) {
+            lastEppoSuggestionContextKey = contextKey;
+            lastEppoSuggestionDecision = null;
+            manualEppoOverride = false;
+
+            if (isCurrentAutoSuggestedCode()) {
+                setEppoCodeFieldValue("");
+            }
+            lastAutoSuggestedEppoCode = "";
         }
-        return "";
+
+        if (editingBatchId != null || loadingExistingBatch) {
+            return;
+        }
+
+        if (selectedPlant == null || originCountryCode.isBlank() || matchedCodeValue.isBlank()) {
+            if (isCurrentAutoSuggestedCode()) {
+                setEppoCodeFieldValue("");
+            }
+            lastAutoSuggestedEppoCode = "";
+            return;
+        }
+
+        if (manualEppoOverride) {
+            return;
+        }
+
+        if (Boolean.FALSE.equals(lastEppoSuggestionDecision)) {
+            if (isCurrentAutoSuggestedCode()) {
+                setEppoCodeFieldValue("");
+            }
+            lastAutoSuggestedEppoCode = "";
+            return;
+        }
+
+        if (Boolean.TRUE.equals(lastEppoSuggestionDecision)) {
+            lastAutoSuggestedEppoCode = matchedCodeValue;
+            if (safeUpper(eppoCodeField.getText()).isBlank() || isCurrentAutoSuggestedCode()) {
+                setEppoCodeFieldValue(matchedCodeValue);
+            }
+            return;
+        }
+
+        if (!safeUpper(eppoCodeField.getText()).isBlank() && !isCurrentAutoSuggestedCode()) {
+            return;
+        }
+
+        boolean accepted = confirmApplyingSuggestedEppoCode(matchedCodeValue, originCountryCode);
+        lastEppoSuggestionDecision = accepted;
+        if (accepted) {
+            lastAutoSuggestedEppoCode = matchedCodeValue;
+            setEppoCodeFieldValue(matchedCodeValue);
+            if (zpOriginCheckBox != null && !zpOriginCheckBox.isDisable()) {
+                zpOriginCheckBox.setSelected(true);
+            }
+        } else {
+            lastAutoSuggestedEppoCode = "";
+            if (isCurrentAutoSuggestedCode()) {
+                setEppoCodeFieldValue("");
+            }
+        }
+    }
+
+    private EppoCode resolveMatchedEppoCodeForOrigin(Plant selectedPlant, String originCountryCode) {
+        if (selectedPlant == null || safe(originCountryCode).isBlank()) {
+            return null;
+        }
+
+        return getLinkedCodes(selectedPlant).stream()
+                .filter(code -> code != null && codeMatchesCountry(code, originCountryCode))
+                .findFirst()
+                .orElse(null);
+    }
+
+    private boolean codeMatchesCountry(EppoCode code, String countryCode) {
+        if (code == null || safe(countryCode).isBlank()) {
+            return false;
+        }
+
+        return eppoCodeZoneLinkService.getZonesForCode(code.getId()).stream()
+                .filter(Objects::nonNull)
+                .map(EppoZone::getCountryCode)
+                .map(this::safeUpper)
+                .anyMatch(safeUpper(countryCode)::equals);
+    }
+
+    private String buildEppoSuggestionContextKey(Plant selectedPlant, String originCountryCode, String matchedCodeValue) {
+        int plantId = selectedPlant == null ? 0 : selectedPlant.getId();
+        return plantId + "|" + safeUpper(originCountryCode) + "|" + safeUpper(matchedCodeValue);
+    }
+
+    private boolean isCurrentAutoSuggestedCode() {
+        return !lastAutoSuggestedEppoCode.isBlank() && safeUpper(eppoCodeField == null ? null : eppoCodeField.getText()).equals(lastAutoSuggestedEppoCode);
+    }
+
+    private void setEppoCodeFieldValue(String value) {
+        if (eppoCodeField == null) {
+            return;
+        }
+
+        applyingEppoSuggestion = true;
+        try {
+            eppoCodeField.setText(value == null ? "" : value);
+        } finally {
+            applyingEppoSuggestion = false;
+        }
+    }
+
+    private boolean confirmApplyingSuggestedEppoCode(String eppoCode, String originCountryCode) {
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        alert.setTitle("Sugestia oznaczenia EPPO");
+        alert.setHeaderText("Wykryto zgodność kraju pochodzenia ze słownikami EPPO.");
+
+        boolean internalSource = internalSourceCheckBox != null && internalSourceCheckBox.isSelected();
+        String contentText;
+        if (internalSource) {
+            contentText = "Kraj pochodzenia partii [" + safeUpper(originCountryCode) + "] jest powiązany ze słownikiem EPPO dla wybranej rośliny i kodu „" + safeUpper(eppoCode) + "”.\n\n"
+                    + "Czy dokument fitosanitarny źródła pochodzenia zawiera to oznaczenie EPPO i czy dodać je do partii?";
+        } else {
+            contentText = "Kraj pochodzenia dostawcy [" + safeUpper(originCountryCode) + "] jest powiązany ze słownikiem EPPO dla wybranej rośliny i kodu „" + safeUpper(eppoCode) + "”.\n\n"
+                    + "Czy dokument fitosanitarny od dostawcy posiada to oznaczenie EPPO i czy dodać je do partii?";
+        }
+
+        alert.setContentText(contentText);
+
+        ButtonType yesButton = new ButtonType("Tak, dodaj");
+        ButtonType noButton = new ButtonType("Nie dodawaj");
+        alert.getButtonTypes().setAll(yesButton, noButton);
+
+        return alert.showAndWait().filter(result -> result == yesButton).isPresent();
     }
 
     private String formatPlantSummary(Plant plant) {
@@ -717,7 +883,7 @@ public class PlantBatchFormController {
         setTooltip(creationDatePicker, "Data utworzenia partii wpływa na numerację i historię zmian.");
         setTooltip(manufacturerCountryCodeField, "Wpisz kod kraju pochodzenia, np. PL. Pole jest automatycznie uzupełniane dla partii wewnętrznych i zapisywane wielkimi literami.");
         setTooltip(fitoQualificationCategoryField, "Pole opcjonalne. Uzupełnij kategorię kwalifikacji, jeśli jest wymagana dla danej partii.");
-        setTooltip(eppoCodeField, "Kod EPPO jest podpowiadany na podstawie wybranej rośliny i słowników EPPO.");
+        setTooltip(eppoCodeField, "Kod EPPO nie jest już wpisywany automatycznie bez potwierdzenia. Sugestia pojawia się tylko wtedy, gdy kraj pochodzenia jest zgodny ze słownikami EPPO dla wybranej rośliny.");
         setTooltip(zpOriginCheckBox, "Zaznacz, jeśli partia pochodzi z obszaru objętego dopasowaną strefą chronioną ZP.");
         setTooltip(restrictionsInfoArea, "Informacja tylko do odczytu. Pokazuje kraje/strefy wynikające z powiązań EPPO dla wybranej rośliny.");
         setTooltip(commentsArea, "Pole opcjonalne na uwagi operacyjne dotyczące partii roślin.");
