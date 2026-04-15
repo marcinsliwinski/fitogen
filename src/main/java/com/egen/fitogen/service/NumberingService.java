@@ -11,6 +11,7 @@ import java.time.temporal.WeekFields;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.function.Predicate;
 
 public class NumberingService {
 
@@ -30,7 +31,6 @@ public class NumberingService {
 
     public String generateNextNumber(NumberingType type, PlantBatch batchContext, LocalDate dateContext) {
         NumberingConfig config = getOrCreateUsableConfig(type);
-
         validateConfig(config, batchContext);
 
         int nextCounter = config.getCurrentCounter() + 1;
@@ -44,6 +44,14 @@ public class NumberingService {
         numberingConfigRepository.update(config);
 
         return generatedNumber;
+    }
+
+    public String generateNextUniqueNumber(NumberingType type, PlantBatch batchContext, Predicate<String> existsPredicate) {
+        return reserveUniqueNumber(type, batchContext, LocalDate.now(), existsPredicate, true);
+    }
+
+    public String previewNextUniqueNumber(NumberingType type, PlantBatch batchContext, Predicate<String> existsPredicate) {
+        return reserveUniqueNumber(type, batchContext, LocalDate.now(), existsPredicate, false);
     }
 
     public String previewNumber(NumberingType type, PlantBatch batchContext) {
@@ -63,6 +71,36 @@ public class NumberingService {
 
         validateConfig(effectiveConfig, batchContext);
         return composeNumber(effectiveConfig, effectiveConfig.getCurrentCounter() + 1, batchContext, LocalDate.now());
+    }
+
+    private String reserveUniqueNumber(
+            NumberingType type,
+            PlantBatch batchContext,
+            LocalDate dateContext,
+            Predicate<String> existsPredicate,
+            boolean persistCounter
+    ) {
+        NumberingConfig config = getOrCreateUsableConfig(type);
+        validateConfig(config, batchContext);
+
+        int baseCounter = config.getCurrentCounter();
+        for (int offset = 1; offset <= 500; offset++) {
+            int candidateCounter = baseCounter + offset;
+            String candidate = composeNumber(config, candidateCounter, batchContext, dateContext);
+            if (candidate == null || candidate.isBlank()) {
+                continue;
+            }
+            if (existsPredicate != null && existsPredicate.test(candidate)) {
+                continue;
+            }
+            if (persistCounter) {
+                config.setCurrentCounter(candidateCounter);
+                numberingConfigRepository.update(config);
+            }
+            return candidate;
+        }
+
+        throw new IllegalStateException("Nie udało się wygenerować unikalnego numeru dla wskazanej konfiguracji.");
     }
 
     private NumberingConfig getOrCreateUsableConfig(NumberingType type) {

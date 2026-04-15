@@ -64,7 +64,11 @@ public class PlantBatchService {
         if (batchContext == null) {
             batchContext = new PlantBatch();
         }
-        return numberingService.previewNumber(NumberingType.BATCH, batchContext);
+        return numberingService.previewNextUniqueNumber(
+                NumberingType.BATCH,
+                batchContext,
+                candidate -> interiorBatchNumberExists(candidate, null)
+        );
     }
 
     public void addBatch(PlantBatch batch) {
@@ -141,14 +145,12 @@ public class PlantBatchService {
             return safe(batch == null ? null : batch.getInteriorBatchNo());
         }
 
-        for (int attempt = 0; attempt < 100; attempt++) {
-            String candidate = safe(numberingService.generateNextNumber(NumberingType.BATCH, batch));
-            if (!candidate.isBlank() && !interiorBatchNumberExists(candidate, null)) {
-                return candidate;
-            }
-        }
-
-        throw new IllegalStateException("Nie udało się nadać unikalnego numeru partii wewnętrznej.");
+        String generated = numberingService.generateNextUniqueNumber(
+                NumberingType.BATCH,
+                batch,
+                candidate -> interiorBatchNumberExists(candidate, null)
+        );
+        return safe(generated);
     }
 
     private void validateInteriorBatchNumberUniqueness(PlantBatch batch) {

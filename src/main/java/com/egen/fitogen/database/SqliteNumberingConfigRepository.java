@@ -107,6 +107,7 @@ public class SqliteNumberingConfigRepository
 
         } catch (Exception e) {
             e.printStackTrace();
+            throw new IllegalStateException("Nie udało się zapisać konfiguracji numeratora do bazy.", e);
         } finally {
             close(stmt, conn);
         }
@@ -146,6 +147,7 @@ public class SqliteNumberingConfigRepository
 
         } catch (Exception e) {
             e.printStackTrace();
+            throw new IllegalStateException("Nie udało się zaktualizować konfiguracji numeratora w bazie.", e);
         } finally {
             close(stmt, conn);
         }

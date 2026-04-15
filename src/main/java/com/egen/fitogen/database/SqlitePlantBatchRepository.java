@@ -134,6 +134,7 @@ public class SqlitePlantBatchRepository
 
         } catch (Exception e) {
             e.printStackTrace();
+            throw new IllegalStateException("Nie udało się zapisać partii roślin do bazy.", e);
         } finally {
             close(stmt, conn);
         }
@@ -176,6 +177,7 @@ public class SqlitePlantBatchRepository
 
         } catch (Exception e) {
             e.printStackTrace();
+            throw new IllegalStateException("Nie udało się zaktualizować partii roślin w bazie.", e);
         } finally {
             close(stmt, conn);
         }
