@@ -90,24 +90,36 @@ public class DocumentController {
     }
 
     private void configureRowFactory() {
-        table.setRowFactory(tv -> new TableRow<>() {
-            @Override
-            protected void updateItem(Document item, boolean empty) {
-                super.updateItem(item, empty);
+        table.setRowFactory(tv -> {
+            TableRow<Document> row = new TableRow<>() {
+                @Override
+                protected void updateItem(Document item, boolean empty) {
+                    super.updateItem(item, empty);
 
-                getStyleClass().remove("cancelled-row");
+                    getStyleClass().remove("cancelled-row");
 
-                if (empty || item == null) {
-                    setStyle("");
+                    if (empty || item == null) {
+                        setStyle("");
+                        return;
+                    }
+
+                    if (item.getStatus() == DocumentStatus.CANCELLED) {
+                        getStyleClass().add("cancelled-row");
+                    } else {
+                        setStyle("");
+                    }
+                }
+            };
+
+            row.setOnMouseClicked(event -> {
+                if (event.getClickCount() != 2 || row.isEmpty()) {
                     return;
                 }
+                table.getSelectionModel().select(row.getItem());
+                editDocument();
+            });
 
-                if (item.getStatus() == DocumentStatus.CANCELLED) {
-                    getStyleClass().add("cancelled-row");
-                } else {
-                    setStyle("");
-                }
-            }
+            return row;
         });
     }
 
@@ -251,17 +263,31 @@ public class DocumentController {
         String contrahent = safe(getContrahentName(document.getContrahentId()));
         String issueDate = document.getIssueDate() == null ? "—" : document.getIssueDate().toString();
         String comments = safe(document.getComments());
-        String commentsSuffix = comments.isBlank() ? "" : " Uwagi: " + comments;
 
-        return "Dokument „" + number + "” | Typ: " + (type.isBlank() ? "—" : type)
-                + " | Klient: " + (contrahent.isBlank() ? "—" : contrahent)
-                + " | Data wystawienia: " + issueDate
+        String firstLine = "Numer: " + shorten(number, 28)
+                + " | Typ: " + shorten(type.isBlank() ? "—" : type, 22)
+                + " | Klient: " + shorten(contrahent.isBlank() ? "—" : contrahent, 28);
+
+        String secondLine = "Data wystawienia: " + issueDate
                 + " | Status: " + formatStatus(document.getStatus())
-                + commentsSuffix;
+                + " | Uwagi: " + shorten(comments.isBlank() ? "—" : comments, 70);
+
+        return firstLine + System.lineSeparator() + secondLine;
     }
 
     private String safe(String value) {
         return value == null ? "" : value.trim();
+    }
+
+    private String shorten(String value, int maxLength) {
+        String normalized = safe(value);
+        if (normalized.length() <= maxLength) {
+            return normalized;
+        }
+        if (maxLength <= 1) {
+            return "…";
+        }
+        return normalized.substring(0, maxLength - 1).trim() + "…";
     }
 
     @FXML

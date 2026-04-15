@@ -75,26 +75,18 @@
                        GridPane.columnIndex="3"/>
 
             <Label text="Ilość:" GridPane.rowIndex="3" GridPane.columnIndex="0"/>
-            <HBox spacing="0"
-                  alignment="CENTER_LEFT"
-                  GridPane.rowIndex="3"
-                  GridPane.columnIndex="1">
-                <TextField fx:id="qtyField"
-                           promptText="Wpisz ilość"
-                           prefWidth="140"
-                           maxWidth="140"/>
-            </HBox>
+            <TextField fx:id="qtyField"
+                       promptText="Wpisz ilość"
+                       maxWidth="1.7976931348623157E308"
+                       GridPane.rowIndex="3"
+                       GridPane.columnIndex="1"/>
 
             <Label text="Wiek partii (l):" GridPane.rowIndex="3" GridPane.columnIndex="2"/>
-            <HBox spacing="0"
-                  alignment="CENTER_LEFT"
-                  GridPane.rowIndex="3"
-                  GridPane.columnIndex="3">
-                <TextField fx:id="ageYearsField"
-                           promptText="Np. 1"
-                           prefWidth="140"
-                           maxWidth="140"/>
-            </HBox>
+            <TextField fx:id="ageYearsField"
+                       promptText="Np. 1"
+                       maxWidth="1.7976931348623157E308"
+                       GridPane.rowIndex="3"
+                       GridPane.columnIndex="3"/>
 
             <Label text="Data utworzenia:" GridPane.rowIndex="4" GridPane.columnIndex="0"/>
             <DatePicker fx:id="creationDatePicker"
@@ -132,17 +124,16 @@
                        GridPane.columnIndex="3"/>
 
             <Label text="Kod EPPO:" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
-            <HBox spacing="12"
-                  alignment="CENTER_LEFT"
-                  GridPane.rowIndex="1"
-                  GridPane.columnIndex="1"
-                  GridPane.columnSpan="3">
-                <TextField fx:id="eppoCodeField"
-                           promptText="Kod EPPO"
-                           prefWidth="160"
-                           maxWidth="160"/>
-                <CheckBox fx:id="zpOriginCheckBox" text="Partia pochodzi z ZP"/>
-            </HBox>
+            <TextField fx:id="eppoCodeField"
+                       promptText="Kod EPPO"
+                       maxWidth="1.7976931348623157E308"
+                       GridPane.rowIndex="1"
+                       GridPane.columnIndex="1"/>
+            <CheckBox fx:id="zpOriginCheckBox"
+                      text="Partia pochodzi z ZP"
+                      GridPane.rowIndex="1"
+                      GridPane.columnIndex="2"
+                      GridPane.columnSpan="2"/>
 
             <Label text="" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
             <Label fx:id="zpEligibilityHintLabel"
