@@ -335,8 +335,8 @@ public class PlantBatchController {
         ModalViewUtil.openModal(
                 "/view/plant_batch_form.fxml",
                 "Dodaj partię roślin",
-                980, 840,
-                900, 760,
+                1120, 900,
+                1020, 820,
                 (PlantBatchFormController controller) -> {
                 }
         );
@@ -362,8 +362,8 @@ public class PlantBatchController {
         ModalViewUtil.openModal(
                 "/view/plant_batch_form.fxml",
                 "Edytuj partię roślin",
-                980, 840,
-                900, 760,
+                1120, 900,
+                1020, 820,
                 (PlantBatchFormController controller) -> controller.setPlantBatch(selected)
         );
         refresh();

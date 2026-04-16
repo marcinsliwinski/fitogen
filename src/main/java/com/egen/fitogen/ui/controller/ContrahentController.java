@@ -25,6 +25,8 @@ public class ContrahentController {
     @FXML private TableColumn<Contrahent, String> colName;
     @FXML private TableColumn<Contrahent, String> colCountry;
     @FXML private TableColumn<Contrahent, String> colCity;
+    @FXML private TableColumn<Contrahent, String> colClient;
+    @FXML private TableColumn<Contrahent, String> colSupplier;
     @FXML private TableColumn<Contrahent, String> colPhyto;
     @FXML private TextField searchField;
     @FXML private Label filterStatusLabel;
@@ -48,6 +50,8 @@ public class ContrahentController {
         colName.setCellValueFactory(new PropertyValueFactory<>("name"));
         colCountry.setCellValueFactory(new PropertyValueFactory<>("country"));
         colCity.setCellValueFactory(new PropertyValueFactory<>("city"));
+        colClient.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().isClient() ? "Tak" : "Nie"));
+        colSupplier.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().isSupplier() ? "Tak" : "Nie"));
         colPhyto.setCellValueFactory(new PropertyValueFactory<>("phytosanitaryNumber"));
     }
 
@@ -58,6 +62,16 @@ public class ContrahentController {
 
         table.setColumnResizePolicy(TableView.UNCONSTRAINED_RESIZE_POLICY);
         table.setPlaceholder(new Label("Brak kontrahentów do wyświetlenia."));
+        table.setRowFactory(tv -> {
+            javafx.scene.control.TableRow<Contrahent> row = new javafx.scene.control.TableRow<>();
+            row.setOnMouseClicked(event -> {
+                if (event.getClickCount() == 2 && !row.isEmpty()) {
+                    table.getSelectionModel().select(row.getItem());
+                    editContrahent();
+                }
+            });
+            return row;
+        });
     }
 
     private void configureSearch() {
@@ -119,7 +133,7 @@ public class ContrahentController {
         statusBuilder.append("Łącznie kontrahentów: ").append(totalCount)
                 .append(". Widoczne po filtrze: ").append(visibleCount)
                 .append(". Dostawcy: ").append(supplierCount)
-                .append(". Odbiorcy: ").append(clientCount).append('.');
+                .append(". Klienci: ").append(clientCount).append('.');
         if (!keyword.isBlank()) {
             statusBuilder.append(UiTextUtil.buildQuotedFilterSuffix("Fraza", keyword));
         }
@@ -150,13 +164,13 @@ public class ContrahentController {
 
     private String buildRoleLabel(Contrahent contrahent) {
         if (contrahent.isSupplier() && contrahent.isClient()) {
-            return "dostawca i odbiorca";
+            return "dostawca i klient";
         }
         if (contrahent.isSupplier()) {
             return "dostawca";
         }
         if (contrahent.isClient()) {
-            return "odbiorca";
+            return "klient";
         }
         return "brak przypisanej roli";
     }

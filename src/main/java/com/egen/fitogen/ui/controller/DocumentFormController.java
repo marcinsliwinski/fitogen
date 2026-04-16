@@ -25,13 +25,14 @@ import com.egen.fitogen.service.AppSettingsService;
 import com.egen.fitogen.service.AppUserService;
 import com.egen.fitogen.service.DocumentService;
 import com.egen.fitogen.service.DocumentTypeService;
+import com.egen.fitogen.service.EppoCodeService;
+import com.egen.fitogen.service.EppoCodeSpeciesLinkService;
 import com.egen.fitogen.service.EppoAdvisoryService;
 import com.egen.fitogen.service.EppoCodePlantLinkService;
 import com.egen.fitogen.service.EppoCodeZoneLinkService;
 import com.egen.fitogen.service.DocumentPdfService;
 import com.egen.fitogen.service.DocumentRenderService;
 import com.egen.fitogen.service.PassportAdvisoryService;
-import com.egen.fitogen.ui.util.ComboBoxAutoComplete;
 import com.egen.fitogen.ui.util.DialogUtil;
 import com.egen.fitogen.ui.util.ModalViewUtil;
 import com.egen.fitogen.ui.util.UiTextUtil;
@@ -46,6 +47,7 @@ import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.collections.transformation.FilteredList;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
@@ -77,6 +79,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 
@@ -109,6 +112,8 @@ public class DocumentFormController {
     private final DocumentRenderService documentRenderService = new DocumentRenderService(documentService);
     private final DocumentPdfService documentPdfService = new DocumentPdfService();
     private final EppoCodePlantLinkService eppoCodePlantLinkService = AppContext.getEppoCodePlantLinkService();
+    private final EppoCodeSpeciesLinkService eppoCodeSpeciesLinkService = AppContext.getEppoCodeSpeciesLinkService();
+    private final EppoCodeService eppoCodeService = AppContext.getEppoCodeService();
     private final EppoCodeZoneLinkService eppoCodeZoneLinkService = AppContext.getEppoCodeZoneLinkService();
     private final EppoAdvisoryService eppoAdvisoryService = AppContext.getEppoAdvisoryService();
     private final PassportAdvisoryService passportAdvisoryService = AppContext.getPassportAdvisoryService();
@@ -264,7 +269,7 @@ public class DocumentFormController {
                 setText(empty || item == null ? "" : formatDocumentType(item));
             }
         });
-        ComboBoxAutoComplete.bindSelectionAutocomplete(documentTypeBox, allDocumentTypes, this::formatDocumentType);
+        bindStableSelectionAutocomplete(documentTypeBox, allDocumentTypes, this::formatDocumentType, null);
     }
 
     private void configureUsersBox() {
@@ -283,7 +288,7 @@ public class DocumentFormController {
                 setText(empty || item == null ? "" : item.getDisplayName());
             }
         });
-        ComboBoxAutoComplete.bindSelectionAutocomplete(createdByBox, allUsers, user -> user == null ? "" : safe(user.getDisplayName()));
+        bindStableSelectionAutocomplete(createdByBox, allUsers, user -> user == null ? "" : safe(user.getDisplayName()), null);
     }
 
     private void configureContrahentBox() {
@@ -303,7 +308,7 @@ public class DocumentFormController {
                 setText(empty || item == null ? "" : safe(item.getName()));
             }
         });
-        ComboBoxAutoComplete.bindSelectionAutocomplete(contrahentBox, allContrahents, contrahent -> contrahent == null ? "" : safe(contrahent.getName()));
+        bindStableSelectionAutocomplete(contrahentBox, allContrahents, contrahent -> contrahent == null ? "" : safe(contrahent.getName()), this::refreshValidationIndicators);
         contrahentBox.valueProperty().addListener((obs, oldVal, newVal) -> refreshValidationIndicators());
     }
 
@@ -458,8 +463,8 @@ public class DocumentFormController {
         try {
             javafx.scene.Scene scene = new javafx.scene.Scene(
                     loader.load(),
-                    WindowSizingUtil.resolveInitialWidth(960),
-                    WindowSizingUtil.resolveInitialHeight(780)
+                    WindowSizingUtil.resolveInitialWidth(1080),
+                    WindowSizingUtil.resolveInitialHeight(860)
             );
             java.net.URL stylesheetUrl = getClass().getResource("/styles/app.css");
             if (stylesheetUrl != null) {
@@ -470,7 +475,7 @@ public class DocumentFormController {
             stage.setTitle("Dodaj partię roślin");
             stage.setScene(scene);
             stage.initModality(javafx.stage.Modality.APPLICATION_MODAL);
-            WindowSizingUtil.applyStageSize(stage, 1000, 840, 900, 760);
+            WindowSizingUtil.applyStageSize(stage, 1120, 900, 1020, 820);
 
             PlantBatchFormController controller = loader.getController();
             controller.setPreselectedPlant(row.getPlant());
@@ -519,7 +524,7 @@ public class DocumentFormController {
             return "";
         }
 
-        Contrahent contrahent = contrahentBox == null ? null : contrahentBox.getValue();
+        Contrahent contrahent = contrahentBox == null ? null : resolveSelectedContrahent();
         String clientCountryCode = contrahent == null ? "" : safe(contrahent.getCountryCode()).toUpperCase();
         if (clientCountryCode.isBlank()) {
             return "";
@@ -531,32 +536,82 @@ public class DocumentFormController {
             return "";
         }
 
-        List<EppoCode> plantCodes = eppoCodePlantLinkService.getCodesForPlant(plant.getId());
-        if (plantCodes == null || plantCodes.isEmpty()) {
-            return "";
-        }
-
-        List<EppoCode> requiredCodes = plantCodes.stream()
-                .filter(code -> code != null)
-                .filter(code -> codeMatchesClientCountry(code, clientCountryCode))
-                .toList();
-
+        List<EppoCode> requiredCodes = resolveRequiredCodesForPlantAndCountry(plant, clientCountryCode);
         if (requiredCodes.isEmpty()) {
             return "";
         }
 
         String batchCode = safe(batch.getEppoCode()).toUpperCase();
-        boolean matchesRequiredCode = requiredCodes.stream()
-                .map(EppoCode::getCode)
-                .map(this::safe)
-                .map(String::toUpperCase)
-                .anyMatch(required -> !required.isBlank() && required.equals(batchCode));
+        for (EppoCode requiredCode : requiredCodes) {
+            String requiredCodeValue = safe(requiredCode.getCode()).toUpperCase();
+            boolean codeMatches = !requiredCodeValue.isBlank() && requiredCodeValue.equals(batchCode);
+            boolean protectedZoneMatches = batchMatchesRequiredProtectedZone(requiredCode, clientCountryCode, batch);
 
-        if (matchesRequiredCode) {
-            return "";
+            if (codeMatches && protectedZoneMatches) {
+                return "";
+            }
         }
 
-        return "Brak wymaganego kodu EPPO w partii dla wybranego gatunku i kraju klienta.";
+        String requiredCodesText = requiredCodes.stream()
+                .map(EppoCode::getCode)
+                .map(this::safe)
+                .filter(value -> !value.isBlank())
+                .distinct()
+                .collect(Collectors.joining(", "));
+
+        if (requiredCodesText.isBlank()) {
+            requiredCodesText = "brak";
+        }
+
+        String batchZpValue = safe(batch.getZpZone());
+        String batchCountry = safe(batch.getManufacturerCountryCode()).toUpperCase();
+        return "Partia nie spełnia wymagań EPPO/ZP dla wybranego gatunku i kraju klienta. Wymagany kod EPPO: "
+                + requiredCodesText
+                + ". Partia ma kod: " + (batchCode.isBlank() ? "brak" : batchCode)
+                + ", ZP: " + (batchZpValue.isBlank() ? "brak" : batchZpValue)
+                + ", kraj pochodzenia: " + (batchCountry.isBlank() ? "brak" : batchCountry) + ".";
+    }
+
+    private List<EppoCode> resolveRequiredCodesForPlantAndCountry(Plant plant, String clientCountryCode) {
+        if (plant == null || safe(clientCountryCode).isBlank()) {
+            return List.of();
+        }
+
+        Map<Integer, EppoCode> byId = new java.util.LinkedHashMap<>();
+        List<EppoCode> linkedCodes = eppoCodePlantLinkService.getCodesForPlant(plant.getId());
+        if (linkedCodes != null) {
+            for (EppoCode code : linkedCodes) {
+                if (code != null) {
+                    byId.put(code.getId(), code);
+                }
+            }
+        }
+
+        String species = normalizeKey(plant.getSpecies());
+        String latinSpecies = normalizeKey(plant.getLatinSpeciesName());
+        if (!species.isBlank() || !latinSpecies.isBlank()) {
+            for (EppoCode code : eppoCodeService.getAll()) {
+                if (code == null) {
+                    continue;
+                }
+                boolean speciesMatch = eppoCodeSpeciesLinkService.getEffectiveSpeciesLinks(code.getId()).stream()
+                        .anyMatch(link -> matchesPlantSpeciesLink(species, latinSpecies, link.getSpeciesName(), link.getLatinSpeciesName()));
+                if (speciesMatch) {
+                    byId.put(code.getId(), code);
+                }
+            }
+        }
+
+        return byId.values().stream()
+                .filter(code -> codeMatchesClientCountry(code, clientCountryCode))
+                .toList();
+    }
+
+    private boolean matchesPlantSpeciesLink(String plantSpecies, String plantLatinSpecies, String linkSpecies, String linkLatinSpecies) {
+        String normalizedLinkSpecies = normalizeKey(linkSpecies);
+        String normalizedLinkLatinSpecies = normalizeKey(linkLatinSpecies);
+        return (!plantSpecies.isBlank() && plantSpecies.equals(normalizedLinkSpecies))
+                || (!plantLatinSpecies.isBlank() && plantLatinSpecies.equals(normalizedLinkLatinSpecies));
     }
 
     private boolean codeMatchesClientCountry(EppoCode code, String clientCountryCode) {
@@ -575,6 +630,34 @@ public class DocumentFormController {
                 .map(this::safe)
                 .map(String::toUpperCase)
                 .anyMatch(countryCode -> countryCode.equals(clientCountryCode));
+    }
+
+    private boolean batchMatchesRequiredProtectedZone(EppoCode requiredCode, String clientCountryCode, PlantBatch batch) {
+        if (requiredCode == null || batch == null || safe(clientCountryCode).isBlank()) {
+            return false;
+        }
+
+        String batchZonesRaw = safe(batch.getZpZone());
+        if (batchZonesRaw.isBlank()) {
+            return false;
+        }
+
+        List<String> batchZoneCodes = java.util.Arrays.stream(batchZonesRaw.split(","))
+                .map(this::safe)
+                .map(String::toUpperCase)
+                .filter(value -> !value.isBlank())
+                .toList();
+        if (batchZoneCodes.isEmpty()) {
+            return false;
+        }
+
+        return eppoCodeZoneLinkService.getZonesForCode(requiredCode.getId()).stream()
+                .filter(Objects::nonNull)
+                .filter(zone -> clientCountryCode.equals(safe(zone.getCountryCode()).toUpperCase()))
+                .map(EppoZone::getCode)
+                .map(this::safe)
+                .map(String::toUpperCase)
+                .anyMatch(batchZoneCodes::contains);
     }
 
     private Plant resolvePlantForRow(DocumentItemRow row) {
@@ -702,15 +785,19 @@ public class DocumentFormController {
             }
 
             if (!clientCountryCode.isBlank()) {
-                EppoAdvisoryService.AdvisoryResult eppoResult = eppoAdvisoryService
-                        .analyzePlantForCountry(plant, clientCountryCode, i + 1, "Pozycja");
-                if (eppoResult.elevatedRisk()) {
+                String validationMessage = buildEppoValidationMessage(row);
+                if (!validationMessage.isBlank()) {
                     elevatedRiskCount++;
-                    details.add("Pozycja " + (i + 1) + ": znaleziono dopasowane strefy EPPO dla kraju klienta.");
+                    details.add("Pozycja " + (i + 1) + ": " + validationMessage);
                 }
-                if (eppoResult.missingCode()) {
-                    missingCodeCount++;
-                    details.add("Pozycja " + (i + 1) + ": brak powiązanego kodu EPPO w słowniku.");
+
+                if (resolveRequiredCodesForPlantAndCountry(plant, clientCountryCode).isEmpty()) {
+                    EppoAdvisoryService.AdvisoryResult eppoResult = eppoAdvisoryService
+                            .analyzePlantForCountry(plant, clientCountryCode, i + 1, "Pozycja");
+                    if (eppoResult.missingCode()) {
+                        missingCodeCount++;
+                        details.add("Pozycja " + (i + 1) + ": brak powiązanego kodu EPPO w słowniku.");
+                    }
                 }
             }
 
@@ -927,7 +1014,6 @@ public class DocumentFormController {
             if (editorText.equalsIgnoreCase(formatted)
                     || editorText.equalsIgnoreCase(name)
                     || (!code.isBlank() && editorText.equalsIgnoreCase(code))) {
-                documentTypeBox.setValue(type);
                 return type;
             }
         }
@@ -948,7 +1034,6 @@ public class DocumentFormController {
         }
         for (AppUser user : allUsers) {
             if (user != null && editorText.equalsIgnoreCase(safe(user.getDisplayName()))) {
-                createdByBox.setValue(user);
                 return user;
             }
         }
@@ -969,11 +1054,127 @@ public class DocumentFormController {
         }
         for (Contrahent contrahent : allContrahents) {
             if (contrahent != null && editorText.equalsIgnoreCase(safe(contrahent.getName()))) {
-                contrahentBox.setValue(contrahent);
                 return contrahent;
             }
         }
         return null;
+    }
+
+    private String normalizeKey(String value) {
+        if (value == null) {
+            return "";
+        }
+        return value.trim().replaceAll("\\s+", " ").toUpperCase();
+    }
+
+    private <T> void bindStableSelectionAutocomplete(
+            ComboBox<T> comboBox,
+            List<T> sourceValues,
+            Function<T, String> textProvider,
+            Runnable afterCommit
+    ) {
+        if (comboBox == null || textProvider == null) {
+            return;
+        }
+
+        ObservableList<T> masterItems = FXCollections.observableArrayList(sourceValues == null ? List.of() : sourceValues);
+        FilteredList<T> filteredItems = new FilteredList<>(masterItems, item -> true);
+        final boolean[] internalChange = {false};
+
+        comboBox.setEditable(true);
+        comboBox.setItems(FXCollections.observableArrayList(masterItems));
+        comboBox.setMaxWidth(Double.MAX_VALUE);
+
+        if (comboBox.getEditor() == null) {
+            return;
+        }
+
+        comboBox.getEditor().textProperty().addListener((obs, oldValue, newValue) -> {
+            if (internalChange[0]) {
+                return;
+            }
+
+            if (!comboBox.isFocused() && !comboBox.getEditor().isFocused()) {
+                return;
+            }
+
+            String typedText = safe(newValue);
+            String normalized = normalizeKey(typedText);
+            filteredItems.setPredicate(item -> normalized.isBlank() || normalizeKey(textProvider.apply(item)).contains(normalized));
+
+            internalChange[0] = true;
+            try {
+                comboBox.setItems(FXCollections.observableArrayList(filteredItems));
+                if (!comboBox.isShowing()) {
+                    comboBox.show();
+                }
+                comboBox.getEditor().setText(typedText);
+                comboBox.getEditor().positionCaret(Math.min(typedText.length(), comboBox.getEditor().getLength()));
+            } finally {
+                internalChange[0] = false;
+            }
+        });
+
+        comboBox.setOnAction(event -> {
+            if (internalChange[0]) {
+                return;
+            }
+            commitStableSelection(comboBox, masterItems, textProvider, internalChange, afterCommit);
+        });
+
+        comboBox.focusedProperty().addListener((obs, oldValue, focused) -> {
+            if (!focused) {
+                commitStableSelection(comboBox, masterItems, textProvider, internalChange, afterCommit);
+            }
+        });
+
+        comboBox.getEditor().setOnAction(event -> commitStableSelection(comboBox, masterItems, textProvider, internalChange, afterCommit));
+    }
+
+    private <T> void commitStableSelection(
+            ComboBox<T> comboBox,
+            ObservableList<T> masterItems,
+            Function<T, String> textProvider,
+            boolean[] internalChange,
+            Runnable afterCommit
+    ) {
+        if (comboBox == null || comboBox.getEditor() == null) {
+            return;
+        }
+
+        String editorText = safe(comboBox.getEditor().getText());
+        String normalized = normalizeKey(editorText);
+
+        T selected = comboBox.getValue();
+        if (selected == null || !normalizeKey(textProvider.apply(selected)).equals(normalized)) {
+            selected = masterItems.stream()
+                    .filter(item -> normalizeKey(textProvider.apply(item)).equals(normalized))
+                    .findFirst()
+                    .orElse(null);
+        }
+
+        internalChange[0] = true;
+        try {
+            comboBox.setItems(FXCollections.observableArrayList(masterItems));
+            if (selected != null) {
+                comboBox.getSelectionModel().select(selected);
+                comboBox.setValue(selected);
+                String committedText = safe(textProvider.apply(selected));
+                comboBox.getEditor().setText(committedText);
+                comboBox.getEditor().positionCaret(committedText.length());
+            } else {
+                comboBox.getSelectionModel().clearSelection();
+                comboBox.setValue(null);
+                comboBox.getEditor().setText(editorText);
+                comboBox.getEditor().positionCaret(editorText.length());
+            }
+        } finally {
+            internalChange[0] = false;
+        }
+
+        if (afterCommit != null) {
+            afterCommit.run();
+        }
     }
 
     private Stage getStage() {

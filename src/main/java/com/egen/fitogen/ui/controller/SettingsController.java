@@ -91,6 +91,8 @@ public class SettingsController {
     @FXML private TextField currentCounterField;
     @FXML private Label previewLabel;
     @FXML private Label infoLabel;
+    @FXML private Label syncScopeLabel;
+    @FXML private Button synchronizeCounterButton;
     @FXML private ComboBox<DatabaseProfileInfo> databaseProfileBox;
     @FXML private TextField newDatabaseNameField;
     @FXML private Label databaseFolderLabel;
@@ -1391,6 +1393,7 @@ public class SettingsController {
         currentCounterField.setText(String.valueOf(config.getCurrentCounter()));
 
         loading = false;
+        updateSynchronizationScope(type);
         updatePreview();
     }
 
@@ -1422,6 +1425,20 @@ public class SettingsController {
         } catch (Exception e) {
             e.printStackTrace();
             DialogUtil.showError("Błąd zapisu", "Nie udało się zapisać konfiguracji numeratora.");
+        }
+    }
+
+    private void updateSynchronizationScope(NumberingType type) {
+        String scopeLabel = switch (type == null ? NumberingType.DOCUMENT : type) {
+            case DOCUMENT -> "Dokumenty";
+            case BATCH -> "Partie roślin";
+        };
+
+        if (syncScopeLabel != null) {
+            syncScopeLabel.setText("Synchronizacja licznika dotyczy aktualnie wybranego typu numeracji: " + scopeLabel + ".");
+        }
+        if (synchronizeCounterButton != null) {
+            synchronizeCounterButton.setText("Synchronizuj licznik „" + scopeLabel + "” z bazą");
         }
     }
 
@@ -1467,6 +1484,7 @@ public class SettingsController {
         section3SeparatorField.setText(safe(defaultConfig.getSection3Separator()));
         currentCounterField.setText("0");
         loading = false;
+        updateSynchronizationScope(selectedType);
         updatePreview();
     }
 

@@ -116,10 +116,11 @@
                                 <Label text="Podgląd kolejnego numeru" styleClass="stat-title"/>
                                 <Label fx:id="previewLabel" text="—" styleClass="page-title"/>
                                 <Label fx:id="infoLabel" text="Podgląd pokazuje kolejny numer dla bieżącej konfiguracji." styleClass="page-subtitle" wrapText="true"/>
+                                <Label fx:id="syncScopeLabel" text="Synchronizacja licznika dotyczy aktualnie wybranego typu numeracji: Dokumenty." styleClass="page-subtitle" wrapText="true"/>
                             </VBox>
 
                             <HBox spacing="10" alignment="CENTER_RIGHT">
-                                <Button text="Synchronizuj licznik z bazą" onAction="#synchronizeCounterWithDatabase" styleClass="button-secondary"/>
+                                <Button fx:id="synchronizeCounterButton" text="Synchronizuj licznik „Dokumenty” z bazą" onAction="#synchronizeCounterWithDatabase" styleClass="button-secondary"/>
                                 <Button text="Przywróć domyślne" onAction="#restoreDefaults" styleClass="button-secondary"/>
                                 <Button text="Zapisz konfigurację" onAction="#save"/>
                             </HBox>
