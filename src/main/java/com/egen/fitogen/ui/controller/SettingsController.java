@@ -4,6 +4,7 @@ import com.egen.fitogen.config.AppContext;
 import com.egen.fitogen.config.DatabaseConfig;
 import com.egen.fitogen.domain.NumberingConfig;
 import com.egen.fitogen.dto.ContrahentImportPreviewResult;
+import com.egen.fitogen.dto.EppoDictionaryImportPreviewResult;
 import com.egen.fitogen.dto.CsvImportExecutionResult;
 import com.egen.fitogen.dto.PlantImportPreviewResult;
 import com.egen.fitogen.domain.NumberingSectionType;
@@ -24,6 +25,8 @@ import com.egen.fitogen.service.CountryDirectoryService;
 import com.egen.fitogen.service.DocumentCsvExportService;
 import com.egen.fitogen.service.DocumentCsvImportService;
 import com.egen.fitogen.service.DocumentTypeService;
+import com.egen.fitogen.service.EppoDictionaryCsvExportService;
+import com.egen.fitogen.service.EppoDictionaryCsvImportService;
 import com.egen.fitogen.service.NumberingConfigService;
 import com.egen.fitogen.service.PlantCsvExportService;
 import com.egen.fitogen.service.PlantCsvImportService;
@@ -149,6 +152,11 @@ public class SettingsController {
     @FXML private TextArea documentsCsvPreviewArea;
     @FXML private Button documentsCsvApplyButton;
 
+    @FXML private Label eppoDictionaryCsvColumnsLabel;
+    @FXML private Label eppoDictionaryCsvStatusLabel;
+    @FXML private TextArea eppoDictionaryCsvPreviewArea;
+    @FXML private Button eppoDictionaryCsvApplyButton;
+
     @FXML private Label auditLogStatusLabel;
     @FXML private TextField auditLogSearchField;
     @FXML private Label auditLogSummaryLabel;
@@ -175,6 +183,18 @@ public class SettingsController {
     private final DocumentCsvImportService documentCsvImportService = new DocumentCsvImportService(AppContext.getDocumentService(), AppContext.getContrahentService(), AppContext.getPlantBatchService(), AppContext.getAuditLogService());
     private final DocumentCsvExportService documentCsvExportService = new DocumentCsvExportService(new SqliteDocumentRepository(), new SqliteDocumentItemRepository(), AppContext.getContrahentService(), AppContext.getPlantBatchService());
 
+    private final EppoDictionaryCsvImportService eppoDictionaryCsvImportService = new EppoDictionaryCsvImportService(
+            AppContext.getEppoCodeService(),
+            AppContext.getEppoZoneService(),
+            AppContext.getEppoCodeSpeciesLinkService(),
+            AppContext.getEppoCodeZoneLinkService()
+    );
+    private final EppoDictionaryCsvExportService eppoDictionaryCsvExportService = new EppoDictionaryCsvExportService(
+            AppContext.getEppoCodeService(),
+            AppContext.getEppoCodeSpeciesLinkService(),
+            AppContext.getEppoCodeZoneLinkService()
+    );
+
     private boolean loading;
     private boolean updatingDefaultUserSelection;
     private boolean updatingIssuerCountryFields;
@@ -195,6 +215,9 @@ public class SettingsController {
     private PlantImportPreviewResult lastPlantsCsvPreviewResult;
     private ContrahentImportPreviewResult lastContrahentsCsvPreviewResult;
     private com.egen.fitogen.dto.DocumentImportPreviewResult lastDocumentsCsvPreviewResult;
+
+
+    private EppoDictionaryImportPreviewResult lastEppoDictionaryCsvPreviewResult;
 
 
     public static void requestInitialTab(String tabTitle) {
@@ -2242,6 +2265,11 @@ public class SettingsController {
                     + UiTextUtil.NL
                     + documentCsvExportService.getSupportedColumnsSummary());
         }
+        if (eppoDictionaryCsvColumnsLabel != null) {
+            eppoDictionaryCsvColumnsLabel.setText(eppoDictionaryCsvImportService.getSupportedColumnsSummary()
+                    + UiTextUtil.NL
+                    + eppoDictionaryCsvExportService.getSupportedColumnsSummary());
+        }
         if (plantsCsvStatusLabel != null) {
             plantsCsvStatusLabel.setText(buildCsvInitialStatus("roślin"));
         }
@@ -2251,12 +2279,17 @@ public class SettingsController {
         if (documentsCsvStatusLabel != null) {
             documentsCsvStatusLabel.setText(buildCsvInitialStatus("dokumentów"));
         }
+        if (eppoDictionaryCsvStatusLabel != null) {
+            eppoDictionaryCsvStatusLabel.setText(buildCsvInitialStatus("słowników EPPO"));
+        }
         clearPlantsCsvPreviewState();
         clearContrahentsCsvPreviewState();
         clearDocumentsCsvPreviewState();
+        clearEppoDictionaryCsvPreviewState();
         resetPlantsCsvPreview();
         resetContrahentsCsvPreview();
         resetDocumentsCsvPreview();
+        resetEppoDictionaryCsvPreview();
     }
 
     @FXML
@@ -2481,6 +2514,84 @@ public class SettingsController {
 
 
     @FXML
+    private void previewEppoDictionaryCsvImport() {
+        Path selectedPath = chooseCsvToOpen("Wybierz plik CSV słowników EPPO");
+        if (selectedPath == null) {
+            return;
+        }
+
+        try {
+            EppoDictionaryImportPreviewResult result = eppoDictionaryCsvImportService.preview(selectedPath);
+            lastEppoDictionaryCsvPreviewResult = result;
+            updateEppoDictionaryCsvApplyButtonState();
+            eppoDictionaryCsvStatusLabel.setText(buildEppoDictionaryPreviewStatus(result));
+            eppoDictionaryCsvPreviewArea.setText(buildEppoDictionaryPreviewText(result));
+        } catch (Exception e) {
+            e.printStackTrace();
+            clearEppoDictionaryCsvPreviewState();
+            eppoDictionaryCsvStatusLabel.setText(buildCsvPreviewErrorStatus("słowników EPPO"));
+            DialogUtil.showError(buildCsvPreviewDialogTitle("słowników EPPO"), buildCsvPreviewErrorMessage("słowników EPPO"));
+        }
+    }
+
+    @FXML
+    private void applyEppoDictionaryCsvImport() {
+        if (lastEppoDictionaryCsvPreviewResult == null) {
+            DialogUtil.showWarning("Import CSV słowników EPPO", "Najpierw przygotuj podgląd importu słowników EPPO.");
+            return;
+        }
+        if (lastEppoDictionaryCsvPreviewResult.getImportableRowsCount() <= 0) {
+            DialogUtil.showWarning("Import CSV słowników EPPO", "Brak nowych lub aktualizowanych relacji EPPO do importu w ostatnim podglądzie.");
+            updateEppoDictionaryCsvApplyButtonState();
+            return;
+        }
+        if (!DialogUtil.confirmAction(
+                "Import CSV słowników EPPO",
+                "zaimportować do bazy",
+                buildCsvImportConfirmationTarget("słowników EPPO",
+                        lastEppoDictionaryCsvPreviewResult.getSourceName(),
+                        lastEppoDictionaryCsvPreviewResult.getImportableRowsCount(),
+                        lastEppoDictionaryCsvPreviewResult.getMatchingExistingCount(),
+                        lastEppoDictionaryCsvPreviewResult.getInvalidRowsCount() + lastEppoDictionaryCsvPreviewResult.getDuplicateInFileCount())
+        )) {
+            return;
+        }
+
+        try {
+            CsvImportExecutionResult executionResult = eppoDictionaryCsvImportService.applyPreview(lastEppoDictionaryCsvPreviewResult);
+            auditLogService.log("EppoDictionaryCsvImport", null, "IMPORT", buildCsvImportAuditDescription("słowników EPPO", executionResult));
+            eppoDictionaryCsvStatusLabel.setText(buildCsvImportExecutionStatus("słowników EPPO", executionResult));
+            eppoDictionaryCsvPreviewArea.setText(buildCsvImportExecutionText("CSV słowników EPPO", executionResult, buildEppoDictionaryPreviewText(lastEppoDictionaryCsvPreviewResult)));
+            clearEppoDictionaryCsvPreviewState();
+            refreshAuditLog();
+            DialogUtil.showSuccess(buildCsvImportSuccessDialogMessage("Słowniki EPPO", executionResult));
+        } catch (Exception e) {
+            e.printStackTrace();
+            eppoDictionaryCsvStatusLabel.setText(buildCsvImportErrorStatus("słowników EPPO"));
+            DialogUtil.showError("Import CSV słowników EPPO", "Nie udało się wykonać importu słowników EPPO do bazy.");
+        }
+    }
+
+    @FXML
+    private void exportEppoDictionaryCsv() {
+        Path selectedPath = chooseCsvToSave("Eksportuj słowniki EPPO do CSV", "slowniki-eppo-eksport.csv");
+        if (selectedPath == null) {
+            return;
+        }
+
+        try {
+            Path exported = eppoDictionaryCsvExportService.export(selectedPath);
+            eppoDictionaryCsvStatusLabel.setText(buildCsvExportSuccessStatus("słowników EPPO", exported));
+            DialogUtil.showSuccess(buildCsvExportSuccessDialogMessage("Słowniki EPPO", exported));
+        } catch (Exception e) {
+            e.printStackTrace();
+            eppoDictionaryCsvStatusLabel.setText(buildCsvExportErrorStatus("słowników EPPO"));
+            DialogUtil.showError(buildCsvExportDialogTitle("słowników EPPO"), buildCsvExportErrorMessage("słowników EPPO"));
+        }
+    }
+
+
+    @FXML
     private void clearPlantsCsvPreview() {
         clearPlantsCsvPreviewState();
         resetPlantsCsvPreview();
@@ -2507,6 +2618,15 @@ public class SettingsController {
         }
     }
 
+    @FXML
+    private void clearEppoDictionaryCsvPreview() {
+        clearEppoDictionaryCsvPreviewState();
+        resetEppoDictionaryCsvPreview();
+        if (eppoDictionaryCsvStatusLabel != null) {
+            eppoDictionaryCsvStatusLabel.setText(buildCsvPreviewClearedStatus("słowników EPPO"));
+        }
+    }
+
     private void clearPlantsCsvPreviewState() {
         lastPlantsCsvPreviewResult = null;
         updatePlantsCsvApplyButtonState();
@@ -2520,6 +2640,11 @@ public class SettingsController {
     private void clearDocumentsCsvPreviewState() {
         lastDocumentsCsvPreviewResult = null;
         updateDocumentsCsvApplyButtonState();
+    }
+
+    private void clearEppoDictionaryCsvPreviewState() {
+        lastEppoDictionaryCsvPreviewResult = null;
+        updateEppoDictionaryCsvApplyButtonState();
     }
 
     private void updatePlantsCsvApplyButtonState() {
@@ -2537,6 +2662,12 @@ public class SettingsController {
     private void updateDocumentsCsvApplyButtonState() {
         if (documentsCsvApplyButton != null) {
             documentsCsvApplyButton.setDisable(lastDocumentsCsvPreviewResult == null || lastDocumentsCsvPreviewResult.getDocumentCount() <= 0);
+        }
+    }
+
+    private void updateEppoDictionaryCsvApplyButtonState() {
+        if (eppoDictionaryCsvApplyButton != null) {
+            eppoDictionaryCsvApplyButton.setDisable(lastEppoDictionaryCsvPreviewResult == null || lastEppoDictionaryCsvPreviewResult.getImportableRowsCount() <= 0);
         }
     }
 
@@ -2735,6 +2866,117 @@ public class SettingsController {
                     "Po uruchomieniu analizy zobaczysz tutaj podsumowanie pliku, nagłówki oraz próbkę wierszy dokumentów i pozycji."
             ));
         }
+    }
+
+    private void resetEppoDictionaryCsvPreview() {
+        if (eppoDictionaryCsvPreviewArea != null) {
+            eppoDictionaryCsvPreviewArea.setText(UiTextUtil.buildEmptyPreviewText(
+                    "CSV słowników EPPO",
+                    "Po uruchomieniu analizy zobaczysz tutaj podsumowanie pliku, nagłówki oraz próbkę relacji kod EPPO → gatunek i kod EPPO → strefa."
+            ));
+        }
+    }
+
+    private String buildEppoDictionaryPreviewStatus(EppoDictionaryImportPreviewResult result) {
+        return "Podgląd importu słowników EPPO gotowy: nowych relacji " + result.getNewRowsCount()
+                + ", aktualizacji " + result.getUpdateRowsCount()
+                + ", istniejących " + result.getMatchingExistingCount()
+                + ", duplikatów " + result.getDuplicateInFileCount()
+                + ", błędnych " + result.getInvalidRowsCount() + ".";
+    }
+
+    private String buildEppoDictionaryPreviewText(EppoDictionaryImportPreviewResult result) {
+        StringBuilder builder = new StringBuilder();
+        appendPreviewFileSummary(builder,
+                result.getSourceName(),
+                result.getDelimiter(),
+                result.getResolvedHeaders(),
+                List.of(
+                        new PreviewSummaryRow("Łącznie wierszy", result.getTotalRowsCount()),
+                        new PreviewSummaryRow("Nowe relacje", result.getNewRowsCount()),
+                        new PreviewSummaryRow("Relacje do aktualizacji", result.getUpdateRowsCount()),
+                        new PreviewSummaryRow("Relacje istniejące", result.getMatchingExistingCount()),
+                        new PreviewSummaryRow("Duplikaty w pliku", result.getDuplicateInFileCount()),
+                        new PreviewSummaryRow("Błędne wiersze", result.getInvalidRowsCount())
+                ));
+
+        UiTextUtil.appendSectionHeader(builder, "OCENA WALIDACJI");
+        UiTextUtil.appendSummaryLine(builder, "Gotowość importu", buildEppoDictionaryImportReadiness(result));
+        UiTextUtil.appendSummaryLine(builder, "Rekomendacja", buildEppoDictionaryImportRecommendation(result));
+        UiTextUtil.appendEmptyLine(builder);
+
+        UiTextUtil.appendSectionHeader(builder, "PRÓBKA WIERSZY");
+        int previewLimit = Math.min(result.getRows().size(), 12);
+        for (int i = 0; i < previewLimit; i++) {
+            var row = result.getRows().get(i);
+            builder.append("#").append(row.getRowNumber())
+                    .append(" [").append(safe(row.getStatus())).append("] ")
+                    .append(safe(row.getRelationType()))
+                    .append(" | EPPO: ").append(safe(row.getEppoCode()));
+            if ("SPECIES".equalsIgnoreCase(safe(row.getRelationType()))) {
+                if (!safe(row.getSpeciesName()).isBlank()) {
+                    builder.append(" | gatunek: ").append(safe(row.getSpeciesName()));
+                }
+                if (!safe(row.getLatinSpeciesName()).isBlank()) {
+                    builder.append(" | nazwa łacińska: ").append(safe(row.getLatinSpeciesName()));
+                }
+            } else if ("ZONE".equalsIgnoreCase(safe(row.getRelationType()))) {
+                builder.append(" | strefa: ").append(safe(row.getZoneCode()));
+                if (!safe(row.getZoneName()).isBlank()) {
+                    builder.append(" (").append(safe(row.getZoneName())).append(")");
+                }
+                if (!safe(row.getCountryCode()).isBlank()) {
+                    builder.append(" | kraj: ").append(safe(row.getCountryCode()));
+                }
+            }
+            builder.append(" | paszport: ").append(row.isPassportRequired() ? "tak" : "nie");
+            if (!safe(row.getCodeStatus()).isBlank()) {
+                builder.append(" | status kodu: ").append(safe(row.getCodeStatus()));
+            }
+            if (!safe(row.getZoneStatus()).isBlank()) {
+                builder.append(" | status strefy: ").append(safe(row.getZoneStatus()));
+            }
+            if (!safe(row.getMessage()).isBlank()) {
+                builder.append(" | uwaga: ").append(safe(row.getMessage()));
+            }
+            builder.append(UiTextUtil.NL);
+        }
+
+        UiTextUtil.appendPreviewLimitNote(builder, previewLimit, result.getRows().size());
+        List<String> problemRows = new ArrayList<>();
+        for (var row : result.getRows()) {
+            if (row.getMessage() != null && !row.getMessage().isBlank()) {
+                problemRows.add("#" + row.getRowNumber() + " [" + row.getStatus() + "] " + row.getMessage());
+            }
+            if (problemRows.size() >= 6) {
+                break;
+            }
+        }
+        UiTextUtil.appendIssuesSection(builder, "NAJWAŻNIEJSZE UWAGI", problemRows);
+        return builder.toString();
+    }
+
+    private String buildEppoDictionaryImportReadiness(EppoDictionaryImportPreviewResult result) {
+        if (result.getInvalidRowsCount() > 0) {
+            return "Wymaga korekty pliku";
+        }
+        if (result.getImportableRowsCount() > 0) {
+            return "Gotowe do importu";
+        }
+        if (result.getMatchingExistingCount() > 0 && result.getImportableRowsCount() == 0) {
+            return "Brak zmian do wykonania";
+        }
+        return "Brak danych do importu";
+    }
+
+    private String buildEppoDictionaryImportRecommendation(EppoDictionaryImportPreviewResult result) {
+        if (result.getInvalidRowsCount() > 0) {
+            return "Popraw błędne wiersze przed importem słowników EPPO.";
+        }
+        if (result.getImportableRowsCount() > 0) {
+            return "Możesz bezpiecznie wykonać import relacji kod EPPO → gatunek i kod EPPO → strefa.";
+        }
+        return "Nie ma nowych ani aktualizowanych relacji do zapisania w bazie.";
     }
 
     private String buildPlantsPreviewText(com.egen.fitogen.dto.PlantImportPreviewResult result) {

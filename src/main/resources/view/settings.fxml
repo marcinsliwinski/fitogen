@@ -280,6 +280,23 @@
                                 </HBox>
                                 <TextArea fx:id="documentsCsvPreviewArea" editable="false" wrapText="true" prefRowCount="12"/>
                             </VBox>
+
+
+                            <Separator/>
+
+                            <VBox spacing="12" styleClass="stat-card">
+                                <Label text="Słowniki EPPO CSV" styleClass="stat-title"/>
+                                <Label text="Jeden lokalny plik CSV dla relacji kod EPPO → gatunek oraz kod EPPO → strefa (kraj). System dopasowuje rośliny po gatunku, więc osobne relacje kod → roślina nie są tu potrzebne." wrapText="true" styleClass="page-subtitle"/>
+                                <Label fx:id="eppoDictionaryCsvColumnsLabel" wrapText="true" styleClass="page-subtitle"/>
+                                <Label fx:id="eppoDictionaryCsvStatusLabel" wrapText="true" styleClass="page-subtitle"/>
+                                <HBox spacing="10">
+                                    <Button text="Podgląd importu CSV EPPO" onAction="#previewEppoDictionaryCsvImport"/>
+                                    <Button fx:id="eppoDictionaryCsvApplyButton" text="Importuj do bazy" onAction="#applyEppoDictionaryCsvImport" disable="true"/>
+                                    <Button text="Eksport CSV EPPO" onAction="#exportEppoDictionaryCsv" styleClass="button-secondary"/>
+                                    <Button text="Wyczyść podgląd" onAction="#clearEppoDictionaryCsvPreview" styleClass="button-secondary"/>
+                                </HBox>
+                                <TextArea fx:id="eppoDictionaryCsvPreviewArea" editable="false" wrapText="true" prefRowCount="12"/>
+                            </VBox>
                         </VBox>
                     </content>
                 </ScrollPane>
