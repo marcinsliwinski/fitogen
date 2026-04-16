@@ -34,11 +34,9 @@
         <GridPane hgap="12" vgap="12">
             <columnConstraints>
                 <ColumnConstraints minWidth="170" prefWidth="190"/>
-                <ColumnConstraints hgrow="ALWAYS" minWidth="210" prefWidth="260"/>
-                <ColumnConstraints minWidth="130" prefWidth="150"/>
-                <ColumnConstraints hgrow="ALWAYS" minWidth="180" prefWidth="240"/>
+                <ColumnConstraints hgrow="ALWAYS" minWidth="260" prefWidth="340"/>
                 <ColumnConstraints minWidth="170" prefWidth="190"/>
-                <ColumnConstraints hgrow="ALWAYS" minWidth="170" prefWidth="220"/>
+                <ColumnConstraints hgrow="ALWAYS" minWidth="240" prefWidth="320"/>
             </columnConstraints>
 
             <Label text="Roślina:" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
@@ -47,7 +45,7 @@
                       maxWidth="1.7976931348623157E308"
                       GridPane.rowIndex="0"
                       GridPane.columnIndex="1"
-                      GridPane.columnSpan="5"/>
+                      GridPane.columnSpan="3"/>
 
             <Label text="Źródło pochodzenia:" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
             <ComboBox fx:id="sourceOriginComboBox"
@@ -60,8 +58,7 @@
             <CheckBox fx:id="internalSourceCheckBox"
                       text="Tak, partia pochodzi z własnej szkółki"
                       GridPane.rowIndex="1"
-                      GridPane.columnIndex="3"
-                      GridPane.columnSpan="3"/>
+                      GridPane.columnIndex="3"/>
 
             <Label text="Nr partii wewnętrzny:" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
             <TextField fx:id="interiorBatchNoField"
@@ -91,11 +88,11 @@
                        GridPane.rowIndex="3"
                        GridPane.columnIndex="3"/>
 
-            <Label text="Data utworzenia:" GridPane.rowIndex="3" GridPane.columnIndex="4"/>
+            <Label text="Data utworzenia:" GridPane.rowIndex="4" GridPane.columnIndex="0"/>
             <DatePicker fx:id="creationDatePicker"
                         maxWidth="1.7976931348623157E308"
-                        GridPane.rowIndex="3"
-                        GridPane.columnIndex="5"/>
+                        GridPane.rowIndex="4"
+                        GridPane.columnIndex="1"/>
         </GridPane>
     </VBox>
 

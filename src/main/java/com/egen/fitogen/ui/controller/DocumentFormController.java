@@ -55,6 +55,7 @@ import javafx.scene.control.ButtonBar;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
+import javafx.scene.control.ContentDisplay;
 import javafx.scene.control.DatePicker;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.TableCell;
@@ -314,7 +315,7 @@ public class DocumentFormController {
 
     private void configureTable() {
         itemsTable.setItems(rows);
-        itemsTable.setEditable(false);
+        itemsTable.setEditable(true);
 
         colLp.setCellValueFactory(cell -> new SimpleIntegerProperty(rows.indexOf(cell.getValue()) + 1));
         colPlant.setCellValueFactory(cell -> new SimpleObjectProperty<>(cell.getValue()));
@@ -463,8 +464,8 @@ public class DocumentFormController {
         try {
             javafx.scene.Scene scene = new javafx.scene.Scene(
                     loader.load(),
-                    WindowSizingUtil.resolveInitialWidth(1080),
-                    WindowSizingUtil.resolveInitialHeight(860)
+                    WindowSizingUtil.resolveInitialWidth(1220),
+                    WindowSizingUtil.resolveInitialHeight(980)
             );
             java.net.URL stylesheetUrl = getClass().getResource("/styles/app.css");
             if (stylesheetUrl != null) {
@@ -475,7 +476,7 @@ public class DocumentFormController {
             stage.setTitle("Dodaj partię roślin");
             stage.setScene(scene);
             stage.initModality(javafx.stage.Modality.APPLICATION_MODAL);
-            WindowSizingUtil.applyStageSize(stage, 1120, 900, 1020, 820);
+            WindowSizingUtil.applyStageSize(stage, 1220, 980, 1080, 860);
 
             PlantBatchFormController controller = loader.getController();
             controller.setPreselectedPlant(row.getPlant());
@@ -841,6 +842,9 @@ public class DocumentFormController {
     }
 
     private DocumentDTO buildDocumentDto() {
+        commitHeaderSelections();
+        commitPendingRowEditors();
+
         DocumentType selectedType = resolveSelectedDocumentType();
         if (selectedType == null) {
             throw new IllegalArgumentException("Wybierz typ dokumentu.");
@@ -992,6 +996,40 @@ public class DocumentFormController {
         return baseName.replaceAll("[\\/:*?\"<>|]", "_") + ".pdf";
     }
 
+    private void commitHeaderSelections() {
+        commitHeaderSelection(documentTypeBox, allDocumentTypes, this::formatDocumentType);
+        commitHeaderSelection(createdByBox, allUsers, user -> user == null ? "" : safe(user.getDisplayName()));
+        commitHeaderSelection(contrahentBox, allContrahents, contrahent -> contrahent == null ? "" : safe(contrahent.getName()));
+    }
+
+    private void commitPendingRowEditors() {
+        if (itemsTable == null) {
+            return;
+        }
+        itemsTable.edit(-1, null);
+        itemsTable.requestFocus();
+        itemsTable.refresh();
+    }
+
+    private <T> void commitHeaderSelection(ComboBox<T> comboBox, List<T> sourceValues, Function<T, String> textProvider) {
+        if (comboBox == null || comboBox.getEditor() == null || textProvider == null) {
+            return;
+        }
+
+        T selected = comboBox.getValue();
+        if (selected == null) {
+            selected = findBestSelectionMatch(sourceValues, comboBox.getEditor().getText(), textProvider);
+        }
+
+        restoreComboItems(comboBox, sourceValues);
+        if (selected != null) {
+            comboBox.getSelectionModel().select(selected);
+            comboBox.setValue(selected);
+            comboBox.getEditor().setText(safe(textProvider.apply(selected)));
+            comboBox.getEditor().positionCaret(comboBox.getEditor().getText().length());
+        }
+    }
+
     private DocumentType resolveSelectedDocumentType() {
         if (documentTypeBox == null) {
             return null;
@@ -1000,24 +1038,9 @@ public class DocumentFormController {
         if (selected != null) {
             return selected;
         }
-        String editorText = documentTypeBox.getEditor() == null ? "" : safe(documentTypeBox.getEditor().getText());
-        if (editorText.isBlank()) {
-            return null;
-        }
-        for (DocumentType type : allDocumentTypes) {
-            if (type == null) {
-                continue;
-            }
-            String formatted = safe(formatDocumentType(type));
-            String name = safe(type.getName());
-            String code = safe(type.getCode());
-            if (editorText.equalsIgnoreCase(formatted)
-                    || editorText.equalsIgnoreCase(name)
-                    || (!code.isBlank() && editorText.equalsIgnoreCase(code))) {
-                return type;
-            }
-        }
-        return null;
+        return findBestSelectionMatch(allDocumentTypes,
+                documentTypeBox.getEditor() == null ? "" : documentTypeBox.getEditor().getText(),
+                this::formatDocumentType);
     }
 
     private AppUser resolveSelectedUser() {
@@ -1028,16 +1051,9 @@ public class DocumentFormController {
         if (selected != null) {
             return selected;
         }
-        String editorText = createdByBox.getEditor() == null ? "" : safe(createdByBox.getEditor().getText());
-        if (editorText.isBlank()) {
-            return null;
-        }
-        for (AppUser user : allUsers) {
-            if (user != null && editorText.equalsIgnoreCase(safe(user.getDisplayName()))) {
-                return user;
-            }
-        }
-        return null;
+        return findBestSelectionMatch(allUsers,
+                createdByBox.getEditor() == null ? "" : createdByBox.getEditor().getText(),
+                user -> user == null ? "" : safe(user.getDisplayName()));
     }
 
     private Contrahent resolveSelectedContrahent() {
@@ -1048,16 +1064,9 @@ public class DocumentFormController {
         if (selected != null) {
             return selected;
         }
-        String editorText = contrahentBox.getEditor() == null ? "" : safe(contrahentBox.getEditor().getText());
-        if (editorText.isBlank()) {
-            return null;
-        }
-        for (Contrahent contrahent : allContrahents) {
-            if (contrahent != null && editorText.equalsIgnoreCase(safe(contrahent.getName()))) {
-                return contrahent;
-            }
-        }
-        return null;
+        return findBestSelectionMatch(allContrahents,
+                contrahentBox.getEditor() == null ? "" : contrahentBox.getEditor().getText(),
+                contrahent -> contrahent == null ? "" : safe(contrahent.getName()));
     }
 
     private String normalizeKey(String value) {
@@ -1078,12 +1087,22 @@ public class DocumentFormController {
         }
 
         ObservableList<T> masterItems = FXCollections.observableArrayList(sourceValues == null ? List.of() : sourceValues);
-        FilteredList<T> filteredItems = new FilteredList<>(masterItems, item -> true);
         final boolean[] internalChange = {false};
 
         comboBox.setEditable(true);
         comboBox.setItems(FXCollections.observableArrayList(masterItems));
         comboBox.setMaxWidth(Double.MAX_VALUE);
+        comboBox.setConverter(new javafx.util.StringConverter<>() {
+            @Override
+            public String toString(T object) {
+                return object == null ? "" : safe(textProvider.apply(object));
+            }
+
+            @Override
+            public T fromString(String string) {
+                return findBestSelectionMatch(masterItems, string, textProvider);
+            }
+        });
 
         if (comboBox.getEditor() == null) {
             return;
@@ -1093,27 +1112,33 @@ public class DocumentFormController {
             if (internalChange[0]) {
                 return;
             }
-
             if (!comboBox.isFocused() && !comboBox.getEditor().isFocused()) {
                 return;
             }
 
             String typedText = safe(newValue);
-            String normalized = normalizeKey(typedText);
-            filteredItems.setPredicate(item -> normalized.isBlank() || normalizeKey(textProvider.apply(item)).contains(normalized));
+            int caretPosition = comboBox.getEditor().getCaretPosition();
+            String normalizedTypedText = normalizeKey(typedText);
+            List<T> filteredItems = masterItems.stream()
+                    .filter(item -> normalizedTypedText.isBlank() || normalizeKey(textProvider.apply(item)).contains(normalizedTypedText))
+                    .toList();
 
             internalChange[0] = true;
             try {
                 comboBox.setItems(FXCollections.observableArrayList(filteredItems));
-                if (!comboBox.isShowing()) {
+                if (!filteredItems.isEmpty() && !comboBox.isShowing()) {
                     comboBox.show();
                 }
-                comboBox.getEditor().setText(typedText);
-                comboBox.getEditor().positionCaret(Math.min(typedText.length(), comboBox.getEditor().getLength()));
+                if (!Objects.equals(comboBox.getEditor().getText(), typedText)) {
+                    comboBox.getEditor().setText(typedText);
+                }
+                comboBox.getEditor().positionCaret(Math.min(caretPosition, comboBox.getEditor().getLength()));
             } finally {
                 internalChange[0] = false;
             }
         });
+
+        comboBox.setOnMouseClicked(event -> restoreComboItems(comboBox, masterItems));
 
         comboBox.setOnAction(event -> {
             if (internalChange[0]) {
@@ -1123,7 +1148,15 @@ public class DocumentFormController {
         });
 
         comboBox.focusedProperty().addListener((obs, oldValue, focused) -> {
-            if (!focused) {
+            if (focused) {
+                restoreComboItems(comboBox, masterItems);
+                return;
+            }
+            commitStableSelection(comboBox, masterItems, textProvider, internalChange, afterCommit);
+        });
+
+        comboBox.getEditor().focusedProperty().addListener((obs, oldValue, focused) -> {
+            if (!focused && !comboBox.isFocused()) {
                 commitStableSelection(comboBox, masterItems, textProvider, internalChange, afterCommit);
             }
         });
@@ -1143,25 +1176,24 @@ public class DocumentFormController {
         }
 
         String editorText = safe(comboBox.getEditor().getText());
-        String normalized = normalizeKey(editorText);
-
-        T selected = comboBox.getValue();
-        if (selected == null || !normalizeKey(textProvider.apply(selected)).equals(normalized)) {
-            selected = masterItems.stream()
-                    .filter(item -> normalizeKey(textProvider.apply(item)).equals(normalized))
-                    .findFirst()
-                    .orElse(null);
+        T selected = comboBox.getSelectionModel().getSelectedItem();
+        if (selected == null || !normalizeKey(textProvider.apply(selected)).equals(normalizeKey(editorText))) {
+            selected = findBestSelectionMatch(masterItems, editorText, textProvider);
         }
 
         internalChange[0] = true;
         try {
-            comboBox.setItems(FXCollections.observableArrayList(masterItems));
+            restoreComboItems(comboBox, masterItems);
             if (selected != null) {
                 comboBox.getSelectionModel().select(selected);
                 comboBox.setValue(selected);
                 String committedText = safe(textProvider.apply(selected));
                 comboBox.getEditor().setText(committedText);
                 comboBox.getEditor().positionCaret(committedText.length());
+            } else if (editorText.isBlank()) {
+                comboBox.getSelectionModel().clearSelection();
+                comboBox.setValue(null);
+                comboBox.getEditor().clear();
             } else {
                 comboBox.getSelectionModel().clearSelection();
                 comboBox.setValue(null);
@@ -1177,7 +1209,53 @@ public class DocumentFormController {
         }
     }
 
+    private <T> void restoreComboItems(ComboBox<T> comboBox, List<T> sourceValues) {
+        if (comboBox == null) {
+            return;
+        }
+        comboBox.setItems(FXCollections.observableArrayList(sourceValues == null ? List.of() : sourceValues));
+    }
+
+    private <T> T findBestSelectionMatch(List<T> sourceValues, String editorText, Function<T, String> textProvider) {
+        if (sourceValues == null || textProvider == null) {
+            return null;
+        }
+
+        String normalized = normalizeKey(editorText);
+        if (normalized.isBlank()) {
+            return null;
+        }
+
+        T exactMatch = sourceValues.stream()
+                .filter(Objects::nonNull)
+                .filter(item -> normalizeKey(textProvider.apply(item)).equals(normalized))
+                .findFirst()
+                .orElse(null);
+        if (exactMatch != null) {
+            return exactMatch;
+        }
+
+        List<T> prefixMatches = sourceValues.stream()
+                .filter(Objects::nonNull)
+                .filter(item -> normalizeKey(textProvider.apply(item)).startsWith(normalized))
+                .toList();
+        if (prefixMatches.size() == 1) {
+            return prefixMatches.get(0);
+        }
+
+        List<T> containsMatches = sourceValues.stream()
+                .filter(Objects::nonNull)
+                .filter(item -> normalizeKey(textProvider.apply(item)).contains(normalized))
+                .toList();
+        if (containsMatches.size() == 1) {
+            return containsMatches.get(0);
+        }
+
+        return null;
+    }
+
     private Stage getStage() {
+
         if (saveButton != null && saveButton.getScene() != null) {
             return (Stage) saveButton.getScene().getWindow();
         }
@@ -1376,6 +1454,7 @@ public class DocumentFormController {
         private boolean syncingSelection;
 
         PlantEditingCell() {
+            setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
             plantBox.setEditable(true);
             plantBox.setMaxWidth(Double.MAX_VALUE);
             HBox.setHgrow(plantBox, Priority.ALWAYS);
@@ -1410,18 +1489,24 @@ public class DocumentFormController {
             });
             if (plantBox.getEditor() != null) {
                 plantBox.getEditor().textProperty().addListener((obs, oldVal, newVal) -> {
-                    if (syncingEditor || !plantBox.isFocused()) {
+                    if (syncingEditor || (!plantBox.isFocused() && (plantBox.getEditor() == null || !plantBox.getEditor().isFocused()))) {
                         return;
                     }
                     filterPlantOptions(newVal);
                 });
                 plantBox.getEditor().setOnAction(event -> commitPlantEditorSelection());
+                plantBox.getEditor().focusedProperty().addListener((obs, oldVal, focused) -> {
+                    if (!focused && !plantBox.isFocused()) {
+                        commitPlantEditorSelection();
+                    }
+                });
                 plantBox.focusedProperty().addListener((obs, oldVal, focused) -> {
                     if (!focused) {
                         commitPlantEditorSelection();
                     }
                 });
             }
+            plantBox.setOnAction(event -> commitPlantEditorSelection());
             plantBox.valueProperty().addListener((obs, oldVal, newVal) -> {
                 if (syncingSelection) {
                     return;
@@ -1478,7 +1563,7 @@ public class DocumentFormController {
             } finally {
                 syncingSelection = false;
             }
-            if (!plantBox.isShowing()) {
+            if (!plantBox.isShowing() && !plantBox.isDisabled()) {
                 plantBox.show();
             }
         }
@@ -1488,11 +1573,31 @@ public class DocumentFormController {
             if (normalized.isBlank()) {
                 return null;
             }
-            for (Plant plant : plantOptions) {
-                if (plant != null && plant.toString().toLowerCase().equals(normalized)) {
-                    return plant;
-                }
+
+            java.util.List<Plant> exactMatches = plantOptions.stream()
+                    .filter(Objects::nonNull)
+                    .filter(plant -> plant.toString().toLowerCase().equals(normalized))
+                    .toList();
+            if (!exactMatches.isEmpty()) {
+                return exactMatches.get(0);
             }
+
+            java.util.List<Plant> prefixMatches = plantOptions.stream()
+                    .filter(Objects::nonNull)
+                    .filter(plant -> plant.toString().toLowerCase().startsWith(normalized))
+                    .toList();
+            if (prefixMatches.size() == 1) {
+                return prefixMatches.get(0);
+            }
+
+            java.util.List<Plant> containsMatches = plantOptions.stream()
+                    .filter(Objects::nonNull)
+                    .filter(plant -> plant.toString().toLowerCase().contains(normalized))
+                    .toList();
+            if (containsMatches.size() == 1) {
+                return containsMatches.get(0);
+            }
+
             return null;
         }
 
@@ -1535,7 +1640,7 @@ public class DocumentFormController {
                     }
                 } else if (plantBox.getEditor() != null) {
                     syncingEditor = true;
-                    plantBox.getEditor().setText(plantBox.getValue() == null ? "" : plantBox.getValue().toString());
+                    plantBox.getEditor().setText(currentPlant == null ? "" : currentPlant.toString());
                     syncingEditor = false;
                 }
             } finally {
@@ -1585,6 +1690,7 @@ public class DocumentFormController {
         private boolean syncingSelection;
 
         BatchEditingCell() {
+            setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
             batchBox.setEditable(true);
             batchBox.setMaxWidth(Double.MAX_VALUE);
             HBox.setHgrow(batchBox, Priority.ALWAYS);
@@ -1624,12 +1730,17 @@ public class DocumentFormController {
             });
             if (batchBox.getEditor() != null) {
                 batchBox.getEditor().textProperty().addListener((obs, oldVal, newVal) -> {
-                    if (syncingEditor || !batchBox.isFocused()) {
+                    if (syncingEditor || (!batchBox.isFocused() && (batchBox.getEditor() == null || !batchBox.getEditor().isFocused()))) {
                         return;
                     }
                     filterBatchOptions(newVal);
                 });
                 batchBox.getEditor().setOnAction(event -> commitBatchEditorSelection());
+                batchBox.getEditor().focusedProperty().addListener((obs, oldVal, focused) -> {
+                    if (!focused && !batchBox.isFocused()) {
+                        commitBatchEditorSelection();
+                    }
+                });
                 batchBox.focusedProperty().addListener((obs, oldVal, focused) -> {
                     if (!focused) {
                         commitBatchEditorSelection();
@@ -1704,15 +1815,37 @@ public class DocumentFormController {
             if (normalized.isBlank()) {
                 return null;
             }
-            for (PlantBatch batch : batchOptions) {
-                if (batch == null || isAddBatchOption(batch)) {
-                    continue;
-                }
-                if (formatBatchNumber(batch).toLowerCase().equals(normalized)
-                        || formatBatchChoice(batch).toLowerCase().equals(normalized)) {
-                    return batch;
-                }
+
+            java.util.List<PlantBatch> exactMatches = batchOptions.stream()
+                    .filter(Objects::nonNull)
+                    .filter(batch -> !isAddBatchOption(batch))
+                    .filter(batch -> formatBatchNumber(batch).toLowerCase().equals(normalized)
+                            || formatBatchChoice(batch).toLowerCase().equals(normalized))
+                    .toList();
+            if (!exactMatches.isEmpty()) {
+                return exactMatches.get(0);
             }
+
+            java.util.List<PlantBatch> prefixMatches = batchOptions.stream()
+                    .filter(Objects::nonNull)
+                    .filter(batch -> !isAddBatchOption(batch))
+                    .filter(batch -> formatBatchNumber(batch).toLowerCase().startsWith(normalized)
+                            || formatBatchChoice(batch).toLowerCase().startsWith(normalized))
+                    .toList();
+            if (prefixMatches.size() == 1) {
+                return prefixMatches.get(0);
+            }
+
+            java.util.List<PlantBatch> containsMatches = batchOptions.stream()
+                    .filter(Objects::nonNull)
+                    .filter(batch -> !isAddBatchOption(batch))
+                    .filter(batch -> formatBatchNumber(batch).toLowerCase().contains(normalized)
+                            || formatBatchChoice(batch).toLowerCase().contains(normalized))
+                    .toList();
+            if (containsMatches.size() == 1) {
+                return containsMatches.get(0);
+            }
+
             return null;
         }
 
@@ -1789,6 +1922,7 @@ public class DocumentFormController {
         private boolean syncingText;
 
         QtyEditingCell() {
+            setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
             qtyField.setTextFormatter(qtyFormatter);
             qtyField.setOnAction(event -> commitQtyValue());
             qtyField.focusedProperty().addListener((obs, oldVal, focused) -> {
@@ -1855,6 +1989,7 @@ public class DocumentFormController {
         private boolean syncingState;
 
         PassportEditingCell() {
+            setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
             warningLabel.getStyleClass().add("eppo-warning-indicator");
             warningLabel.setManaged(false);
             warningLabel.setVisible(false);
@@ -1909,6 +2044,7 @@ public class DocumentFormController {
         private final Button deleteButton = new Button("🗑");
 
         ActionsCell() {
+            setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
             deleteButton.getStyleClass().add("button-danger");
             deleteButton.setOnAction(event -> {
                 DocumentItemRow row = getCurrentRow();
