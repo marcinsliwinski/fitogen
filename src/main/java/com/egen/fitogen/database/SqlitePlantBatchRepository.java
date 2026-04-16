@@ -7,6 +7,7 @@ import com.egen.fitogen.repository.PlantBatchRepository;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.Statement;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -110,10 +111,11 @@ public class SqlitePlantBatchRepository
 
         Connection conn = null;
         PreparedStatement stmt = null;
+        ResultSet rs = null;
 
         try {
             conn = getConnection();
-            stmt = prepare(conn, sql);
+            stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
 
             stmt.setString(1, batch.getInteriorBatchNo());
             stmt.setString(2, batch.getExteriorBatchNo());
@@ -130,13 +132,17 @@ public class SqlitePlantBatchRepository
             stmt.setString(13, batch.getComments());
             stmt.setString(14, resolveStatus(batch).name());
 
-            executeUpdate(stmt);
+            stmt.executeUpdate();
+
+            rs = stmt.getGeneratedKeys();
+            if (rs.next()) {
+                batch.setId(rs.getInt(1));
+            }
 
         } catch (Exception e) {
-            e.printStackTrace();
-            throw new IllegalStateException("Nie udało się zapisać partii roślin do bazy.", e);
+            throw new IllegalStateException("Nie udało się zapisać partii roślin.", e);
         } finally {
-            close(stmt, conn);
+            close(rs, stmt, conn);
         }
     }
 
@@ -176,8 +182,7 @@ public class SqlitePlantBatchRepository
             executeUpdate(stmt);
 
         } catch (Exception e) {
-            e.printStackTrace();
-            throw new IllegalStateException("Nie udało się zaktualizować partii roślin w bazie.", e);
+            throw new IllegalStateException("Nie udało się zaktualizować partii roślin.", e);
         } finally {
             close(stmt, conn);
         }

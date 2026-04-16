@@ -243,6 +243,22 @@ public class DatabaseInitializer {
                 ON eppo_code_plant_links (plant_id)
             """);
 
+            createUniqueIndexIfNoDuplicates(
+                    stmt,
+                    "plant_batches",
+                    "interior_batch_no",
+                    "ux_plant_batches_interior_batch_no_nonblank",
+                    "CREATE UNIQUE INDEX IF NOT EXISTS ux_plant_batches_interior_batch_no_nonblank ON plant_batches (interior_batch_no) WHERE interior_batch_no IS NOT NULL AND TRIM(interior_batch_no) <> ''"
+            );
+
+            createUniqueIndexIfNoDuplicates(
+                    stmt,
+                    "documents",
+                    "document_number",
+                    "ux_documents_document_number_nonblank",
+                    "CREATE UNIQUE INDEX IF NOT EXISTS ux_documents_document_number_nonblank ON documents (document_number) WHERE document_number IS NOT NULL AND TRIM(document_number) <> ''"
+            );
+
             // migrations for older databases
             ensureColumnExists(stmt, "plants", "eppo_code", "TEXT");
             ensureColumnExists(stmt, "plants", "passport_required", "INTEGER NOT NULL DEFAULT 0");
@@ -324,6 +340,30 @@ public class DatabaseInitializer {
 
         } catch (SQLException e) {
             e.printStackTrace();
+        }
+    }
+
+    private static void createUniqueIndexIfNoDuplicates(
+            Statement stmt,
+            String tableName,
+            String columnName,
+            String indexName,
+            String createIndexSql) throws SQLException {
+
+        if (hasNonBlankDuplicates(stmt, tableName, columnName)) {
+            System.out.println("Pominięto utworzenie indeksu " + indexName + ", bo istnieją duplikaty w " + tableName + ".");
+            return;
+        }
+
+        stmt.execute(createIndexSql);
+    }
+
+    private static boolean hasNonBlankDuplicates(Statement stmt, String tableName, String columnName) throws SQLException {
+        String sql = "SELECT 1 FROM " + tableName
+                + " WHERE " + columnName + " IS NOT NULL AND TRIM(" + columnName + ") <> ''"
+                + " GROUP BY TRIM(" + columnName + ") HAVING COUNT(*) > 1 LIMIT 1";
+        try (ResultSet rs = stmt.executeQuery(sql)) {
+            return rs.next();
         }
     }
 

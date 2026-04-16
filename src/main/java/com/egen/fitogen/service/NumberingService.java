@@ -3,22 +3,35 @@ package com.egen.fitogen.service;
 import com.egen.fitogen.domain.NumberingConfig;
 import com.egen.fitogen.domain.NumberingSectionType;
 import com.egen.fitogen.domain.NumberingType;
+import com.egen.fitogen.model.Document;
 import com.egen.fitogen.model.PlantBatch;
+import com.egen.fitogen.repository.DocumentRepository;
 import com.egen.fitogen.repository.NumberingConfigRepository;
+import com.egen.fitogen.repository.PlantBatchRepository;
 
 import java.time.LocalDate;
 import java.time.temporal.WeekFields;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
-import java.util.function.Predicate;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class NumberingService {
 
     private final NumberingConfigRepository numberingConfigRepository;
+    private final DocumentRepository documentRepository;
+    private final PlantBatchRepository plantBatchRepository;
 
-    public NumberingService(NumberingConfigRepository numberingConfigRepository) {
+    public NumberingService(
+            NumberingConfigRepository numberingConfigRepository,
+            DocumentRepository documentRepository,
+            PlantBatchRepository plantBatchRepository) {
         this.numberingConfigRepository = numberingConfigRepository;
+        this.documentRepository = documentRepository;
+        this.plantBatchRepository = plantBatchRepository;
     }
 
     public String generateNextNumber(NumberingType type) {
@@ -31,9 +44,10 @@ public class NumberingService {
 
     public String generateNextNumber(NumberingType type, PlantBatch batchContext, LocalDate dateContext) {
         NumberingConfig config = getOrCreateUsableConfig(type);
+
         validateConfig(config, batchContext);
 
-        int nextCounter = config.getCurrentCounter() + 1;
+        int nextCounter = findNextAvailableCounter(config, type, batchContext, dateContext);
         String generatedNumber = composeNumber(config, nextCounter, batchContext, dateContext);
 
         if (generatedNumber == null || generatedNumber.isBlank()) {
@@ -46,18 +60,11 @@ public class NumberingService {
         return generatedNumber;
     }
 
-    public String generateNextUniqueNumber(NumberingType type, PlantBatch batchContext, Predicate<String> existsPredicate) {
-        return reserveUniqueNumber(type, batchContext, LocalDate.now(), existsPredicate, true);
-    }
-
-    public String previewNextUniqueNumber(NumberingType type, PlantBatch batchContext, Predicate<String> existsPredicate) {
-        return reserveUniqueNumber(type, batchContext, LocalDate.now(), existsPredicate, false);
-    }
-
     public String previewNumber(NumberingType type, PlantBatch batchContext) {
         NumberingConfig config = getOrCreateUsableConfig(type);
         validateConfig(config, batchContext);
-        return composeNumber(config, config.getCurrentCounter() + 1, batchContext, LocalDate.now());
+        int nextCounter = findNextAvailableCounter(config, type, batchContext, LocalDate.now());
+        return composeNumber(config, nextCounter, batchContext, LocalDate.now());
     }
 
     public String previewNumber(NumberingConfig config, PlantBatch batchContext) {
@@ -70,37 +77,77 @@ public class NumberingService {
                 : config;
 
         validateConfig(effectiveConfig, batchContext);
-        return composeNumber(effectiveConfig, effectiveConfig.getCurrentCounter() + 1, batchContext, LocalDate.now());
+        int nextCounter = findNextAvailableCounter(effectiveConfig, effectiveConfig.getType(), batchContext, LocalDate.now());
+        return composeNumber(effectiveConfig, nextCounter, batchContext, LocalDate.now());
     }
 
-    private String reserveUniqueNumber(
-            NumberingType type,
-            PlantBatch batchContext,
-            LocalDate dateContext,
-            Predicate<String> existsPredicate,
-            boolean persistCounter
-    ) {
-        NumberingConfig config = getOrCreateUsableConfig(type);
-        validateConfig(config, batchContext);
 
-        int baseCounter = config.getCurrentCounter();
-        for (int offset = 1; offset <= 500; offset++) {
-            int candidateCounter = baseCounter + offset;
-            String candidate = composeNumber(config, candidateCounter, batchContext, dateContext);
-            if (candidate == null || candidate.isBlank()) {
-                continue;
-            }
-            if (existsPredicate != null && existsPredicate.test(candidate)) {
-                continue;
-            }
-            if (persistCounter) {
-                config.setCurrentCounter(candidateCounter);
-                numberingConfigRepository.update(config);
-            }
-            return candidate;
+    public int resolveCounterForNumber(NumberingConfig config, String actualNumber, PlantBatch batchContext, LocalDate dateContext) {
+        if (config == null || actualNumber == null || actualNumber.isBlank()) {
+            return -1;
         }
 
-        throw new IllegalStateException("Nie udało się wygenerować unikalnego numeru dla wskazanej konfiguracji.");
+        NumberingConfig effectiveConfig = isEffectivelyEmpty(config)
+                ? buildDefaultConfig(config.getType())
+                : config;
+
+        LocalDate effectiveDate = dateContext != null ? dateContext : LocalDate.now();
+        validateConfig(effectiveConfig, batchContext);
+
+        Pattern pattern = buildCounterPattern(effectiveConfig, batchContext, effectiveDate);
+        if (pattern == null) {
+            return -1;
+        }
+
+        Matcher matcher = pattern.matcher(actualNumber.trim());
+        if (!matcher.matches()) {
+            return -1;
+        }
+
+        try {
+            return Integer.parseInt(matcher.group(1));
+        } catch (Exception e) {
+            return -1;
+        }
+    }
+
+    private int findNextAvailableCounter(NumberingConfig config, NumberingType type, PlantBatch batchContext, LocalDate dateContext) {
+        Set<String> existingNumbers = loadExistingNumbers(type);
+        int candidateCounter = Math.max(0, config.getCurrentCounter()) + 1;
+
+        for (int attempts = 0; attempts < 100000; attempts++) {
+            String candidateNumber = composeNumber(config, candidateCounter, batchContext, dateContext);
+            if (candidateNumber != null && !candidateNumber.isBlank()
+                    && !existingNumbers.contains(candidateNumber.trim())) {
+                return candidateCounter;
+            }
+            candidateCounter++;
+        }
+
+        throw new IllegalStateException("Nie udało się znaleźć wolnego numeru dla typu " + type + ".");
+    }
+
+    private Set<String> loadExistingNumbers(NumberingType type) {
+        Set<String> numbers = new LinkedHashSet<>();
+
+        if (type == NumberingType.DOCUMENT && documentRepository != null) {
+            for (Document document : documentRepository.findAll()) {
+                if (document != null && document.getDocumentNumber() != null && !document.getDocumentNumber().isBlank()) {
+                    numbers.add(document.getDocumentNumber().trim());
+                }
+            }
+            return numbers;
+        }
+
+        if (type == NumberingType.BATCH && plantBatchRepository != null) {
+            for (PlantBatch batch : plantBatchRepository.findAll()) {
+                if (batch != null && batch.getInteriorBatchNo() != null && !batch.getInteriorBatchNo().isBlank()) {
+                    numbers.add(batch.getInteriorBatchNo().trim());
+                }
+            }
+        }
+
+        return numbers;
     }
 
     private NumberingConfig getOrCreateUsableConfig(NumberingType type) {
@@ -223,6 +270,58 @@ public class NumberingService {
 
     private boolean isAutoIncrement(NumberingSectionType type) {
         return type == NumberingSectionType.AUTO_INCREMENT;
+    }
+
+
+    private Pattern buildCounterPattern(NumberingConfig config, PlantBatch batchContext, LocalDate dateContext) {
+        StringBuilder regex = new StringBuilder("^");
+        boolean[] captureAdded = {false};
+
+        appendSectionRegex(regex, config.getSection1Type(), config.getSection1StaticValue(), config.getSection1Separator(), batchContext, dateContext, captureAdded);
+        appendSectionRegex(regex, config.getSection2Type(), config.getSection2StaticValue(), config.getSection2Separator(), batchContext, dateContext, captureAdded);
+        appendSectionRegex(regex, config.getSection3Type(), config.getSection3StaticValue(), config.getSection3Separator(), batchContext, dateContext, captureAdded);
+
+        if (!captureAdded[0]) {
+            return null;
+        }
+
+        regex.append("$");
+        return Pattern.compile(regex.toString());
+    }
+
+    private void appendSectionRegex(
+            StringBuilder regex,
+            NumberingSectionType type,
+            String staticValue,
+            String separator,
+            PlantBatch batchContext,
+            LocalDate dateContext,
+            boolean[] captureAdded) {
+
+        if (type == null) {
+            return;
+        }
+
+        if (type == NumberingSectionType.AUTO_INCREMENT) {
+            regex.append("(\\d+)");
+            captureAdded[0] = true;
+            appendSeparatorRegex(regex, separator);
+            return;
+        }
+
+        String value = resolveSectionValue(type, staticValue, 0, batchContext, dateContext);
+        if (value == null || value.isBlank()) {
+            return;
+        }
+
+        regex.append(Pattern.quote(value));
+        appendSeparatorRegex(regex, separator);
+    }
+
+    private void appendSeparatorRegex(StringBuilder regex, String separator) {
+        if (separator != null && !separator.isEmpty()) {
+            regex.append(Pattern.quote(separator));
+        }
     }
 
     private SectionValue buildSection(

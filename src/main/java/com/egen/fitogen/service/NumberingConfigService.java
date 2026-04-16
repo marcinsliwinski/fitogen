@@ -3,23 +3,32 @@ package com.egen.fitogen.service;
 import com.egen.fitogen.domain.NumberingConfig;
 import com.egen.fitogen.domain.NumberingSectionType;
 import com.egen.fitogen.domain.NumberingType;
+import com.egen.fitogen.model.Document;
 import com.egen.fitogen.model.PlantBatch;
+import com.egen.fitogen.repository.DocumentRepository;
 import com.egen.fitogen.repository.NumberingConfigRepository;
+import com.egen.fitogen.repository.PlantBatchRepository;
 
 public class NumberingConfigService {
 
     private final NumberingConfigRepository repository;
     private final NumberingService numberingService;
     private final AuditLogService auditLogService;
+    private final DocumentRepository documentRepository;
+    private final PlantBatchRepository plantBatchRepository;
 
     public NumberingConfigService(
             NumberingConfigRepository repository,
             NumberingService numberingService,
-            AuditLogService auditLogService) {
+            AuditLogService auditLogService,
+            DocumentRepository documentRepository,
+            PlantBatchRepository plantBatchRepository) {
 
         this.repository = repository;
         this.numberingService = numberingService;
         this.auditLogService = auditLogService;
+        this.documentRepository = documentRepository;
+        this.plantBatchRepository = plantBatchRepository;
     }
 
     public NumberingConfig getConfigOrDefault(NumberingType type) {
@@ -105,6 +114,74 @@ public class NumberingConfigService {
         sampleBatch.setExteriorBatchNo("EXT-001");
 
         return numberingService.previewNumber(config, sampleBatch);
+    }
+
+
+    public String synchronizeCounterWithDatabase(NumberingType type) {
+        NumberingConfig config = getConfigOrDefault(type);
+        int previousCounter = config.getCurrentCounter();
+        int synchronizedCounter = type == NumberingType.DOCUMENT
+                ? resolveHighestDocumentCounter(config)
+                : resolveHighestBatchCounter(config);
+
+        config.setCurrentCounter(Math.max(0, synchronizedCounter));
+        repository.update(config);
+
+        String description = "Zsynchronizowano licznik " + type.name()
+                + " z bazą: " + previousCounter + " -> " + config.getCurrentCounter();
+        logAudit(config, "SYNC", description);
+
+        return description;
+    }
+
+    private int resolveHighestDocumentCounter(NumberingConfig config) {
+        if (documentRepository == null) {
+            return config.getCurrentCounter();
+        }
+
+        int highest = 0;
+        for (Document document : documentRepository.findAll()) {
+            if (document == null) {
+                continue;
+            }
+
+            int counter = numberingService.resolveCounterForNumber(
+                    config,
+                    document.getDocumentNumber(),
+                    null,
+                    document.getIssueDate()
+            );
+            if (counter > highest) {
+                highest = counter;
+            }
+        }
+
+        return highest;
+    }
+
+    private int resolveHighestBatchCounter(NumberingConfig config) {
+        if (plantBatchRepository == null) {
+            return config.getCurrentCounter();
+        }
+
+        int highest = 0;
+        for (PlantBatch batch : plantBatchRepository.findAll()) {
+            if (batch == null || batch.getInteriorBatchNo() == null || batch.getInteriorBatchNo().isBlank()) {
+                continue;
+            }
+
+            int counter = numberingService.resolveCounterForNumber(
+                    config,
+                    batch.getInteriorBatchNo(),
+                    batch,
+                    batch.getCreationDate()
+            );
+            if (counter > highest) {
+                highest = counter;
+            }
+        }
+
+        return highest;
     }
 
     private boolean isEffectivelyEmpty(NumberingConfig config) {

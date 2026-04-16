@@ -107,7 +107,7 @@ public class AppContext {
         eppoZoneRepository = new SqliteEppoZoneRepository();
         eppoCodeZoneLinkRepository = new SqliteEppoCodeZoneLinkRepository();
 
-        numberingService = new NumberingService(numberingConfigRepository);
+        numberingService = new NumberingService(numberingConfigRepository, documentRepository, plantBatchRepository);
         backupService = new BackupService();
         databaseProfileService = new DatabaseProfileService();
         appUserService = new AppUserService(appUserRepository, null);
@@ -116,7 +116,13 @@ public class AppContext {
         documentTypeService = new DocumentTypeService(documentTypeRepository, auditLogService);
         appUserService = new AppUserService(appUserRepository, auditLogService);
         auditLogService = new AuditLogService(auditLogRepository, appUserService);
-        numberingConfigService = new NumberingConfigService(numberingConfigRepository, numberingService, auditLogService);
+        numberingConfigService = new NumberingConfigService(
+                numberingConfigRepository,
+                numberingService,
+                auditLogService,
+                documentRepository,
+                plantBatchRepository
+        );
         eppoCodeService = new EppoCodeService(eppoCodeRepository);
         eppoCodeSpeciesLinkService = new EppoCodeSpeciesLinkService(
                 eppoCodeSpeciesLinkRepository,

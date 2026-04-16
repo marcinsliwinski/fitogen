@@ -50,7 +50,7 @@ public class SqliteDocumentRepository
             }
 
         } catch (Exception e) {
-            e.printStackTrace();
+            throw new IllegalStateException("Nie udało się zapisać dokumentu.", e);
         } finally {
             close(rs, stmt, conn);
         }
@@ -93,7 +93,7 @@ public class SqliteDocumentRepository
             executeUpdate(stmt);
 
         } catch (Exception e) {
-            e.printStackTrace();
+            throw new IllegalStateException("Nie udało się zaktualizować dokumentu.", e);
         } finally {
             close(stmt, conn);
         }

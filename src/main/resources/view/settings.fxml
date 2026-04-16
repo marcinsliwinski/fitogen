@@ -119,6 +119,7 @@
                             </VBox>
 
                             <HBox spacing="10" alignment="CENTER_RIGHT">
+                                <Button text="Synchronizuj licznik z bazą" onAction="#synchronizeCounterWithDatabase" styleClass="button-secondary"/>
                                 <Button text="Przywróć domyślne" onAction="#restoreDefaults" styleClass="button-secondary"/>
                                 <Button text="Zapisz konfigurację" onAction="#save"/>
                             </HBox>
@@ -277,22 +278,6 @@
                                     <Button text="Wyczyść podgląd" onAction="#clearDocumentsCsvPreview" styleClass="button-secondary"/>
                                 </HBox>
                                 <TextArea fx:id="documentsCsvPreviewArea" editable="false" wrapText="true" prefRowCount="12"/>
-                            </VBox>
-
-                            <Separator/>
-
-                            <VBox spacing="12" styleClass="stat-card">
-                                <Label text="EPPO CSV — jeden import / eksport słowników" styleClass="stat-title"/>
-                                <Label text="Jeden plik CSV obejmuje dwa typy relacji: kod EPPO → gatunek oraz kod EPPO → strefa (kraj). Powiązania kod → roślina nie są potrzebne, bo system dopasowuje rośliny po gatunku." wrapText="true" styleClass="page-subtitle"/>
-                                <Label fx:id="eppoDictionaryCsvColumnsLabel" wrapText="true" styleClass="page-subtitle"/>
-                                <Label fx:id="eppoDictionaryCsvStatusLabel" wrapText="true" styleClass="page-subtitle"/>
-                                <HBox spacing="10">
-                                    <Button text="Podgląd importu CSV słowników EPPO" onAction="#previewEppoDictionaryCsvImport"/>
-                                    <Button fx:id="eppoDictionaryCsvApplyButton" text="Importuj do bazy" onAction="#applyEppoDictionaryCsvImport" disable="true"/>
-                                    <Button text="Eksport CSV słowników EPPO" onAction="#exportEppoDictionaryCsv" styleClass="button-secondary"/>
-                                    <Button text="Wyczyść podgląd" onAction="#clearEppoDictionaryCsvPreview" styleClass="button-secondary"/>
-                                </HBox>
-                                <TextArea fx:id="eppoDictionaryCsvPreviewArea" editable="false" wrapText="true" prefRowCount="12"/>
                             </VBox>
                         </VBox>
                     </content>

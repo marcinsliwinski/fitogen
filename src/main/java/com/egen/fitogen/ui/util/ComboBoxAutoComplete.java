@@ -104,13 +104,14 @@ public final class ComboBoxAutoComplete {
         }
 
         ObservableList<T> masterItems = FXCollections.observableArrayList(sourceValues == null ? List.of() : sourceValues);
+        boolean[] internalChange = {false};
         comboBox.setEditable(true);
         comboBox.setItems(FXCollections.observableArrayList(masterItems));
         comboBox.setMaxWidth(Double.MAX_VALUE);
         comboBox.setConverter(new StringConverter<>() {
             @Override
             public String toString(T object) {
-                return object == null ? "" : safe(textProvider.apply(object));
+                return safe(textProvider.apply(object));
             }
 
             @Override
@@ -123,29 +124,8 @@ public final class ComboBoxAutoComplete {
             return;
         }
 
-        comboBox.getSelectionModel().selectedItemProperty().addListener((obs, oldValue, newValue) -> {
-            if (isInternalChange(comboBox)) {
-                return;
-            }
-
-            runInternalChange(comboBox, () -> {
-                if (newValue != null) {
-                    String displayText = safe(textProvider.apply(newValue));
-                    if (!Objects.equals(comboBox.getEditor().getText(), displayText)) {
-                        comboBox.getEditor().setText(displayText);
-                    }
-                    comboBox.getEditor().positionCaret(comboBox.getEditor().getText().length());
-                } else if (!comboBox.isFocused() && !comboBox.getEditor().isFocused() && !comboBox.getEditor().getText().isBlank()) {
-                    comboBox.getEditor().clear();
-                }
-            });
-        });
-
         comboBox.getEditor().textProperty().addListener((obs, oldValue, newValue) -> {
-            if (isInternalChange(comboBox)) {
-                return;
-            }
-            if (!comboBox.isFocused() && !comboBox.getEditor().isFocused()) {
+            if (internalChange[0] || !comboBox.isFocused()) {
                 return;
             }
 
@@ -154,50 +134,32 @@ public final class ComboBoxAutoComplete {
                 return;
             }
 
-            String typedText = safe(newValue);
-            int caretPosition = comboBox.getEditor().getCaretPosition();
-            String normalized = normalizeKey(typedText);
-            ObservableList<T> filteredItems = normalized.isBlank()
-                    ? FXCollections.observableArrayList(masterItems)
-                    : masterItems.filtered(item -> normalizeKey(textProvider.apply(item)).contains(normalized));
+            String normalized = normalizeKey(newValue);
+            if (normalized.isBlank()) {
+                comboBox.setItems(FXCollections.observableArrayList(masterItems));
+            } else {
+                comboBox.setItems(masterItems.filtered(item -> normalizeKey(textProvider.apply(item)).contains(normalized)));
+            }
 
-            runInternalChange(comboBox, () -> {
-                comboBox.setItems(filteredItems);
-                if (!Objects.equals(comboBox.getEditor().getText(), typedText)) {
-                    comboBox.getEditor().setText(typedText);
-                }
-                comboBox.getEditor().positionCaret(Math.min(caretPosition, comboBox.getEditor().getText().length()));
-            });
-
-            if (!comboBox.isShowing() && !filteredItems.isEmpty()) {
+            if (!comboBox.isShowing()) {
                 comboBox.show();
             }
         });
 
         comboBox.focusedProperty().addListener((obs, oldValue, focused) -> {
-            if (focused || isInternalChange(comboBox)) {
+            if (focused || internalChange[0]) {
                 return;
             }
             restoreItems(comboBox, masterItems);
-            commitSelection(comboBox, masterItems, textProvider);
+            commitSelection(comboBox, masterItems, textProvider, internalChange);
         });
-
-        comboBox.setOnMouseClicked(event -> restoreItems(comboBox, masterItems));
 
         comboBox.setOnAction(event -> {
-            if (isInternalChange(comboBox)) {
+            if (internalChange[0]) {
                 return;
             }
             restoreItems(comboBox, masterItems);
-            commitSelection(comboBox, masterItems, textProvider);
-        });
-
-        comboBox.getEditor().setOnAction(event -> {
-            if (isInternalChange(comboBox)) {
-                return;
-            }
-            restoreItems(comboBox, masterItems);
-            commitSelection(comboBox, masterItems, textProvider);
+            commitSelection(comboBox, masterItems, textProvider, internalChange);
         });
     }
 
@@ -234,47 +196,34 @@ public final class ComboBoxAutoComplete {
     private static <T> void commitSelection(
             ComboBox<T> comboBox,
             ObservableList<T> masterItems,
-            Function<T, String> textProvider
+            Function<T, String> textProvider,
+            boolean[] internalChange
     ) {
         if (comboBox.getEditor() == null) {
             return;
         }
 
-        runInternalChange(comboBox, () -> {
+        internalChange[0] = true;
+        try {
             String editorText = comboBox.getEditor().getText();
             T exactMatch = findBestMatch(masterItems, editorText, textProvider);
             if (exactMatch != null) {
-                if (!Objects.equals(comboBox.getValue(), exactMatch)) {
-                    comboBox.setValue(exactMatch);
-                }
-                if (!Objects.equals(comboBox.getSelectionModel().getSelectedItem(), exactMatch)) {
-                    comboBox.getSelectionModel().select(exactMatch);
-                }
-                String displayText = safe(textProvider.apply(exactMatch));
-                if (!Objects.equals(comboBox.getEditor().getText(), displayText)) {
-                    comboBox.getEditor().setText(displayText);
-                }
-                comboBox.getEditor().positionCaret(comboBox.getEditor().getText().length());
+                comboBox.setValue(exactMatch);
+                comboBox.getSelectionModel().select(exactMatch);
+                comboBox.getEditor().setText(safe(textProvider.apply(exactMatch)));
                 return;
             }
 
             T selected = comboBox.getSelectionModel().getSelectedItem();
             if (selected != null) {
-                String displayText = safe(textProvider.apply(selected));
-                if (!Objects.equals(comboBox.getEditor().getText(), displayText)) {
-                    comboBox.getEditor().setText(displayText);
-                }
-                comboBox.getEditor().positionCaret(comboBox.getEditor().getText().length());
+                comboBox.getEditor().setText(safe(textProvider.apply(selected)));
                 return;
             }
 
-            if (!Objects.equals(comboBox.getValue(), null)) {
-                comboBox.setValue(null);
-            }
-            if (!comboBox.getEditor().getText().isBlank()) {
-                comboBox.getEditor().setText("");
-            }
-        });
+            comboBox.getEditor().setText("");
+        } finally {
+            internalChange[0] = false;
+        }
     }
 
     private static void commitEditorValue(ComboBox<String> comboBox) {
