@@ -421,8 +421,8 @@ public class DashboardController {
         ModalViewUtil.openModal(
                 "/view/document_form.fxml",
                 "Edytuj dokument",
-                1220, 880,
-                1080, 760,
+                1340, 960,
+                1180, 840,
                 (DocumentFormController controller) -> controller.setDocument(document)
         );
         refreshDashboard();
@@ -432,8 +432,8 @@ public class DashboardController {
         ModalViewUtil.openModal(
                 "/view/plant_batch_form.fxml",
                 "Podgląd / edycja partii",
-                900, 760,
-                860, 720,
+                1220, 980,
+                1080, 860,
                 (PlantBatchFormController controller) -> controller.setPlantBatch(batch)
         );
         refreshDashboard();
@@ -444,8 +444,8 @@ public class DashboardController {
         ModalViewUtil.openModal(
                 "/view/plant_form.fxml",
                 "Dodaj roślinę",
-                860, 660,
-                820, 620,
+                860, 760,
+                820, 700,
                 (PlantFormController controller) -> controller.setPlantService(plantService)
         );
         refreshDashboard();
@@ -469,8 +469,8 @@ public class DashboardController {
         ModalViewUtil.openModal(
                 "/view/plant_batch_form.fxml",
                 "Dodaj partię",
-                900, 760,
-                860, 720,
+                1220, 980,
+                1080, 860,
                 (PlantBatchFormController controller) -> {
                 }
         );
@@ -482,8 +482,8 @@ public class DashboardController {
         ModalViewUtil.openModal(
                 "/view/document_form.fxml",
                 "Dodaj dokument",
+                1340, 960,
                 1180, 840,
-                1100, 780,
                 (DocumentFormController controller) -> {
                 }
         );

@@ -544,11 +544,8 @@ public class DocumentFormController {
 
         String batchCode = safe(batch.getEppoCode()).toUpperCase();
         for (EppoCode requiredCode : requiredCodes) {
-            String requiredCodeValue = safe(requiredCode.getCode()).toUpperCase();
-            boolean codeMatches = !requiredCodeValue.isBlank() && requiredCodeValue.equals(batchCode);
             boolean protectedZoneMatches = batchMatchesRequiredProtectedZone(requiredCode, clientCountryCode, batch);
-
-            if (codeMatches && protectedZoneMatches) {
+            if (protectedZoneMatches) {
                 return "";
             }
         }
@@ -566,11 +563,12 @@ public class DocumentFormController {
 
         String batchZpValue = safe(batch.getZpZone());
         String batchCountry = safe(batch.getManufacturerCountryCode()).toUpperCase();
-        return "Partia nie spełnia wymagań EPPO/ZP dla wybranego gatunku i kraju klienta. Wymagany kod EPPO: "
+        return "Partia nie spełnia wymagań ZP dla wybranego gatunku i kraju klienta. Wymagany kod EPPO: "
                 + requiredCodesText
                 + ". Partia ma kod: " + (batchCode.isBlank() ? "brak" : batchCode)
                 + ", ZP: " + (batchZpValue.isBlank() ? "brak" : batchZpValue)
-                + ", kraj pochodzenia: " + (batchCountry.isBlank() ? "brak" : batchCountry) + ".";
+                + ", kraj pochodzenia: " + (batchCountry.isBlank() ? "brak" : batchCountry)
+                + ". Kraj klienta jest objęty tym kodem EPPO, ale kraj pochodzenia partii nie jest powiązany z tym samym kodem albo na partii nie zapisano oznaczenia 'Partia pochodzi z ZP'.";
     }
 
     private List<EppoCode> resolveRequiredCodesForPlantAndCountry(Plant plant, String clientCountryCode) {
@@ -638,27 +636,57 @@ public class DocumentFormController {
             return false;
         }
 
+        List<EppoZone> linkedZones = eppoCodeZoneLinkService.getZonesForCode(requiredCode.getId()).stream()
+                .filter(Objects::nonNull)
+                .toList();
+        if (linkedZones.isEmpty()) {
+            return false;
+        }
+
+        boolean destinationCountryRequiresCode = linkedZones.stream()
+                .map(EppoZone::getCountryCode)
+                .map(this::safe)
+                .map(String::toUpperCase)
+                .anyMatch(clientCountryCode::equals);
+        if (!destinationCountryRequiresCode) {
+            return false;
+        }
+
+        String batchCountryCode = safe(batch.getManufacturerCountryCode()).toUpperCase();
+        boolean sourceCountryMatchesRequiredCode = !batchCountryCode.isBlank() && linkedZones.stream()
+                .map(EppoZone::getCountryCode)
+                .map(this::safe)
+                .map(String::toUpperCase)
+                .anyMatch(batchCountryCode::equals);
+        if (!sourceCountryMatchesRequiredCode) {
+            return false;
+        }
+
         String batchZonesRaw = safe(batch.getZpZone());
         if (batchZonesRaw.isBlank()) {
             return false;
         }
 
-        List<String> batchZoneCodes = java.util.Arrays.stream(batchZonesRaw.split(","))
+        List<String> batchZoneMarkers = java.util.Arrays.stream(batchZonesRaw.split(","))
                 .map(this::safe)
                 .map(String::toUpperCase)
                 .filter(value -> !value.isBlank())
                 .toList();
-        if (batchZoneCodes.isEmpty()) {
+        if (batchZoneMarkers.isEmpty()) {
             return false;
         }
 
-        return eppoCodeZoneLinkService.getZonesForCode(requiredCode.getId()).stream()
-                .filter(Objects::nonNull)
-                .filter(zone -> clientCountryCode.equals(safe(zone.getCountryCode()).toUpperCase()))
-                .map(EppoZone::getCode)
+        java.util.Set<String> allowedBatchMarkers = linkedZones.stream()
+                .flatMap(zone -> java.util.stream.Stream.of(zone.getCode(), zone.getCountryCode(), zone.getName()))
                 .map(this::safe)
                 .map(String::toUpperCase)
-                .anyMatch(batchZoneCodes::contains);
+                .filter(value -> !value.isBlank())
+                .collect(Collectors.toSet());
+
+        boolean markedProtectedZoneMatchesRequiredCode = batchZoneMarkers.stream()
+                .anyMatch(marker -> allowedBatchMarkers.contains(marker) || marker.equals("ZP") || marker.equals("TRUE") || marker.equals("TAK"));
+
+        return markedProtectedZoneMatchesRequiredCode;
     }
 
     private Plant resolvePlantForRow(DocumentItemRow row) {

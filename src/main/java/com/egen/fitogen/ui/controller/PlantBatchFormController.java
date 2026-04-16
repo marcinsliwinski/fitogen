@@ -14,6 +14,8 @@ import com.egen.fitogen.repository.ContrahentRepository;
 import com.egen.fitogen.repository.PlantRepository;
 import com.egen.fitogen.service.AppSettingsService;
 import com.egen.fitogen.service.EppoCodePlantLinkService;
+import com.egen.fitogen.service.EppoCodeService;
+import com.egen.fitogen.service.EppoCodeSpeciesLinkService;
 import com.egen.fitogen.service.EppoCodeZoneLinkService;
 import com.egen.fitogen.service.PlantBatchService;
 import com.egen.fitogen.ui.util.DialogUtil;
@@ -73,6 +75,8 @@ public class PlantBatchFormController {
     private final ContrahentRepository contrahentRepository = new SqliteContrahentRepository();
     private final AppSettingsService appSettingsService = AppContext.getAppSettingsService();
     private final EppoCodePlantLinkService eppoCodePlantLinkService = AppContext.getEppoCodePlantLinkService();
+    private final EppoCodeSpeciesLinkService eppoCodeSpeciesLinkService = AppContext.getEppoCodeSpeciesLinkService();
+    private final EppoCodeService eppoCodeService = AppContext.getEppoCodeService();
     private final EppoCodeZoneLinkService eppoCodeZoneLinkService = AppContext.getEppoCodeZoneLinkService();
 
     private List<Plant> availablePlants = List.of();
@@ -461,10 +465,6 @@ public class PlantBatchFormController {
         return null;
     }
 
-    private String normalizeKey(String value) {
-        return safe(value).toLowerCase();
-    }
-
     private void selectPlant(int plantId) {
         if (plantComboBox == null) {
             return;
@@ -572,9 +572,37 @@ public class PlantBatchFormController {
         if (selectedPlant == null) {
             return List.of();
         }
-        return eppoCodePlantLinkService.getCodesForPlant(selectedPlant.getId()).stream()
+
+        Map<Integer, EppoCode> byId = new LinkedHashMap<>();
+        eppoCodePlantLinkService.getCodesForPlant(selectedPlant.getId()).stream()
+                .filter(Objects::nonNull)
+                .forEach(code -> byId.put(code.getId(), code));
+
+        String species = normalizeKey(selectedPlant.getSpecies());
+        String latinSpecies = normalizeKey(selectedPlant.getLatinSpeciesName());
+        if (!species.isBlank() || !latinSpecies.isBlank()) {
+            for (EppoCode code : eppoCodeService.getAll()) {
+                if (code == null) {
+                    continue;
+                }
+                boolean speciesMatch = eppoCodeSpeciesLinkService.getEffectiveSpeciesLinks(code.getId()).stream()
+                        .anyMatch(link -> matchesPlantSpeciesLink(species, latinSpecies, link.getSpeciesName(), link.getLatinSpeciesName()));
+                if (speciesMatch) {
+                    byId.put(code.getId(), code);
+                }
+            }
+        }
+
+        return byId.values().stream()
                 .sorted(Comparator.comparing(code -> safeUpper(code.getCode())))
                 .toList();
+    }
+
+    private boolean matchesPlantSpeciesLink(String plantSpecies, String plantLatinSpecies, String linkSpecies, String linkLatinSpecies) {
+        String normalizedLinkSpecies = normalizeKey(linkSpecies);
+        String normalizedLinkLatinSpecies = normalizeKey(linkLatinSpecies);
+        return (!plantSpecies.isBlank() && plantSpecies.equals(normalizedLinkSpecies))
+                || (!plantLatinSpecies.isBlank() && plantLatinSpecies.equals(normalizedLinkLatinSpecies));
     }
 
     private Map<EppoCode, List<EppoZone>> buildZoneMap(List<EppoCode> linkedCodes) {
@@ -960,6 +988,17 @@ public class PlantBatchFormController {
 
     private String safeUpper(String value) {
         return value == null ? "" : value.trim().toUpperCase();
+    }
+
+    private String normalizeKey(String value) {
+        if (value == null || value.isBlank()) {
+            return "";
+        }
+        return java.text.Normalizer.normalize(value.trim(), java.text.Normalizer.Form.NFD)
+                .replaceAll("\\p{M}+", "")
+                .replace('ł', 'l')
+                .replace('Ł', 'L')
+                .toLowerCase(java.util.Locale.ROOT);
     }
 
     private String normalizeUppercase(String value) {
