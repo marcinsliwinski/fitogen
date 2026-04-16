@@ -246,7 +246,7 @@
                                     <Button text="Eksport CSV roślin" onAction="#exportPlantsCsv" styleClass="button-secondary"/>
                                     <Button text="Wyczyść podgląd" onAction="#clearPlantsCsvPreview" styleClass="button-secondary"/>
                                 </HBox>
-                                <TextArea fx:id="plantsCsvPreviewArea" editable="false" wrapText="true" prefRowCount="10"/>
+                                <TextArea fx:id="plantsCsvPreviewArea" editable="false" wrapText="true" prefRowCount="16" prefHeight="320"/>
                             </VBox>
 
                             <Separator/>
@@ -262,7 +262,7 @@
                                     <Button text="Eksport CSV kontrahentów" onAction="#exportContrahentsCsv" styleClass="button-secondary"/>
                                     <Button text="Wyczyść podgląd" onAction="#clearContrahentsCsvPreview" styleClass="button-secondary"/>
                                 </HBox>
-                                <TextArea fx:id="contrahentsCsvPreviewArea" editable="false" wrapText="true" prefRowCount="10"/>
+                                <TextArea fx:id="contrahentsCsvPreviewArea" editable="false" wrapText="true" prefRowCount="16" prefHeight="320"/>
                             </VBox>
 
                             <Separator/>
@@ -278,7 +278,7 @@
                                     <Button text="Eksport CSV dokumentów" onAction="#exportDocumentsCsv" styleClass="button-secondary"/>
                                     <Button text="Wyczyść podgląd" onAction="#clearDocumentsCsvPreview" styleClass="button-secondary"/>
                                 </HBox>
-                                <TextArea fx:id="documentsCsvPreviewArea" editable="false" wrapText="true" prefRowCount="12"/>
+                                <TextArea fx:id="documentsCsvPreviewArea" editable="false" wrapText="true" prefRowCount="18" prefHeight="360"/>
                             </VBox>
 
 
@@ -295,7 +295,7 @@
                                     <Button text="Eksport CSV EPPO" onAction="#exportEppoDictionaryCsv" styleClass="button-secondary"/>
                                     <Button text="Wyczyść podgląd" onAction="#clearEppoDictionaryCsvPreview" styleClass="button-secondary"/>
                                 </HBox>
-                                <TextArea fx:id="eppoDictionaryCsvPreviewArea" editable="false" wrapText="true" prefRowCount="12"/>
+                                <TextArea fx:id="eppoDictionaryCsvPreviewArea" editable="false" wrapText="true" prefRowCount="18" prefHeight="360"/>
                             </VBox>
                         </VBox>
                     </content>
