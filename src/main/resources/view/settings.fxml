@@ -239,10 +239,10 @@
                                 <VBox spacing="12" styleClass="stat-card">
                                     <GridPane hgap="16" vgap="12">
                                         <columnConstraints>
-                                            <ColumnConstraints percentWidth="67" hgrow="ALWAYS"/>
-                                            <ColumnConstraints percentWidth="33" hgrow="ALWAYS"/>
+                                            <ColumnConstraints percentWidth="50" hgrow="ALWAYS"/>
+                                            <ColumnConstraints percentWidth="50" hgrow="ALWAYS"/>
                                         </columnConstraints>
-                                        <VBox spacing="10" GridPane.columnIndex="0">
+                                        <VBox spacing="10" GridPane.columnIndex="0" fillWidth="true" maxWidth="1.7976931348623157E308">
                                             <Label text="CSV roślin" styleClass="stat-title"/>
                                             <Label text="Lokalny podgląd importu i eksport CSV dla roślin. Ten obszar pozostaje w Ustawieniach i nie jest częścią modułu Aktualizacje." wrapText="true" styleClass="page-subtitle"/>
                                             <Label fx:id="plantsCsvColumnsLabel" wrapText="true" styleClass="page-subtitle"/>
@@ -254,7 +254,7 @@
                                                 <Button text="Wyczyść podgląd" onAction="#clearPlantsCsvPreview" styleClass="button-secondary"/>
                                             </HBox>
                                         </VBox>
-                                        <VBox spacing="8" GridPane.columnIndex="1" maxWidth="1.7976931348623157E308">
+                                        <VBox spacing="8" GridPane.columnIndex="1" fillWidth="true" maxWidth="1.7976931348623157E308">
                                             <Label text="Podgląd importu" styleClass="stat-title"/>
                                             <TextArea fx:id="plantsCsvPreviewArea" editable="false" wrapText="true" prefRowCount="16" prefHeight="340" maxWidth="1.7976931348623157E308" VBox.vgrow="ALWAYS"/>
                                         </VBox>
@@ -264,10 +264,10 @@
                                 <VBox spacing="12" styleClass="stat-card">
                                     <GridPane hgap="16" vgap="12">
                                         <columnConstraints>
-                                            <ColumnConstraints percentWidth="67" hgrow="ALWAYS"/>
-                                            <ColumnConstraints percentWidth="33" hgrow="ALWAYS"/>
+                                            <ColumnConstraints percentWidth="50" hgrow="ALWAYS"/>
+                                            <ColumnConstraints percentWidth="50" hgrow="ALWAYS"/>
                                         </columnConstraints>
-                                        <VBox spacing="10" GridPane.columnIndex="0">
+                                        <VBox spacing="10" GridPane.columnIndex="0" fillWidth="true" maxWidth="1.7976931348623157E308">
                                             <Label text="CSV kontrahentów" styleClass="stat-title"/>
                                             <Label text="Lokalny podgląd importu i eksport CSV dla kontrahentów w tym samym standardzie ustawień lokalnych." wrapText="true" styleClass="page-subtitle"/>
                                             <Label fx:id="contrahentsCsvColumnsLabel" wrapText="true" styleClass="page-subtitle"/>
@@ -279,7 +279,7 @@
                                                 <Button text="Wyczyść podgląd" onAction="#clearContrahentsCsvPreview" styleClass="button-secondary"/>
                                             </HBox>
                                         </VBox>
-                                        <VBox spacing="8" GridPane.columnIndex="1" maxWidth="1.7976931348623157E308">
+                                        <VBox spacing="8" GridPane.columnIndex="1" fillWidth="true" maxWidth="1.7976931348623157E308">
                                             <Label text="Podgląd importu" styleClass="stat-title"/>
                                             <TextArea fx:id="contrahentsCsvPreviewArea" editable="false" wrapText="true" prefRowCount="16" prefHeight="340" maxWidth="1.7976931348623157E308" VBox.vgrow="ALWAYS"/>
                                         </VBox>
@@ -289,10 +289,10 @@
                                 <VBox spacing="12" styleClass="stat-card">
                                     <GridPane hgap="16" vgap="12">
                                         <columnConstraints>
-                                            <ColumnConstraints percentWidth="67" hgrow="ALWAYS"/>
-                                            <ColumnConstraints percentWidth="33" hgrow="ALWAYS"/>
+                                            <ColumnConstraints percentWidth="50" hgrow="ALWAYS"/>
+                                            <ColumnConstraints percentWidth="50" hgrow="ALWAYS"/>
                                         </columnConstraints>
-                                        <VBox spacing="10" GridPane.columnIndex="0">
+                                        <VBox spacing="10" GridPane.columnIndex="0" fillWidth="true" maxWidth="1.7976931348623157E308">
                                             <Label text="Dokumenty CSV" styleClass="stat-title"/>
                                             <Label text="Lokalny podgląd importu i eksport CSV dla dokumentów. Format pozostaje w Ustawieniach -> Import / Eksport CSV i nie wchodzi do modułu Aktualizacje." wrapText="true" styleClass="page-subtitle"/>
                                             <Label fx:id="documentsCsvColumnsLabel" wrapText="true" styleClass="page-subtitle"/>
@@ -304,7 +304,7 @@
                                                 <Button text="Wyczyść podgląd" onAction="#clearDocumentsCsvPreview" styleClass="button-secondary"/>
                                             </HBox>
                                         </VBox>
-                                        <VBox spacing="8" GridPane.columnIndex="1" maxWidth="1.7976931348623157E308">
+                                        <VBox spacing="8" GridPane.columnIndex="1" fillWidth="true" maxWidth="1.7976931348623157E308">
                                             <Label text="Podgląd importu" styleClass="stat-title"/>
                                             <TextArea fx:id="documentsCsvPreviewArea" editable="false" wrapText="true" prefRowCount="16" prefHeight="340" maxWidth="1.7976931348623157E308" VBox.vgrow="ALWAYS"/>
                                         </VBox>
@@ -314,10 +314,10 @@
                                 <VBox spacing="12" styleClass="stat-card">
                                     <GridPane hgap="16" vgap="12">
                                         <columnConstraints>
-                                            <ColumnConstraints percentWidth="67" hgrow="ALWAYS"/>
-                                            <ColumnConstraints percentWidth="33" hgrow="ALWAYS"/>
+                                            <ColumnConstraints percentWidth="50" hgrow="ALWAYS"/>
+                                            <ColumnConstraints percentWidth="50" hgrow="ALWAYS"/>
                                         </columnConstraints>
-                                        <VBox spacing="10" GridPane.columnIndex="0">
+                                        <VBox spacing="10" GridPane.columnIndex="0" fillWidth="true" maxWidth="1.7976931348623157E308">
                                             <Label text="CSV partii roślin" styleClass="stat-title"/>
                                             <Label text="Lokalny podgląd importu i eksport CSV dla partii roślin. Import działa po dopasowaniu rośliny po gatunku/odmianie/podkładce oraz źródła pochodzenia po nazwie kontrahenta." wrapText="true" styleClass="page-subtitle"/>
                                             <Label fx:id="plantBatchesCsvColumnsLabel" wrapText="true" styleClass="page-subtitle"/>
@@ -329,7 +329,7 @@
                                                 <Button text="Wyczyść podgląd" onAction="#clearPlantBatchesCsvPreview" styleClass="button-secondary"/>
                                             </HBox>
                                         </VBox>
-                                        <VBox spacing="8" GridPane.columnIndex="1" maxWidth="1.7976931348623157E308">
+                                        <VBox spacing="8" GridPane.columnIndex="1" fillWidth="true" maxWidth="1.7976931348623157E308">
                                             <Label text="Podgląd importu" styleClass="stat-title"/>
                                             <TextArea fx:id="plantBatchesCsvPreviewArea" editable="false" wrapText="true" prefRowCount="16" prefHeight="340" maxWidth="1.7976931348623157E308" VBox.vgrow="ALWAYS"/>
                                         </VBox>
@@ -339,10 +339,10 @@
                                 <VBox spacing="12" styleClass="stat-card">
                                     <GridPane hgap="16" vgap="12">
                                         <columnConstraints>
-                                            <ColumnConstraints percentWidth="67" hgrow="ALWAYS"/>
-                                            <ColumnConstraints percentWidth="33" hgrow="ALWAYS"/>
+                                            <ColumnConstraints percentWidth="50" hgrow="ALWAYS"/>
+                                            <ColumnConstraints percentWidth="50" hgrow="ALWAYS"/>
                                         </columnConstraints>
-                                        <VBox spacing="10" GridPane.columnIndex="0">
+                                        <VBox spacing="10" GridPane.columnIndex="0" fillWidth="true" maxWidth="1.7976931348623157E308">
                                             <Label text="Słowniki EPPO CSV" styleClass="stat-title"/>
                                             <Label text="Jeden lokalny plik CSV dla relacji kod EPPO → gatunek oraz kod EPPO → strefa (kraj). System dopasowuje rośliny po gatunku, więc osobne relacje kod → roślina nie są tu potrzebne." wrapText="true" styleClass="page-subtitle"/>
                                             <Label fx:id="eppoDictionaryCsvColumnsLabel" wrapText="true" styleClass="page-subtitle"/>
@@ -354,7 +354,7 @@
                                                 <Button text="Wyczyść podgląd" onAction="#clearEppoDictionaryCsvPreview" styleClass="button-secondary"/>
                                             </HBox>
                                         </VBox>
-                                        <VBox spacing="8" GridPane.columnIndex="1" maxWidth="1.7976931348623157E308">
+                                        <VBox spacing="8" GridPane.columnIndex="1" fillWidth="true" maxWidth="1.7976931348623157E308">
                                             <Label text="Podgląd importu" styleClass="stat-title"/>
                                             <TextArea fx:id="eppoDictionaryCsvPreviewArea" editable="false" wrapText="true" prefRowCount="16" prefHeight="340" maxWidth="1.7976931348623157E308" VBox.vgrow="ALWAYS"/>
                                         </VBox>
