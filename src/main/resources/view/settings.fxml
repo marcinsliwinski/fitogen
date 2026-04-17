@@ -444,7 +444,7 @@
                             <Label text="Walidacja ostatnio używanej bazy:"/>
                             <Label fx:id="databaseMissingStatusLabel" wrapText="true" styleClass="page-subtitle"/>
                             <HBox spacing="10">
-                                <Button text="Użyj wybranej bazy" onAction="#applySelectedDatabaseProfile"/>
+                                <Button fx:id="applyDatabaseProfileButton" text="Użyj wybranej bazy" onAction="#applySelectedDatabaseProfile"/>
                                 <Button text="Odzyskaj z backupu" onAction="#restoreDatabaseFromBackup" styleClass="button-secondary"/>
                                 <Button text="Odśwież listę baz" onAction="#refreshDatabaseProfiles" styleClass="button-secondary"/>
                             </HBox>

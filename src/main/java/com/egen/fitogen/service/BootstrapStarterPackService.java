@@ -20,6 +20,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import com.egen.fitogen.database.SqlitePlantRepository;
+
 public class BootstrapStarterPackService {
 
     public static final String FG1_PACKAGE_CODE = "FG1";
@@ -95,6 +97,23 @@ public class BootstrapStarterPackService {
             AppContext.getAuditLogService().log("SYSTEM", null, "IMPORT", summary);
         }
         return summary;
+    }
+
+    public void verifyFg1StarterPackImported() {
+        int plantCount = new SqlitePlantRepository().findAll().size();
+        int eppoSpeciesLinks = AppContext.getEppoCodeSpeciesLinkService() == null
+                ? 0
+                : AppContext.getEppoCodeSpeciesLinkService().getAll().size();
+        int eppoZoneLinks = AppContext.getEppoCodeZoneLinkService() == null
+                ? 0
+                : AppContext.getEppoCodeZoneLinkService().getAll().size();
+
+        if (plantCount <= 0) {
+            throw new IllegalStateException("Pakiet startowy FG1 nie zapisał roślin w aktywnej bazie.");
+        }
+        if (eppoSpeciesLinks <= 0 || eppoZoneLinks <= 0) {
+            throw new IllegalStateException("Pakiet startowy FG1 nie zapisał pełnych słowników EPPO w aktywnej bazie.");
+        }
     }
 
     private void validateCrossPackageConsistency(CountryImportPreviewResult countriesPreview,

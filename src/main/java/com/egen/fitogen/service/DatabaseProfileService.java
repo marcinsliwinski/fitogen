@@ -75,9 +75,18 @@ public class DatabaseProfileService {
         seedNewProfile(createdPath, profileName);
 
         if (importStarterPackFg1) {
-            new BootstrapStarterPackService().importFg1StarterPack();
+            BootstrapStarterPackService starterPackService = new BootstrapStarterPackService();
+            starterPackService.importFg1StarterPack();
+            AppSettingsService settingsService = new AppSettingsService(
+                    new com.egen.fitogen.database.SqliteAppSettingsRepository(),
+                    com.egen.fitogen.config.AppContext.getAuditLogService()
+            );
+            settingsService.setPlantFullCatalogEnabled(true);
+            starterPackService.verifyFg1StarterPackImported();
         }
 
+        DatabaseConfig.switchDatabase(createdPath);
+        DatabaseInitializer.initDatabase();
         return getCurrentProfileInfo();
     }
 

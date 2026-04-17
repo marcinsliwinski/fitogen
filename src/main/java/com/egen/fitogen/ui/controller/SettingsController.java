@@ -112,6 +112,7 @@ public class SettingsController {
     @FXML private Label databaseProfileStatusLabel;
     @FXML private Label databaseMissingStatusLabel;
     @FXML private Label backupStatusLabel;
+    @FXML private Button applyDatabaseProfileButton;
     @FXML private ListView<DocumentType> documentTypesList;
     @FXML private TextField documentTypeSearchField;
     @FXML private Label documentTypeStatusLabel;
@@ -1783,6 +1784,13 @@ public class SettingsController {
             }
             updateDatabaseProfileSelectionState(newValue);
         });
+
+        if (newDatabaseNameField != null) {
+            newDatabaseNameField.textProperty().addListener((obs, oldValue, newValue) -> {
+                DatabaseProfileInfo selected = databaseProfileBox == null ? null : databaseProfileBox.getValue();
+                updateDatabaseProfileSelectionState(selected);
+            });
+        }
     }
 
     private void loadDatabaseProfileOverview() {
@@ -1898,12 +1906,23 @@ public class SettingsController {
         }
 
         if (createMode) {
-            databaseProfileStatusLabel.setText("Wybierz nazwę nowej bazy danych i potwierdź przyciskiem „Użyj wybranej bazy”.");
+            databaseProfileStatusLabel.setText("Wybierz nazwę nowej bazy danych i potwierdź przyciskiem „Dodaj i użyj nową bazę”.");
         } else if (!selectedProfile.exists()) {
             databaseProfileStatusLabel.setText("Wybrana baza danych nie istnieje już w zapisanej lokalizacji. Możesz utworzyć nową bazę albo odzyskać dane z backupu.");
         } else {
             databaseProfileStatusLabel.setText(buildDatabaseProfileStatus(selectedProfile));
         }
+        updateApplyDatabaseProfileButtonState(selectedProfile);
+    }
+
+    private void updateApplyDatabaseProfileButtonState(DatabaseProfileInfo selectedProfile) {
+        if (applyDatabaseProfileButton == null) {
+            return;
+        }
+
+        boolean createMode = selectedProfile != null && selectedProfile.createNewOption();
+        boolean hasName = newDatabaseNameField != null && newDatabaseNameField.getText() != null && !newDatabaseNameField.getText().trim().isBlank();
+        applyDatabaseProfileButton.setText(createMode && hasName ? "Dodaj i użyj nową bazę" : "Użyj wybranej bazy");
     }
 
     private void activateCreateNewDatabaseFlow() {
@@ -1953,17 +1972,23 @@ public class SettingsController {
             }
 
             boolean importStarterPack = starterPackSelection == StarterPackSelection.CREATE_WITH_FG1;
-            DatabaseProfileInfo created = databaseProfileService.createAndActivateProfile(profileName, importStarterPack);
+            try {
+                DatabaseProfileInfo created = databaseProfileService.createAndActivateProfile(profileName, importStarterPack);
 
-            if (importStarterPack) {
-                DialogUtil.showSuccess("Aktywowano bazę danych: " + created.displayName()
-                        + ". Baza została zasilona pakietem startowym FG1 (kraje, rośliny, słowniki EPPO).");
-            } else {
-                DialogUtil.showSuccess("Aktywowano bazę danych: " + created.displayName());
+                if (importStarterPack) {
+                    DialogUtil.showSuccess("Aktywowano bazę danych: " + created.displayName()
+                            + ". Baza została zasilona pakietem startowym FG1 (kraje, rośliny, słowniki EPPO)."
+                            + "Włączono też tryb pełnej bazy roślin, aby zaimportowany pakiet był od razu widoczny w aplikacji.");
+                } else {
+                    DialogUtil.showSuccess("Aktywowano bazę danych: " + created.displayName());
+                }
+
+                loadDatabaseProfileOverview();
+                ViewManager.refreshCurrent();
+                MainController.requestRefreshSystemNews();
+            } catch (Exception e) {
+                DialogUtil.showError("Nowa baza danych", e.getMessage());
             }
-
-            ViewManager.refreshCurrent();
-            MainController.requestRefreshSystemNews();
             return;
         }
 

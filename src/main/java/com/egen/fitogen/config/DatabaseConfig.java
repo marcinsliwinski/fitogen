@@ -237,12 +237,21 @@ public class DatabaseConfig {
     }
 
     public static synchronized boolean isTestDatabase(Path databaseFilePath) {
-        if (databaseFilePath == null || databaseFilePath.getFileName() == null) {
+        if (databaseFilePath == null) {
             return false;
         }
 
-        String fileName = databaseFilePath.getFileName().toString().toLowerCase();
-        return fileName.contains("test") || fileName.contains("baza_testowa");
+        Path normalized = databaseFilePath.toAbsolutePath().normalize();
+        Path testPath = getTestProfilePath();
+        if (testPath != null && normalized.equals(testPath)) {
+            return true;
+        }
+
+        if (normalized.getFileName() == null || testPath == null || testPath.getFileName() == null) {
+            return false;
+        }
+
+        return normalized.getFileName().toString().equalsIgnoreCase(testPath.getFileName().toString());
     }
 
     public static synchronized String getActiveDatabaseDisplayName() {

@@ -202,11 +202,15 @@ public class AppSettingsService {
 
     public boolean isIssuerProfileComplete() {
         IssuerProfile profile = getIssuerProfile();
-        return notBlank(profile.getNurseryName())
+        boolean streetComplete = profile != null && profile.isNoStreet()
+                ? true
+                : notBlank(profile == null ? null : profile.getStreet());
+        return profile != null
+                && notBlank(profile.getNurseryName())
                 && notBlank(profile.getCountry())
                 && notBlank(profile.getPostalCode())
                 && notBlank(profile.getCity())
-                && notBlank(profile.getStreet())
+                && streetComplete
                 && notBlank(profile.getPhytosanitaryNumber());
     }
 
