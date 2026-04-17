@@ -38,7 +38,7 @@ public class EppoDictionaryCsvExportService {
         }
 
         try (BufferedWriter writer = Files.newBufferedWriter(outputPath)) {
-            writer.write("relationType;eppoCode;speciesName;latinSpeciesName;zoneCode;zoneName;countryCode;passportRequired;codeStatus;zoneStatus");
+            writer.write("relationType;eppoCode;codeCommonName;codeScientificName;speciesName;latinSpeciesName;zoneCode;zoneName;countryCode;passportRequired;codeStatus;zoneStatus");
             writer.newLine();
 
             for (EppoCode code : codeById.values()) {
@@ -47,6 +47,8 @@ public class EppoDictionaryCsvExportService {
                     writer.write(String.join(";",
                             TYPE_SPECIES,
                             escape(code.getCode()),
+                            escape(code.getCommonName()),
+                            escape(code.getScientificName()),
                             escape(link.getSpeciesName()),
                             escape(link.getLatinSpeciesName()),
                             "",
@@ -64,6 +66,8 @@ public class EppoDictionaryCsvExportService {
                     writer.write(String.join(";",
                             TYPE_ZONE,
                             escape(code.getCode()),
+                            escape(code.getCommonName()),
+                            escape(code.getScientificName()),
                             "",
                             "",
                             escape(zone.getCode()),
@@ -84,7 +88,7 @@ public class EppoDictionaryCsvExportService {
     }
 
     public String getSupportedColumnsSummary() {
-        return "Jeden plik CSV słowników EPPO. Kolumny: typ relacji (relationType: SPECIES lub ZONE), kod EPPO (eppoCode), gatunek (speciesName), nazwa łacińska (latinSpeciesName), kod strefy (zoneCode), nazwa strefy (zoneName), kod kraju (countryCode), wymagany paszport (passportRequired), status kodu (codeStatus), status strefy (zoneStatus).";
+        return "Jeden plik CSV słowników EPPO. Kolumny: typ relacji (relationType: SPECIES lub ZONE), kod EPPO (eppoCode), nazwa polska kodu/agrofaga (codeCommonName), nazwa łacińska kodu/agrofaga (codeScientificName), gatunek żywicielski (speciesName), nazwa łacińska gatunku (latinSpeciesName), kod strefy (zoneCode), nazwa strefy (zoneName), kod kraju (countryCode), wymagany paszport (passportRequired), status kodu (codeStatus), status strefy (zoneStatus).";
     }
 
     private String escape(String value) {

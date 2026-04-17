@@ -28,7 +28,7 @@ public final class CountryCatalog {
         add("Estonia", "EE");
         add("Finlandia", "FI");
         add("Francja", "FR");
-        add("Grecja", "GR");
+        add("Grecja", "EL");
         add("Hiszpania", "ES");
         add("Holandia", "NL");
         add("Irlandia", "IE");
@@ -60,6 +60,8 @@ public final class CountryCatalog {
         add("Węgry", "HU");
         add("Wielka Brytania", "GB");
         add("Włochy", "IT");
+
+        CODE_TO_COUNTRY.put("GR", "Grecja");
 
         alias("UK", "GB");
         alias("Great Britain", "GB");

@@ -70,6 +70,8 @@ public class EppoDictionaryCsvImportService {
 
         int relationTypeIndex = indexOf(headers, "relationtype", "typrelacji", "typ");
         int eppoCodeIndex = indexOf(headers, "eppocode", "code", "kodeppo");
+        int codeCommonNameIndex = indexOf(headers, "codecommonname", "commonname", "polishname", "nazwapolska", "agrofagpolski");
+        int codeScientificNameIndex = indexOf(headers, "codescientificname", "scientificname", "latinname", "nazwalacinskakodu", "agrofaglacinski");
         int speciesNameIndex = indexOf(headers, "speciesname", "gatunek");
         int latinSpeciesNameIndex = indexOf(headers, "latinspeciesname", "nazwalacinska");
         int zoneCodeIndex = indexOf(headers, "zonecode", "kodstrefy");
@@ -106,6 +108,8 @@ public class EppoDictionaryCsvImportService {
             List<String> cells = parseCsvLine(line, delimiter);
             String relationType = normalizeRelationType(valueAt(cells, relationTypeIndex));
             String eppoCode = normalizeUpper(valueAt(cells, eppoCodeIndex));
+            String codeCommonName = normalizeText(valueAt(cells, codeCommonNameIndex));
+            String codeScientificName = normalizeText(valueAt(cells, codeScientificNameIndex));
             String speciesName = normalizeText(valueAt(cells, speciesNameIndex));
             String latinSpeciesName = normalizeText(valueAt(cells, latinSpeciesNameIndex));
             String zoneCode = normalizeUpper(valueAt(cells, zoneCodeIndex));
@@ -141,7 +145,20 @@ public class EppoDictionaryCsvImportService {
                     duplicateCount++;
                     message = "Duplikat relacji w pliku importu.";
                 } else {
-                    status = resolveStatus(relationType, eppoCode, speciesName, latinSpeciesName, zoneCode, zoneName, countryCode, passportRequired, codeStatus, zoneStatus);
+                    status = resolveStatus(
+                            relationType,
+                            eppoCode,
+                            codeCommonName,
+                            codeScientificName,
+                            speciesName,
+                            latinSpeciesName,
+                            zoneCode,
+                            zoneName,
+                            countryCode,
+                            passportRequired,
+                            codeStatus,
+                            zoneStatus
+                    );
                     switch (status) {
                         case STATUS_NEW -> newCount++;
                         case STATUS_UPDATE_EXISTING -> updateCount++;
@@ -165,6 +182,8 @@ public class EppoDictionaryCsvImportService {
                     rowNo,
                     relationType,
                     eppoCode,
+                    codeCommonName,
+                    codeScientificName,
                     speciesName,
                     latinSpeciesName,
                     zoneCode,
@@ -178,7 +197,17 @@ public class EppoDictionaryCsvImportService {
             ));
         }
 
-        return new EppoDictionaryImportPreviewResult(sourceName, delimiter, headers, rows, newCount, updateCount, existingCount, duplicateCount, invalidCount);
+        return new EppoDictionaryImportPreviewResult(
+                sourceName,
+                delimiter,
+                headers,
+                rows,
+                newCount,
+                updateCount,
+                existingCount,
+                duplicateCount,
+                invalidCount
+        );
     }
 
     public CsvImportExecutionResult applyPreview(EppoDictionaryImportPreviewResult previewResult) {
@@ -233,12 +262,14 @@ public class EppoDictionaryCsvImportService {
     }
 
     public String getSupportedColumnsSummary() {
-        return "Obsługiwany jest jeden plik CSV słowników EPPO. Wymagane kolumny: relationType (SPECIES lub ZONE), eppoCode. Dla SPECIES użyj speciesName i opcjonalnie latinSpeciesName. Dla ZONE użyj zoneCode, zoneName i countryCode. Opcjonalnie: passportRequired, codeStatus, zoneStatus.";
+        return "Obsługiwany jest jeden plik CSV słowników EPPO. Wymagane kolumny: relationType (SPECIES lub ZONE), eppoCode. Zalecane kolumny nazwy kodu/agrofaga: codeCommonName oraz codeScientificName. Dla SPECIES użyj speciesName i opcjonalnie latinSpeciesName. Dla ZONE użyj zoneCode, zoneName i countryCode. Opcjonalnie: passportRequired, codeStatus, zoneStatus.";
     }
 
     private String resolveStatus(
             String relationType,
             String eppoCodeValue,
+            String codeCommonName,
+            String codeScientificName,
             String speciesName,
             String latinSpeciesName,
             String zoneCode,
@@ -249,7 +280,7 @@ public class EppoDictionaryCsvImportService {
             String zoneStatus
     ) {
         EppoCode existingCode = eppoCodeService.getByCode(eppoCodeValue);
-        boolean codeRequiresUpdate = requiresCodeUpdate(existingCode, speciesName, latinSpeciesName, passportRequired, codeStatus);
+        boolean codeRequiresUpdate = requiresCodeUpdate(existingCode, codeCommonName, codeScientificName, passportRequired, codeStatus);
 
         if (TYPE_SPECIES.equals(relationType)) {
             if (existingCode == null) {
@@ -279,23 +310,26 @@ public class EppoDictionaryCsvImportService {
 
     private EppoCode upsertCode(EppoDictionaryImportPreviewRow row) {
         EppoCode existing = eppoCodeService.getByCode(row.getEppoCode());
-        EppoCode code = existing != null ? existing : new EppoCode(0, row.getEppoCode(), row.getSpeciesName(), row.getLatinSpeciesName(), row.getLatinSpeciesName(), row.getSpeciesName(), row.isPassportRequired(), row.getCodeStatus());
+        String codeCommonName = firstNonBlank(row.getCodeCommonName(), row.getSpeciesName());
+        String codeScientificName = firstNonBlank(row.getCodeScientificName(), row.getLatinSpeciesName());
+
+        EppoCode code = existing != null
+                ? existing
+                : new EppoCode(0, row.getEppoCode(), codeScientificName, codeCommonName, row.isPassportRequired(), row.getCodeStatus());
 
         if (existing == null) {
             code.setCode(row.getEppoCode());
         }
-        if (!row.getSpeciesName().isBlank()) {
-            code.setSpeciesName(row.getSpeciesName());
-            if (isBlank(code.getCommonName())) {
-                code.setCommonName(row.getSpeciesName());
-            }
+
+        if (!isBlank(codeCommonName)) {
+            code.setCommonName(codeCommonName);
+            code.setSpeciesName(codeCommonName);
         }
-        if (!row.getLatinSpeciesName().isBlank()) {
-            code.setLatinSpeciesName(row.getLatinSpeciesName());
-            if (isBlank(code.getScientificName())) {
-                code.setScientificName(row.getLatinSpeciesName());
-            }
+        if (!isBlank(codeScientificName)) {
+            code.setScientificName(codeScientificName);
+            code.setLatinSpeciesName(codeScientificName);
         }
+
         code.setPassportRequired(row.isPassportRequired());
         if (!row.getCodeStatus().isBlank()) {
             code.setStatus(row.getCodeStatus());
@@ -339,14 +373,14 @@ public class EppoDictionaryCsvImportService {
         }
     }
 
-    private boolean requiresCodeUpdate(EppoCode existing, String speciesName, String latinSpeciesName, boolean passportRequired, String codeStatus) {
+    private boolean requiresCodeUpdate(EppoCode existing, String codeCommonName, String codeScientificName, boolean passportRequired, String codeStatus) {
         if (existing == null) {
             return false;
         }
-        if (!speciesName.isBlank() && !speciesName.equalsIgnoreCase(normalizeText(existing.getSpeciesName()))) {
+        if (!isBlank(codeCommonName) && !codeCommonName.equalsIgnoreCase(normalizeText(existing.getCommonName()))) {
             return true;
         }
-        if (!latinSpeciesName.isBlank() && !latinSpeciesName.equalsIgnoreCase(normalizeText(existing.getLatinSpeciesName()))) {
+        if (!isBlank(codeScientificName) && !codeScientificName.equalsIgnoreCase(normalizeText(existing.getScientificName()))) {
             return true;
         }
         if (existing.isPassportRequired() != passportRequired) {
@@ -419,6 +453,18 @@ public class EppoDictionaryCsvImportService {
         return null;
     }
 
+    private String firstNonBlank(String... values) {
+        if (values == null) {
+            return "";
+        }
+        for (String value : values) {
+            if (!isBlank(value)) {
+                return value.trim();
+            }
+        }
+        return "";
+    }
+
     private String valueAt(List<String> cells, int index) {
         return index < 0 || index >= cells.size() || cells.get(index) == null ? "" : cells.get(index).trim();
     }
@@ -471,9 +517,9 @@ public class EppoDictionaryCsvImportService {
     private char resolveDelimiter(String line) {
         int semicolons = count(line, ';');
         int commas = count(line, ',');
-        int tabs = count(line, '	');
+        int tabs = count(line, '\t');
         if (tabs >= semicolons && tabs >= commas) {
-            return '	';
+            return '\t';
         }
         if (commas > semicolons) {
             return ',';

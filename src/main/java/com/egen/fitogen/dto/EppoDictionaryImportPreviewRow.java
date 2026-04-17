@@ -4,6 +4,8 @@ public class EppoDictionaryImportPreviewRow {
     private final int rowNumber;
     private final String relationType;
     private final String eppoCode;
+    private final String codeCommonName;
+    private final String codeScientificName;
     private final String speciesName;
     private final String latinSpeciesName;
     private final String zoneCode;
@@ -19,6 +21,8 @@ public class EppoDictionaryImportPreviewRow {
             int rowNumber,
             String relationType,
             String eppoCode,
+            String codeCommonName,
+            String codeScientificName,
             String speciesName,
             String latinSpeciesName,
             String zoneCode,
@@ -33,6 +37,8 @@ public class EppoDictionaryImportPreviewRow {
         this.rowNumber = rowNumber;
         this.relationType = relationType;
         this.eppoCode = eppoCode;
+        this.codeCommonName = codeCommonName;
+        this.codeScientificName = codeScientificName;
         this.speciesName = speciesName;
         this.latinSpeciesName = latinSpeciesName;
         this.zoneCode = zoneCode;
@@ -48,6 +54,8 @@ public class EppoDictionaryImportPreviewRow {
     public int getRowNumber() { return rowNumber; }
     public String getRelationType() { return relationType; }
     public String getEppoCode() { return eppoCode; }
+    public String getCodeCommonName() { return codeCommonName; }
+    public String getCodeScientificName() { return codeScientificName; }
     public String getSpeciesName() { return speciesName; }
     public String getLatinSpeciesName() { return latinSpeciesName; }
     public String getZoneCode() { return zoneCode; }
