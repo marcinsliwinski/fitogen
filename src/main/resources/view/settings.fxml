@@ -16,6 +16,7 @@
 <?import javafx.scene.control.TextArea?>
 <?import javafx.scene.layout.ColumnConstraints?>
 <?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.FlowPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.VBox?>
@@ -243,19 +244,19 @@
                                             <ColumnConstraints percentWidth="50" hgrow="ALWAYS"/>
                                         </columnConstraints>
                                         <VBox spacing="10" GridPane.columnIndex="0" fillWidth="true" maxWidth="1.7976931348623157E308">
-                                            <Label text="CSV roślin" styleClass="stat-title"/>
-                                            <Label text="Lokalny podgląd importu i eksport CSV dla roślin. Ten obszar pozostaje w Ustawieniach i nie jest częścią modułu Aktualizacje." wrapText="true" styleClass="page-subtitle"/>
-                                            <Label fx:id="plantsCsvColumnsLabel" wrapText="true" styleClass="page-subtitle"/>
-                                            <Label fx:id="plantsCsvStatusLabel" wrapText="true" styleClass="page-subtitle"/>
-                                            <HBox spacing="10" alignment="CENTER_LEFT">
+                                            <Label text="CSV roślin" styleClass="stat-title" maxWidth="1.7976931348623157E308"/>
+                                            <Label text="Lokalny podgląd importu i eksport CSV dla roślin. Ten obszar pozostaje w Ustawieniach i nie jest częścią modułu Aktualizacje." wrapText="true" styleClass="page-subtitle" maxWidth="1.7976931348623157E308"/>
+                                            <Label fx:id="plantsCsvColumnsLabel" wrapText="true" styleClass="page-subtitle" maxWidth="1.7976931348623157E308"/>
+                                            <Label fx:id="plantsCsvStatusLabel" wrapText="true" styleClass="page-subtitle" maxWidth="1.7976931348623157E308"/>
+                                            <FlowPane hgap="10" vgap="10" prefWrapLength="360" alignment="CENTER_LEFT">
                                                 <Button text="Podgląd importu CSV roślin" onAction="#previewPlantsCsvImport"/>
                                                 <Button fx:id="plantsCsvApplyButton" text="Importuj do bazy" onAction="#applyPlantsCsvImport" disable="true"/>
                                                 <Button text="Eksport CSV roślin" onAction="#exportPlantsCsv" styleClass="button-secondary"/>
                                                 <Button text="Wyczyść podgląd" onAction="#clearPlantsCsvPreview" styleClass="button-secondary"/>
-                                            </HBox>
+                                            </FlowPane>
                                         </VBox>
                                         <VBox spacing="8" GridPane.columnIndex="1" fillWidth="true" maxWidth="1.7976931348623157E308">
-                                            <Label text="Podgląd importu" styleClass="stat-title"/>
+                                            <Label text="Podgląd importu" styleClass="stat-title" maxWidth="1.7976931348623157E308"/>
                                             <TextArea fx:id="plantsCsvPreviewArea" editable="false" wrapText="true" prefRowCount="16" prefHeight="340" maxWidth="1.7976931348623157E308" VBox.vgrow="ALWAYS"/>
                                         </VBox>
                                     </GridPane>
@@ -268,19 +269,19 @@
                                             <ColumnConstraints percentWidth="50" hgrow="ALWAYS"/>
                                         </columnConstraints>
                                         <VBox spacing="10" GridPane.columnIndex="0" fillWidth="true" maxWidth="1.7976931348623157E308">
-                                            <Label text="CSV kontrahentów" styleClass="stat-title"/>
-                                            <Label text="Lokalny podgląd importu i eksport CSV dla kontrahentów w tym samym standardzie ustawień lokalnych." wrapText="true" styleClass="page-subtitle"/>
-                                            <Label fx:id="contrahentsCsvColumnsLabel" wrapText="true" styleClass="page-subtitle"/>
-                                            <Label fx:id="contrahentsCsvStatusLabel" wrapText="true" styleClass="page-subtitle"/>
-                                            <HBox spacing="10" alignment="CENTER_LEFT">
+                                            <Label text="CSV kontrahentów" styleClass="stat-title" maxWidth="1.7976931348623157E308"/>
+                                            <Label text="Lokalny podgląd importu i eksport CSV dla kontrahentów w tym samym standardzie ustawień lokalnych." wrapText="true" styleClass="page-subtitle" maxWidth="1.7976931348623157E308"/>
+                                            <Label fx:id="contrahentsCsvColumnsLabel" wrapText="true" styleClass="page-subtitle" maxWidth="1.7976931348623157E308"/>
+                                            <Label fx:id="contrahentsCsvStatusLabel" wrapText="true" styleClass="page-subtitle" maxWidth="1.7976931348623157E308"/>
+                                            <FlowPane hgap="10" vgap="10" prefWrapLength="360" alignment="CENTER_LEFT">
                                                 <Button text="Podgląd importu CSV kontrahentów" onAction="#previewContrahentsCsvImport"/>
                                                 <Button fx:id="contrahentsCsvApplyButton" text="Importuj do bazy" onAction="#applyContrahentsCsvImport" disable="true"/>
                                                 <Button text="Eksport CSV kontrahentów" onAction="#exportContrahentsCsv" styleClass="button-secondary"/>
                                                 <Button text="Wyczyść podgląd" onAction="#clearContrahentsCsvPreview" styleClass="button-secondary"/>
-                                            </HBox>
+                                            </FlowPane>
                                         </VBox>
                                         <VBox spacing="8" GridPane.columnIndex="1" fillWidth="true" maxWidth="1.7976931348623157E308">
-                                            <Label text="Podgląd importu" styleClass="stat-title"/>
+                                            <Label text="Podgląd importu" styleClass="stat-title" maxWidth="1.7976931348623157E308"/>
                                             <TextArea fx:id="contrahentsCsvPreviewArea" editable="false" wrapText="true" prefRowCount="16" prefHeight="340" maxWidth="1.7976931348623157E308" VBox.vgrow="ALWAYS"/>
                                         </VBox>
                                     </GridPane>
@@ -293,19 +294,19 @@
                                             <ColumnConstraints percentWidth="50" hgrow="ALWAYS"/>
                                         </columnConstraints>
                                         <VBox spacing="10" GridPane.columnIndex="0" fillWidth="true" maxWidth="1.7976931348623157E308">
-                                            <Label text="Dokumenty CSV" styleClass="stat-title"/>
-                                            <Label text="Lokalny podgląd importu i eksport CSV dla dokumentów. Format pozostaje w Ustawieniach -> Import / Eksport CSV i nie wchodzi do modułu Aktualizacje." wrapText="true" styleClass="page-subtitle"/>
-                                            <Label fx:id="documentsCsvColumnsLabel" wrapText="true" styleClass="page-subtitle"/>
-                                            <Label fx:id="documentsCsvStatusLabel" wrapText="true" styleClass="page-subtitle"/>
-                                            <HBox spacing="10" alignment="CENTER_LEFT">
+                                            <Label text="Dokumenty CSV" styleClass="stat-title" maxWidth="1.7976931348623157E308"/>
+                                            <Label text="Lokalny podgląd importu i eksport CSV dla dokumentów. Format pozostaje w Ustawieniach → Import / Eksport CSV i nie wchodzi do modułu Aktualizacje." wrapText="true" styleClass="page-subtitle" maxWidth="1.7976931348623157E308"/>
+                                            <Label fx:id="documentsCsvColumnsLabel" wrapText="true" styleClass="page-subtitle" maxWidth="1.7976931348623157E308"/>
+                                            <Label fx:id="documentsCsvStatusLabel" wrapText="true" styleClass="page-subtitle" maxWidth="1.7976931348623157E308"/>
+                                            <FlowPane hgap="10" vgap="10" prefWrapLength="360" alignment="CENTER_LEFT">
                                                 <Button text="Podgląd importu CSV dokumentów" onAction="#previewDocumentsCsvImport"/>
                                                 <Button fx:id="documentsCsvApplyButton" text="Importuj do bazy" onAction="#applyDocumentsCsvImport" disable="true"/>
                                                 <Button text="Eksport CSV dokumentów" onAction="#exportDocumentsCsv" styleClass="button-secondary"/>
                                                 <Button text="Wyczyść podgląd" onAction="#clearDocumentsCsvPreview" styleClass="button-secondary"/>
-                                            </HBox>
+                                            </FlowPane>
                                         </VBox>
                                         <VBox spacing="8" GridPane.columnIndex="1" fillWidth="true" maxWidth="1.7976931348623157E308">
-                                            <Label text="Podgląd importu" styleClass="stat-title"/>
+                                            <Label text="Podgląd importu" styleClass="stat-title" maxWidth="1.7976931348623157E308"/>
                                             <TextArea fx:id="documentsCsvPreviewArea" editable="false" wrapText="true" prefRowCount="16" prefHeight="340" maxWidth="1.7976931348623157E308" VBox.vgrow="ALWAYS"/>
                                         </VBox>
                                     </GridPane>
@@ -318,19 +319,19 @@
                                             <ColumnConstraints percentWidth="50" hgrow="ALWAYS"/>
                                         </columnConstraints>
                                         <VBox spacing="10" GridPane.columnIndex="0" fillWidth="true" maxWidth="1.7976931348623157E308">
-                                            <Label text="CSV partii roślin" styleClass="stat-title"/>
-                                            <Label text="Lokalny podgląd importu i eksport CSV dla partii roślin. Import działa po dopasowaniu rośliny po gatunku/odmianie/podkładce oraz źródła pochodzenia po nazwie kontrahenta." wrapText="true" styleClass="page-subtitle"/>
-                                            <Label fx:id="plantBatchesCsvColumnsLabel" wrapText="true" styleClass="page-subtitle"/>
-                                            <Label fx:id="plantBatchesCsvStatusLabel" wrapText="true" styleClass="page-subtitle"/>
-                                            <HBox spacing="10" alignment="CENTER_LEFT">
+                                            <Label text="CSV partii roślin" styleClass="stat-title" maxWidth="1.7976931348623157E308"/>
+                                            <Label text="Lokalny podgląd importu i eksport CSV dla partii roślin. Import działa po dopasowaniu rośliny po gatunku/odmianie/podkładce oraz źródła pochodzenia po nazwie kontrahenta." wrapText="true" styleClass="page-subtitle" maxWidth="1.7976931348623157E308"/>
+                                            <Label fx:id="plantBatchesCsvColumnsLabel" wrapText="true" styleClass="page-subtitle" maxWidth="1.7976931348623157E308"/>
+                                            <Label fx:id="plantBatchesCsvStatusLabel" wrapText="true" styleClass="page-subtitle" maxWidth="1.7976931348623157E308"/>
+                                            <FlowPane hgap="10" vgap="10" prefWrapLength="360" alignment="CENTER_LEFT">
                                                 <Button text="Podgląd importu CSV partii" onAction="#previewPlantBatchesCsvImport"/>
                                                 <Button fx:id="plantBatchesCsvApplyButton" text="Importuj do bazy" onAction="#applyPlantBatchesCsvImport" disable="true"/>
                                                 <Button text="Eksport CSV partii" onAction="#exportPlantBatchesCsv" styleClass="button-secondary"/>
                                                 <Button text="Wyczyść podgląd" onAction="#clearPlantBatchesCsvPreview" styleClass="button-secondary"/>
-                                            </HBox>
+                                            </FlowPane>
                                         </VBox>
                                         <VBox spacing="8" GridPane.columnIndex="1" fillWidth="true" maxWidth="1.7976931348623157E308">
-                                            <Label text="Podgląd importu" styleClass="stat-title"/>
+                                            <Label text="Podgląd importu" styleClass="stat-title" maxWidth="1.7976931348623157E308"/>
                                             <TextArea fx:id="plantBatchesCsvPreviewArea" editable="false" wrapText="true" prefRowCount="16" prefHeight="340" maxWidth="1.7976931348623157E308" VBox.vgrow="ALWAYS"/>
                                         </VBox>
                                     </GridPane>
@@ -343,20 +344,45 @@
                                             <ColumnConstraints percentWidth="50" hgrow="ALWAYS"/>
                                         </columnConstraints>
                                         <VBox spacing="10" GridPane.columnIndex="0" fillWidth="true" maxWidth="1.7976931348623157E308">
-                                            <Label text="Słowniki EPPO CSV" styleClass="stat-title"/>
-                                            <Label text="Jeden lokalny plik CSV dla relacji kod EPPO → gatunek oraz kod EPPO → strefa (kraj). System dopasowuje rośliny po gatunku, więc osobne relacje kod → roślina nie są tu potrzebne." wrapText="true" styleClass="page-subtitle"/>
-                                            <Label fx:id="eppoDictionaryCsvColumnsLabel" wrapText="true" styleClass="page-subtitle"/>
-                                            <Label fx:id="eppoDictionaryCsvStatusLabel" wrapText="true" styleClass="page-subtitle"/>
-                                            <HBox spacing="10" alignment="CENTER_LEFT">
+                                            <Label text="Słowniki EPPO CSV" styleClass="stat-title" maxWidth="1.7976931348623157E308"/>
+                                            <Label text="Jeden lokalny plik CSV dla relacji kod EPPO → gatunek oraz kod EPPO → strefa (kraj). System dopasowuje rośliny po gatunku, więc osobne relacje kod → roślina nie są tu potrzebne." wrapText="true" styleClass="page-subtitle" maxWidth="1.7976931348623157E308"/>
+                                            <Label fx:id="eppoDictionaryCsvColumnsLabel" wrapText="true" styleClass="page-subtitle" maxWidth="1.7976931348623157E308"/>
+                                            <Label fx:id="eppoDictionaryCsvStatusLabel" wrapText="true" styleClass="page-subtitle" maxWidth="1.7976931348623157E308"/>
+                                            <FlowPane hgap="10" vgap="10" prefWrapLength="360" alignment="CENTER_LEFT">
                                                 <Button text="Podgląd importu CSV EPPO" onAction="#previewEppoDictionaryCsvImport"/>
                                                 <Button fx:id="eppoDictionaryCsvApplyButton" text="Importuj do bazy" onAction="#applyEppoDictionaryCsvImport" disable="true"/>
                                                 <Button text="Eksport CSV EPPO" onAction="#exportEppoDictionaryCsv" styleClass="button-secondary"/>
                                                 <Button text="Wyczyść podgląd" onAction="#clearEppoDictionaryCsvPreview" styleClass="button-secondary"/>
-                                            </HBox>
+                                            </FlowPane>
                                         </VBox>
                                         <VBox spacing="8" GridPane.columnIndex="1" fillWidth="true" maxWidth="1.7976931348623157E308">
-                                            <Label text="Podgląd importu" styleClass="stat-title"/>
+                                            <Label text="Podgląd importu" styleClass="stat-title" maxWidth="1.7976931348623157E308"/>
                                             <TextArea fx:id="eppoDictionaryCsvPreviewArea" editable="false" wrapText="true" prefRowCount="16" prefHeight="340" maxWidth="1.7976931348623157E308" VBox.vgrow="ALWAYS"/>
+                                        </VBox>
+                                    </GridPane>
+                                </VBox>
+
+                                <VBox spacing="12" styleClass="stat-card">
+                                    <GridPane hgap="16" vgap="12">
+                                        <columnConstraints>
+                                            <ColumnConstraints percentWidth="50" hgrow="ALWAYS"/>
+                                            <ColumnConstraints percentWidth="50" hgrow="ALWAYS"/>
+                                        </columnConstraints>
+                                        <VBox spacing="10" GridPane.columnIndex="0" fillWidth="true" maxWidth="1.7976931348623157E308">
+                                            <Label text="CSV danych podmiotu" styleClass="stat-title" maxWidth="1.7976931348623157E308"/>
+                                            <Label text="Lokalny podgląd importu i eksport CSV dla profilu szkółki / wystawcy używanego w dokumentach. Plik powinien zawierać pojedynczy rekord danych podmiotu." wrapText="true" styleClass="page-subtitle" maxWidth="1.7976931348623157E308"/>
+                                            <Label fx:id="subjectDataCsvColumnsLabel" wrapText="true" styleClass="page-subtitle" maxWidth="1.7976931348623157E308"/>
+                                            <Label fx:id="subjectDataCsvStatusLabel" wrapText="true" styleClass="page-subtitle" maxWidth="1.7976931348623157E308"/>
+                                            <FlowPane hgap="10" vgap="10" prefWrapLength="360" alignment="CENTER_LEFT">
+                                                <Button text="Podgląd importu CSV danych podmiotu" onAction="#previewSubjectDataCsvImport"/>
+                                                <Button fx:id="subjectDataCsvApplyButton" text="Importuj do ustawień" onAction="#applySubjectDataCsvImport" disable="true"/>
+                                                <Button text="Eksport CSV danych podmiotu" onAction="#exportSubjectDataCsv" styleClass="button-secondary"/>
+                                                <Button text="Wyczyść podgląd" onAction="#clearSubjectDataCsvPreview" styleClass="button-secondary"/>
+                                            </FlowPane>
+                                        </VBox>
+                                        <VBox spacing="8" GridPane.columnIndex="1" fillWidth="true" maxWidth="1.7976931348623157E308">
+                                            <Label text="Podgląd importu" styleClass="stat-title" maxWidth="1.7976931348623157E308"/>
+                                            <TextArea fx:id="subjectDataCsvPreviewArea" editable="false" wrapText="true" prefRowCount="16" prefHeight="340" maxWidth="1.7976931348623157E308" VBox.vgrow="ALWAYS"/>
                                         </VBox>
                                     </GridPane>
                                 </VBox>
@@ -365,7 +391,6 @@
                     </content>
                 </ScrollPane>
             </Tab>
-
 
             <Tab text="Dziennik audytu">
                 <ScrollPane fitToWidth="true" fitToHeight="true">

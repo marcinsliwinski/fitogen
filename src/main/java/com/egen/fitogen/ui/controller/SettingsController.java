@@ -5,6 +5,7 @@ import com.egen.fitogen.config.DatabaseConfig;
 import com.egen.fitogen.domain.NumberingConfig;
 import com.egen.fitogen.dto.ContrahentImportPreviewResult;
 import com.egen.fitogen.dto.EppoDictionaryImportPreviewResult;
+import com.egen.fitogen.dto.SubjectDataImportPreviewResult;
 import com.egen.fitogen.dto.PlantBatchImportPreviewResult;
 import com.egen.fitogen.dto.CsvImportExecutionResult;
 import com.egen.fitogen.dto.PlantImportPreviewResult;
@@ -28,6 +29,8 @@ import com.egen.fitogen.service.DocumentCsvImportService;
 import com.egen.fitogen.service.DocumentTypeService;
 import com.egen.fitogen.service.EppoDictionaryCsvExportService;
 import com.egen.fitogen.service.EppoDictionaryCsvImportService;
+import com.egen.fitogen.service.SubjectDataCsvExportService;
+import com.egen.fitogen.service.SubjectDataCsvImportService;
 import com.egen.fitogen.service.NumberingConfigService;
 import com.egen.fitogen.service.PlantCsvExportService;
 import com.egen.fitogen.service.PlantBatchCsvExportService;
@@ -164,6 +167,10 @@ public class SettingsController {
     @FXML private Label eppoDictionaryCsvStatusLabel;
     @FXML private TextArea eppoDictionaryCsvPreviewArea;
     @FXML private Button eppoDictionaryCsvApplyButton;
+    @FXML private Label subjectDataCsvColumnsLabel;
+    @FXML private Label subjectDataCsvStatusLabel;
+    @FXML private TextArea subjectDataCsvPreviewArea;
+    @FXML private Button subjectDataCsvApplyButton;
 
     @FXML private Label auditLogStatusLabel;
     @FXML private TextField auditLogSearchField;
@@ -204,6 +211,13 @@ public class SettingsController {
             AppContext.getEppoCodeSpeciesLinkService(),
             AppContext.getEppoCodeZoneLinkService()
     );
+    private final SubjectDataCsvImportService subjectDataCsvImportService = new SubjectDataCsvImportService(
+            AppContext.getAppSettingsService(),
+            AppContext.getCountryDirectoryService()
+    );
+    private final SubjectDataCsvExportService subjectDataCsvExportService = new SubjectDataCsvExportService(
+            AppContext.getAppSettingsService()
+    );
 
     private boolean loading;
     private boolean updatingDefaultUserSelection;
@@ -227,6 +241,7 @@ public class SettingsController {
     private com.egen.fitogen.dto.DocumentImportPreviewResult lastDocumentsCsvPreviewResult;
     private PlantBatchImportPreviewResult lastPlantBatchesCsvPreviewResult;
     private EppoDictionaryImportPreviewResult lastEppoDictionaryCsvPreviewResult;
+    private SubjectDataImportPreviewResult lastSubjectDataCsvPreviewResult;
 
 
     public static void requestInitialTab(String tabTitle) {
@@ -2284,6 +2299,11 @@ public class SettingsController {
                     + UiTextUtil.NL
                     + eppoDictionaryCsvExportService.getSupportedColumnsSummary());
         }
+        if (subjectDataCsvColumnsLabel != null) {
+            subjectDataCsvColumnsLabel.setText(subjectDataCsvImportService.getSupportedColumnsSummary()
+                    + UiTextUtil.NL
+                    + subjectDataCsvExportService.getSupportedColumnsSummary());
+        }
         if (plantsCsvStatusLabel != null) {
             plantsCsvStatusLabel.setText(buildCsvInitialStatus("roślin"));
         }
@@ -2299,16 +2319,21 @@ public class SettingsController {
         if (eppoDictionaryCsvStatusLabel != null) {
             eppoDictionaryCsvStatusLabel.setText(buildCsvInitialStatus("słowników EPPO"));
         }
+        if (subjectDataCsvStatusLabel != null) {
+            subjectDataCsvStatusLabel.setText(buildCsvInitialStatus("danych podmiotu"));
+        }
         clearPlantsCsvPreviewState();
         clearContrahentsCsvPreviewState();
         clearDocumentsCsvPreviewState();
         clearPlantBatchesCsvPreviewState();
         clearEppoDictionaryCsvPreviewState();
+        clearSubjectDataCsvPreviewState();
         resetPlantsCsvPreview();
         resetContrahentsCsvPreview();
         resetDocumentsCsvPreview();
         resetPlantBatchesCsvPreview();
         resetEppoDictionaryCsvPreview();
+        resetSubjectDataCsvPreview();
     }
 
     @FXML
@@ -2685,6 +2710,94 @@ public class SettingsController {
 
 
     @FXML
+    private void previewSubjectDataCsvImport() {
+        Path selectedPath = chooseCsvToOpen("Wybierz plik CSV danych podmiotu");
+        if (selectedPath == null) {
+            return;
+        }
+
+        try {
+            SubjectDataImportPreviewResult result = subjectDataCsvImportService.preview(selectedPath);
+            lastSubjectDataCsvPreviewResult = result;
+            updateSubjectDataCsvApplyButtonState();
+            subjectDataCsvStatusLabel.setText(buildSubjectDataPreviewStatus(result));
+            subjectDataCsvPreviewArea.setText(buildSubjectDataPreviewText(result));
+        } catch (Exception e) {
+            e.printStackTrace();
+            clearSubjectDataCsvPreviewState();
+            subjectDataCsvStatusLabel.setText(buildCsvPreviewErrorStatus("danych podmiotu"));
+            DialogUtil.showError(buildCsvPreviewDialogTitle("danych podmiotu"), buildCsvPreviewErrorMessage("danych podmiotu"));
+        }
+    }
+
+    @FXML
+    private void applySubjectDataCsvImport() {
+        if (lastSubjectDataCsvPreviewResult == null) {
+            DialogUtil.showWarning("Import CSV danych podmiotu", "Najpierw przygotuj podgląd importu danych podmiotu.");
+            return;
+        }
+        if (lastSubjectDataCsvPreviewResult.getImportableRowsCount() <= 0) {
+            DialogUtil.showWarning("Import CSV danych podmiotu", "Brak zmian do zapisania w ostatnim podglądzie danych podmiotu.");
+            updateSubjectDataCsvApplyButtonState();
+            return;
+        }
+        if (!DialogUtil.confirmAction(
+                "Import CSV danych podmiotu",
+                "zaimportować do ustawień",
+                buildCsvImportConfirmationTarget("danych podmiotu",
+                        lastSubjectDataCsvPreviewResult.getSourceName(),
+                        lastSubjectDataCsvPreviewResult.getImportableRowsCount(),
+                        lastSubjectDataCsvPreviewResult.getMatchingExistingCount(),
+                        lastSubjectDataCsvPreviewResult.getInvalidRowsCount() + lastSubjectDataCsvPreviewResult.getDuplicateInFileCount())
+        )) {
+            return;
+        }
+
+        try {
+            CsvImportExecutionResult executionResult = subjectDataCsvImportService.applyPreview(lastSubjectDataCsvPreviewResult);
+            auditLogService.log("SubjectDataCsvImport", null, "IMPORT", buildCsvImportAuditDescription("danych podmiotu", executionResult));
+            subjectDataCsvStatusLabel.setText(buildCsvImportExecutionStatus("danych podmiotu", executionResult));
+            subjectDataCsvPreviewArea.setText(buildCsvImportExecutionText("CSV danych podmiotu", executionResult, buildSubjectDataPreviewText(lastSubjectDataCsvPreviewResult)));
+            clearSubjectDataCsvPreviewState();
+            refreshAuditLog();
+            loadIssuerProfile();
+            updateIssuerStatusLabel();
+            DialogUtil.showSuccess(buildCsvImportSuccessDialogMessage("Dane podmiotu", executionResult));
+        } catch (Exception e) {
+            e.printStackTrace();
+            subjectDataCsvStatusLabel.setText(buildCsvImportErrorStatus("danych podmiotu"));
+            DialogUtil.showError("Import CSV danych podmiotu", "Nie udało się wykonać importu danych podmiotu.");
+        }
+    }
+
+    @FXML
+    private void exportSubjectDataCsv() {
+        Path selectedPath = chooseCsvToSave("Eksportuj dane podmiotu do CSV", "dane-podmiotu-eksport.csv");
+        if (selectedPath == null) {
+            return;
+        }
+
+        try {
+            Path exported = subjectDataCsvExportService.export(selectedPath);
+            subjectDataCsvStatusLabel.setText(buildCsvExportSuccessStatus("danych podmiotu", exported));
+            DialogUtil.showSuccess(buildCsvExportSuccessDialogMessage("Dane podmiotu", exported));
+        } catch (Exception e) {
+            e.printStackTrace();
+            subjectDataCsvStatusLabel.setText(buildCsvExportErrorStatus("danych podmiotu"));
+            DialogUtil.showError(buildCsvExportDialogTitle("danych podmiotu"), buildCsvExportErrorMessage("danych podmiotu"));
+        }
+    }
+
+    @FXML
+    private void clearSubjectDataCsvPreview() {
+        clearSubjectDataCsvPreviewState();
+        resetSubjectDataCsvPreview();
+        if (subjectDataCsvStatusLabel != null) {
+            subjectDataCsvStatusLabel.setText(buildCsvPreviewClearedStatus("danych podmiotu"));
+        }
+    }
+
+    @FXML
     private void clearPlantsCsvPreview() {
         clearPlantsCsvPreviewState();
         resetPlantsCsvPreview();
@@ -2754,6 +2867,11 @@ public class SettingsController {
         updateEppoDictionaryCsvApplyButtonState();
     }
 
+    private void clearSubjectDataCsvPreviewState() {
+        lastSubjectDataCsvPreviewResult = null;
+        updateSubjectDataCsvApplyButtonState();
+    }
+
     private void updatePlantsCsvApplyButtonState() {
         if (plantsCsvApplyButton != null) {
             plantsCsvApplyButton.setDisable(lastPlantsCsvPreviewResult == null || lastPlantsCsvPreviewResult.getNewRowsCount() <= 0);
@@ -2781,6 +2899,12 @@ public class SettingsController {
     private void updateEppoDictionaryCsvApplyButtonState() {
         if (eppoDictionaryCsvApplyButton != null) {
             eppoDictionaryCsvApplyButton.setDisable(lastEppoDictionaryCsvPreviewResult == null || lastEppoDictionaryCsvPreviewResult.getImportableRowsCount() <= 0);
+        }
+    }
+
+    private void updateSubjectDataCsvApplyButtonState() {
+        if (subjectDataCsvApplyButton != null) {
+            subjectDataCsvApplyButton.setDisable(lastSubjectDataCsvPreviewResult == null || lastSubjectDataCsvPreviewResult.getImportableRowsCount() <= 0);
         }
     }
 
@@ -3008,6 +3132,15 @@ public class SettingsController {
         }
     }
 
+    private void resetSubjectDataCsvPreview() {
+        if (subjectDataCsvPreviewArea != null) {
+            subjectDataCsvPreviewArea.setText(UiTextUtil.buildEmptyPreviewText(
+                    "CSV danych podmiotu",
+                    "Po uruchomieniu analizy zobaczysz tutaj podsumowanie pliku i pojedynczy rekord profilu szkółki / wystawcy."
+            ));
+        }
+    }
+
     private String buildPlantBatchesPreviewText(PlantBatchImportPreviewResult result) {
         StringBuilder builder = new StringBuilder();
         appendPreviewFileSummary(builder,
@@ -3209,6 +3342,114 @@ public class SettingsController {
             return "Możesz bezpiecznie wykonać import relacji kod EPPO → gatunek i kod EPPO → strefa.";
         }
         return "Nie ma nowych ani aktualizowanych relacji do zapisania w bazie.";
+    }
+
+    private String buildSubjectDataPreviewStatus(SubjectDataImportPreviewResult result) {
+        return "CSV danych podmiotu — łącznie wierszy: " + result.getTotalRowsCount()
+                + ", nowych: " + result.getNewRowsCount()
+                + ", aktualizacji: " + result.getUpdateRowsCount()
+                + ", zgodnych: " + result.getMatchingExistingCount()
+                + ", duplikatów w pliku: " + result.getDuplicateInFileCount()
+                + ", błędnych: " + result.getInvalidRowsCount()
+                + ". Ocena: " + buildSubjectDataImportReadiness(result);
+    }
+
+    private String buildSubjectDataPreviewText(SubjectDataImportPreviewResult result) {
+        StringBuilder builder = new StringBuilder();
+        appendPreviewFileSummary(builder,
+                result.getSourceName(),
+                result.getDelimiter(),
+                result.getResolvedHeaders(),
+                List.of(
+                        new PreviewSummaryRow("Łącznie wierszy", result.getTotalRowsCount()),
+                        new PreviewSummaryRow("Nowe profile", result.getNewRowsCount()),
+                        new PreviewSummaryRow("Profile do aktualizacji", result.getUpdateRowsCount()),
+                        new PreviewSummaryRow("Profile zgodne", result.getMatchingExistingCount()),
+                        new PreviewSummaryRow("Duplikaty w pliku", result.getDuplicateInFileCount()),
+                        new PreviewSummaryRow("Błędne wiersze", result.getInvalidRowsCount())
+                ));
+
+        UiTextUtil.appendSectionHeader(builder, "OCENA WALIDACJI");
+        UiTextUtil.appendSummaryLine(builder, "Gotowość importu", buildSubjectDataImportReadiness(result));
+        UiTextUtil.appendSummaryLine(builder, "Rekomendacja", buildSubjectDataImportRecommendation(result));
+        UiTextUtil.appendEmptyLine(builder);
+
+        UiTextUtil.appendSectionHeader(builder, "PRÓBKA WIERSZY");
+        int previewLimit = Math.min(result.getRows().size(), 5);
+        for (int i = 0; i < previewLimit; i++) {
+            var row = result.getRows().get(i);
+            builder.append("#").append(row.getRowNumber())
+                    .append(" [").append(safe(row.getStatus())).append("] ")
+                    .append(fallback(safe(row.getNurseryName()), "[bez nazwy]"));
+            if (!safe(row.getCountry()).isBlank()) {
+                builder.append(" | kraj: ").append(safe(row.getCountry()));
+            }
+            if (!safe(row.getCountryCode()).isBlank()) {
+                builder.append(" | kod: ").append(safe(row.getCountryCode()));
+            }
+            if (!safe(row.getCity()).isBlank()) {
+                builder.append(" | miasto: ").append(safe(row.getCity()));
+            }
+            if (!safe(row.getPostalCode()).isBlank()) {
+                builder.append(" | kod pocztowy: ").append(safe(row.getPostalCode()));
+            }
+            builder.append(" | brak ulicy: ").append(row.isNoStreet() ? "tak" : "nie");
+            if (!safe(row.getStreet()).isBlank()) {
+                builder.append(" | ulica: ").append(safe(row.getStreet()));
+            }
+            if (!safe(row.getPhytosanitaryNumber()).isBlank()) {
+                builder.append(" | nr fitosanitarny: ").append(safe(row.getPhytosanitaryNumber()));
+            }
+            if (row.getMessage() != null && !row.getMessage().isBlank()) {
+                builder.append(" | uwaga: ").append(row.getMessage());
+            }
+            builder.append(UiTextUtil.NL);
+        }
+
+        UiTextUtil.appendPreviewLimitNote(builder, previewLimit, result.getRows().size());
+        List<String> problemRows = new ArrayList<>();
+        for (var row : result.getRows()) {
+            if (row.getMessage() != null && !row.getMessage().isBlank()) {
+                problemRows.add("#" + row.getRowNumber() + " [" + row.getStatus() + "] " + row.getMessage());
+            }
+            if (problemRows.size() >= 5) {
+                break;
+            }
+        }
+        UiTextUtil.appendIssuesSection(builder, "NAJWAŻNIEJSZE UWAGI", problemRows);
+        return builder.toString();
+    }
+
+    private String buildSubjectDataImportReadiness(SubjectDataImportPreviewResult result) {
+        if (result.getTotalRowsCount() == 0) {
+            return "plik nie zawiera danych do analizy";
+        }
+        if (result.getInvalidRowsCount() > 0) {
+            return "wymaga korekty przed importem";
+        }
+        if (result.getDuplicateInFileCount() > 0) {
+            return "wymaga pozostawienia tylko jednego rekordu profilu";
+        }
+        if (result.getImportableRowsCount() == 0) {
+            return "brak zmian do zapisania";
+        }
+        return "gotowy do bezpiecznego importu";
+    }
+
+    private String buildSubjectDataImportRecommendation(SubjectDataImportPreviewResult result) {
+        if (result.getTotalRowsCount() == 0) {
+            return "Sprawdź, czy plik zawiera nagłówek i co najmniej jeden rekord danych podmiotu.";
+        }
+        if (result.getInvalidRowsCount() > 0) {
+            return "Popraw błędne wiersze, szczególnie parę kraj / kod kraju oraz pola obowiązkowe eksportu.";
+        }
+        if (result.getDuplicateInFileCount() > 0) {
+            return "Pozostaw w pliku tylko jeden rekord profilu szkółki / wystawcy.";
+        }
+        if (result.getImportableRowsCount() == 0) {
+            return "Plik nie wniesie zmian względem bieżącego profilu danych podmiotu.";
+        }
+        return "Podgląd wygląda spójnie. Możesz bezpiecznie zaktualizować dane podmiotu z tego pliku.";
     }
 
     private String buildPlantsPreviewText(com.egen.fitogen.dto.PlantImportPreviewResult result) {
