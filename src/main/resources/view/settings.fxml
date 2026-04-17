@@ -268,6 +268,22 @@
                             <Separator/>
 
                             <VBox spacing="12" styleClass="stat-card">
+                                <Label text="Kraje CSV" styleClass="stat-title"/>
+                                <Label text="Lokalny podgląd importu i eksport wspólnego słownika krajów używanego przez Kontrahentów, EPPO i dane podmiotu. Import działa przez wpisy własne i nie nadpisuje katalogu bazowego w kodzie." wrapText="true" styleClass="page-subtitle"/>
+                                <Label fx:id="countriesCsvColumnsLabel" wrapText="true" styleClass="page-subtitle"/>
+                                <Label fx:id="countriesCsvStatusLabel" wrapText="true" styleClass="page-subtitle"/>
+                                <HBox spacing="10">
+                                    <Button text="Podgląd importu CSV krajów" onAction="#previewCountriesCsvImport"/>
+                                    <Button fx:id="countriesCsvApplyButton" text="Importuj do słownika" onAction="#applyCountriesCsvImport" disable="true"/>
+                                    <Button text="Eksport CSV krajów" onAction="#exportCountriesCsv" styleClass="button-secondary"/>
+                                    <Button text="Wyczyść podgląd" onAction="#clearCountriesCsvPreview" styleClass="button-secondary"/>
+                                </HBox>
+                                <TextArea fx:id="countriesCsvPreviewArea" editable="false" wrapText="true" prefRowCount="18" prefHeight="360"/>
+                            </VBox>
+
+                            <Separator/>
+
+                            <VBox spacing="12" styleClass="stat-card">
                                 <Label text="Dokumenty CSV" styleClass="stat-title"/>
                                 <Label text="Lokalny podgląd importu i eksport CSV dla dokumentów. Format pozostaje w Ustawieniach -> Import / Eksport CSV i nie wchodzi do modułu Aktualizacje." wrapText="true" styleClass="page-subtitle"/>
                                 <Label fx:id="documentsCsvColumnsLabel" wrapText="true" styleClass="page-subtitle"/>

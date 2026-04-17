@@ -4,6 +4,7 @@ import com.egen.fitogen.config.AppContext;
 import com.egen.fitogen.config.DatabaseConfig;
 import com.egen.fitogen.domain.NumberingConfig;
 import com.egen.fitogen.dto.ContrahentImportPreviewResult;
+import com.egen.fitogen.dto.CountryImportPreviewResult;
 import com.egen.fitogen.dto.EppoDictionaryImportPreviewResult;
 import com.egen.fitogen.dto.CsvImportExecutionResult;
 import com.egen.fitogen.dto.PlantImportPreviewResult;
@@ -21,6 +22,8 @@ import com.egen.fitogen.service.BackupService;
 import com.egen.fitogen.service.DatabaseProfileService;
 import com.egen.fitogen.service.ContrahentCsvExportService;
 import com.egen.fitogen.service.ContrahentCsvImportService;
+import com.egen.fitogen.service.CountryCsvExportService;
+import com.egen.fitogen.service.CountryCsvImportService;
 import com.egen.fitogen.service.CountryDirectoryService;
 import com.egen.fitogen.service.DocumentCsvExportService;
 import com.egen.fitogen.service.DocumentCsvImportService;
@@ -147,6 +150,10 @@ public class SettingsController {
     @FXML private Label contrahentsCsvStatusLabel;
     @FXML private TextArea contrahentsCsvPreviewArea;
     @FXML private Button contrahentsCsvApplyButton;
+    @FXML private Label countriesCsvColumnsLabel;
+    @FXML private Label countriesCsvStatusLabel;
+    @FXML private TextArea countriesCsvPreviewArea;
+    @FXML private Button countriesCsvApplyButton;
     @FXML private Label documentsCsvColumnsLabel;
     @FXML private Label documentsCsvStatusLabel;
     @FXML private TextArea documentsCsvPreviewArea;
@@ -180,6 +187,8 @@ public class SettingsController {
     private final PlantCsvExportService plantCsvExportService = new PlantCsvExportService(AppContext.getPlantService());
     private final ContrahentCsvImportService contrahentCsvImportService = new ContrahentCsvImportService(AppContext.getContrahentService(), AppContext.getCountryDirectoryService());
     private final ContrahentCsvExportService contrahentCsvExportService = new ContrahentCsvExportService(AppContext.getContrahentService());
+    private final CountryCsvImportService countryCsvImportService = new CountryCsvImportService(AppContext.getCountryDirectoryService(), AppContext.getAppSettingsService());
+    private final CountryCsvExportService countryCsvExportService = new CountryCsvExportService(AppContext.getCountryDirectoryService());
     private final DocumentCsvImportService documentCsvImportService = new DocumentCsvImportService(AppContext.getDocumentService(), AppContext.getContrahentService(), AppContext.getPlantBatchService(), AppContext.getAuditLogService());
     private final DocumentCsvExportService documentCsvExportService = new DocumentCsvExportService(new SqliteDocumentRepository(), new SqliteDocumentItemRepository(), AppContext.getContrahentService(), AppContext.getPlantBatchService());
 
@@ -214,6 +223,7 @@ public class SettingsController {
     private SortedList<com.egen.fitogen.model.AuditLogEntry> auditLogSortedData;
     private PlantImportPreviewResult lastPlantsCsvPreviewResult;
     private ContrahentImportPreviewResult lastContrahentsCsvPreviewResult;
+    private CountryImportPreviewResult lastCountriesCsvPreviewResult;
     private com.egen.fitogen.dto.DocumentImportPreviewResult lastDocumentsCsvPreviewResult;
 
 
@@ -2260,6 +2270,11 @@ public class SettingsController {
                     + UiTextUtil.NL
                     + contrahentCsvExportService.getSupportedColumnsSummary());
         }
+        if (countriesCsvColumnsLabel != null) {
+            countriesCsvColumnsLabel.setText(countryCsvImportService.getSupportedColumnsSummary()
+                    + UiTextUtil.NL
+                    + countryCsvExportService.getSupportedColumnsSummary());
+        }
         if (documentsCsvColumnsLabel != null) {
             documentsCsvColumnsLabel.setText(documentCsvImportService.getSupportedColumnsSummary()
                     + UiTextUtil.NL
@@ -2276,6 +2291,9 @@ public class SettingsController {
         if (contrahentsCsvStatusLabel != null) {
             contrahentsCsvStatusLabel.setText(buildCsvInitialStatus("kontrahentów"));
         }
+        if (countriesCsvStatusLabel != null) {
+            countriesCsvStatusLabel.setText(buildCsvInitialStatus("krajów"));
+        }
         if (documentsCsvStatusLabel != null) {
             documentsCsvStatusLabel.setText(buildCsvInitialStatus("dokumentów"));
         }
@@ -2284,10 +2302,12 @@ public class SettingsController {
         }
         clearPlantsCsvPreviewState();
         clearContrahentsCsvPreviewState();
+        clearCountriesCsvPreviewState();
         clearDocumentsCsvPreviewState();
         clearEppoDictionaryCsvPreviewState();
         resetPlantsCsvPreview();
         resetContrahentsCsvPreview();
+        resetCountriesCsvPreview();
         resetDocumentsCsvPreview();
         resetEppoDictionaryCsvPreview();
     }
@@ -2435,6 +2455,81 @@ public class SettingsController {
             e.printStackTrace();
             contrahentsCsvStatusLabel.setText(buildCsvExportErrorStatus("kontrahentów"));
             DialogUtil.showError(buildCsvExportDialogTitle("kontrahentów"), buildCsvExportErrorMessage("kontrahentów"));
+        }
+    }
+
+    @FXML
+    private void previewCountriesCsvImport() {
+        Path selectedPath = chooseCsvToOpen("Wybierz plik CSV krajów");
+        if (selectedPath == null) {
+            return;
+        }
+
+        try {
+            CountryImportPreviewResult result = countryCsvImportService.preview(selectedPath);
+            lastCountriesCsvPreviewResult = result;
+            updateCountriesCsvApplyButtonState();
+            countriesCsvStatusLabel.setText(buildCountriesPreviewStatus(result));
+            countriesCsvPreviewArea.setText(buildCountriesPreviewText(result));
+        } catch (Exception e) {
+            e.printStackTrace();
+            clearCountriesCsvPreviewState();
+            countriesCsvStatusLabel.setText(buildCsvPreviewErrorStatus("krajów"));
+            DialogUtil.showError(buildCsvPreviewDialogTitle("krajów"), buildCsvPreviewErrorMessage("krajów"));
+        }
+    }
+
+    @FXML
+    private void applyCountriesCsvImport() {
+        if (lastCountriesCsvPreviewResult == null) {
+            DialogUtil.showWarning("Import CSV krajów", "Najpierw przygotuj podgląd importu krajów.");
+            return;
+        }
+        if (lastCountriesCsvPreviewResult.getImportableRowsCount() <= 0) {
+            DialogUtil.showWarning("Import CSV krajów", "Brak nowych lub aktualizowanych krajów do importu w ostatnim podglądzie.");
+            updateCountriesCsvApplyButtonState();
+            return;
+        }
+        if (!DialogUtil.confirmAction(
+                "Import CSV krajów",
+                "zaimportować do wspólnego słownika",
+                buildCsvImportConfirmationTarget("krajów", lastCountriesCsvPreviewResult.getSourceName(), lastCountriesCsvPreviewResult.getImportableRowsCount(), lastCountriesCsvPreviewResult.getMatchingExistingCount(), lastCountriesCsvPreviewResult.getInvalidRowsCount() + lastCountriesCsvPreviewResult.getDuplicateInFileCount())
+        )) {
+            return;
+        }
+
+        try {
+            CsvImportExecutionResult executionResult = countryCsvImportService.applyPreview(lastCountriesCsvPreviewResult);
+            auditLogService.log("CountryCsvImport", null, "IMPORT", buildCsvImportAuditDescription("krajów", executionResult));
+            countriesCsvStatusLabel.setText(buildCsvImportExecutionStatus("krajów", executionResult));
+            countriesCsvPreviewArea.setText(buildCsvImportExecutionText("CSV krajów", executionResult, buildCountriesPreviewText(lastCountriesCsvPreviewResult)));
+            clearCountriesCsvPreviewState();
+            loadCustomCountryEntries();
+            refreshSharedCountryCombos();
+            refreshAuditLog();
+            DialogUtil.showSuccess(buildCsvImportSuccessDialogMessage("Kraje", executionResult));
+        } catch (Exception e) {
+            e.printStackTrace();
+            countriesCsvStatusLabel.setText(buildCsvImportErrorStatus("krajów"));
+            DialogUtil.showError("Import CSV krajów", "Nie udało się wykonać importu krajów do wspólnego słownika.");
+        }
+    }
+
+    @FXML
+    private void exportCountriesCsv() {
+        Path selectedPath = chooseCsvToSave("Eksportuj kraje do CSV", "kraje-eksport.csv");
+        if (selectedPath == null) {
+            return;
+        }
+
+        try {
+            Path exported = countryCsvExportService.export(selectedPath);
+            countriesCsvStatusLabel.setText(buildCsvExportSuccessStatus("krajów", exported));
+            DialogUtil.showSuccess(buildCsvExportSuccessDialogMessage("Kraje", exported));
+        } catch (Exception e) {
+            e.printStackTrace();
+            countriesCsvStatusLabel.setText(buildCsvExportErrorStatus("krajów"));
+            DialogUtil.showError(buildCsvExportDialogTitle("krajów"), buildCsvExportErrorMessage("krajów"));
         }
     }
 
@@ -2610,6 +2705,15 @@ public class SettingsController {
     }
 
     @FXML
+    private void clearCountriesCsvPreview() {
+        clearCountriesCsvPreviewState();
+        resetCountriesCsvPreview();
+        if (countriesCsvStatusLabel != null) {
+            countriesCsvStatusLabel.setText(buildCsvPreviewClearedStatus("krajów"));
+        }
+    }
+
+    @FXML
     private void clearDocumentsCsvPreview() {
         clearDocumentsCsvPreviewState();
         resetDocumentsCsvPreview();
@@ -2637,6 +2741,11 @@ public class SettingsController {
         updateContrahentsCsvApplyButtonState();
     }
 
+    private void clearCountriesCsvPreviewState() {
+        lastCountriesCsvPreviewResult = null;
+        updateCountriesCsvApplyButtonState();
+    }
+
     private void clearDocumentsCsvPreviewState() {
         lastDocumentsCsvPreviewResult = null;
         updateDocumentsCsvApplyButtonState();
@@ -2656,6 +2765,12 @@ public class SettingsController {
     private void updateContrahentsCsvApplyButtonState() {
         if (contrahentsCsvApplyButton != null) {
             contrahentsCsvApplyButton.setDisable(lastContrahentsCsvPreviewResult == null || lastContrahentsCsvPreviewResult.getNewRowsCount() <= 0);
+        }
+    }
+
+    private void updateCountriesCsvApplyButtonState() {
+        if (countriesCsvApplyButton != null) {
+            countriesCsvApplyButton.setDisable(lastCountriesCsvPreviewResult == null || lastCountriesCsvPreviewResult.getImportableRowsCount() <= 0);
         }
     }
 
@@ -2859,6 +2974,15 @@ public class SettingsController {
         }
     }
 
+    private void resetCountriesCsvPreview() {
+        if (countriesCsvPreviewArea != null) {
+            countriesCsvPreviewArea.setText(UiTextUtil.buildEmptyPreviewText(
+                    "CSV krajów",
+                    "Po uruchomieniu analizy zobaczysz tutaj podsumowanie pliku, nagłówki oraz próbkę wpisów wspólnego słownika krajów."
+            ));
+        }
+    }
+
     private void resetDocumentsCsvPreview() {
         if (documentsCsvPreviewArea != null) {
             documentsCsvPreviewArea.setText(UiTextUtil.buildEmptyPreviewText(
@@ -2875,6 +2999,86 @@ public class SettingsController {
                     "Po uruchomieniu analizy zobaczysz tutaj podsumowanie pliku, nagłówki oraz próbkę relacji kod EPPO → gatunek i kod EPPO → strefa."
             ));
         }
+    }
+
+    private String buildCountriesPreviewStatus(CountryImportPreviewResult result) {
+        return "Podgląd importu krajów gotowy: nowych wpisów " + result.getNewRowsCount()
+                + ", aktualizacji " + result.getUpdateRowsCount()
+                + ", istniejących " + result.getMatchingExistingCount()
+                + ", duplikatów " + result.getDuplicateInFileCount()
+                + ", błędnych " + result.getInvalidRowsCount() + ".";
+    }
+
+    private String buildCountriesPreviewText(CountryImportPreviewResult result) {
+        StringBuilder builder = new StringBuilder();
+        appendPreviewFileSummary(builder,
+                result.getSourceName(),
+                result.getDelimiter(),
+                result.getResolvedHeaders(),
+                List.of(
+                        new PreviewSummaryRow("Łącznie wierszy", result.getTotalRowsCount()),
+                        new PreviewSummaryRow("Nowe wpisy", result.getNewRowsCount()),
+                        new PreviewSummaryRow("Wpisy do aktualizacji", result.getUpdateRowsCount()),
+                        new PreviewSummaryRow("Wpisy istniejące", result.getMatchingExistingCount()),
+                        new PreviewSummaryRow("Duplikaty w pliku", result.getDuplicateInFileCount()),
+                        new PreviewSummaryRow("Błędne wiersze", result.getInvalidRowsCount())
+                ));
+
+        UiTextUtil.appendSectionHeader(builder, "OCENA WALIDACJI");
+        UiTextUtil.appendSummaryLine(builder, "Gotowość importu", buildCountriesImportReadiness(result));
+        UiTextUtil.appendSummaryLine(builder, "Rekomendacja", buildCountriesImportRecommendation(result));
+        UiTextUtil.appendParagraph(builder, "Import aktualizuje wspólny słownik krajów przez wpisy własne. Katalog bazowy w kodzie pozostaje nienaruszony, a import może dodawać nowe kraje lub nadpisywać kod kraju dla istniejącej nazwy.");
+
+        UiTextUtil.appendSectionHeader(builder, "PRÓBKA WIERSZY");
+        int previewLimit = Math.min(result.getRows().size(), 12);
+        for (int i = 0; i < previewLimit; i++) {
+            var row = result.getRows().get(i);
+            builder.append("#").append(row.getRowNumber())
+                    .append(" [").append(safe(row.getStatus())).append("] ")
+                    .append(safe(row.getCountry()))
+                    .append(" | kod: ").append(safe(row.getCountryCode()));
+            if (!safe(row.getMessage()).isBlank()) {
+                builder.append(" | uwaga: ").append(safe(row.getMessage()));
+            }
+            builder.append(UiTextUtil.NL);
+        }
+
+        UiTextUtil.appendPreviewLimitNote(builder, previewLimit, result.getRows().size());
+        List<String> problemRows = new ArrayList<>();
+        for (var row : result.getRows()) {
+            if (row.getMessage() != null && !row.getMessage().isBlank()
+                    && ("INVALID".equalsIgnoreCase(row.getStatus()) || "DUPLICATE_IN_FILE".equalsIgnoreCase(row.getStatus()))) {
+                problemRows.add("#" + row.getRowNumber() + " [" + row.getStatus() + "] " + row.getMessage());
+            }
+            if (problemRows.size() >= 6) {
+                break;
+            }
+        }
+        UiTextUtil.appendIssuesSection(builder, "NAJWAŻNIEJSZE UWAGI", problemRows);
+        return builder.toString();
+    }
+
+    private String buildCountriesImportReadiness(CountryImportPreviewResult result) {
+        if (result.getInvalidRowsCount() > 0) {
+            return "Wymaga korekty pliku";
+        }
+        if (result.getImportableRowsCount() > 0) {
+            return "Gotowe do importu";
+        }
+        if (result.getMatchingExistingCount() > 0) {
+            return "Brak zmian do wykonania";
+        }
+        return "Brak danych do importu";
+    }
+
+    private String buildCountriesImportRecommendation(CountryImportPreviewResult result) {
+        if (result.getInvalidRowsCount() > 0) {
+            return "Popraw błędne lub konfliktowe wiersze przed importem wspólnego słownika krajów.";
+        }
+        if (result.getImportableRowsCount() > 0) {
+            return "Możesz bezpiecznie wykonać import krajów do wspólnego słownika używanego przez Kontrahentów, EPPO i dane podmiotu.";
+        }
+        return "Nie ma nowych ani aktualizowanych wpisów krajów do zapisania.";
     }
 
     private String buildEppoDictionaryPreviewStatus(EppoDictionaryImportPreviewResult result) {
