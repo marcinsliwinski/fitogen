@@ -60,6 +60,10 @@ public class DatabaseProfileService {
     }
 
     public DatabaseProfileInfo createAndActivateProfile(String profileName) {
+        return createAndActivateProfile(profileName, false);
+    }
+
+    public DatabaseProfileInfo createAndActivateProfile(String profileName, boolean importStarterPackFg1) {
         String sanitized = DatabaseConfig.sanitizeProfileName(profileName);
         Path profilePath = DatabaseConfig.buildNamedProfilePath(sanitized);
         if (Files.exists(profilePath)) {
@@ -69,6 +73,11 @@ public class DatabaseProfileService {
         Path createdPath = DatabaseConfig.createDatabaseProfile(sanitized);
         DatabaseInitializer.initDatabase();
         seedNewProfile(createdPath, profileName);
+
+        if (importStarterPackFg1) {
+            new BootstrapStarterPackService().importFg1StarterPack();
+        }
+
         return getCurrentProfileInfo();
     }
 

@@ -20,6 +20,7 @@ import com.egen.fitogen.service.AppSettingsService;
 import com.egen.fitogen.service.AppUserService;
 import com.egen.fitogen.service.AuditLogService;
 import com.egen.fitogen.service.BackupService;
+import com.egen.fitogen.service.BootstrapStarterPackService;
 import com.egen.fitogen.service.DatabaseProfileService;
 import com.egen.fitogen.service.ContrahentCsvExportService;
 import com.egen.fitogen.service.ContrahentCsvImportService;
@@ -49,6 +50,8 @@ import javafx.collections.transformation.FilteredList;
 import javafx.collections.transformation.SortedList;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
+import javafx.scene.control.Alert;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
@@ -191,6 +194,7 @@ public class SettingsController {
     private final AppSettingsService appSettingsService = AppContext.getAppSettingsService();
     private final AuditLogService auditLogService = AppContext.getAuditLogService();
     private final CountryDirectoryService countryDirectoryService = AppContext.getCountryDirectoryService();
+    private final BootstrapStarterPackService bootstrapStarterPackService = new BootstrapStarterPackService();
     private final PlantCsvImportService plantCsvImportService = new PlantCsvImportService(AppContext.getPlantService(), AppContext.getAppSettingsService());
     private final PlantCsvExportService plantCsvExportService = new PlantCsvExportService(AppContext.getPlantService());
     private final ContrahentCsvImportService contrahentCsvImportService = new ContrahentCsvImportService(AppContext.getContrahentService(), AppContext.getCountryDirectoryService());
@@ -1820,6 +1824,42 @@ public class SettingsController {
         updateDatabaseProfileSelectionState(databaseProfileBox == null ? null : databaseProfileBox.getValue());
     }
 
+
+    private StarterPackSelection askForStarterPackOnNewDatabase() {
+        if (!bootstrapStarterPackService.isFg1PackageAvailable()) {
+            DialogUtil.showWarning("Nowa baza danych", "Pakiet startowy FG1 nie jest dostępny w zasobach aplikacji. Zostanie utworzona pusta baza danych.");
+            return StarterPackSelection.CREATE_EMPTY;
+        }
+
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        alert.setTitle("Nowa baza danych");
+        alert.setHeaderText("Czy zasilić nową bazę pakietem startowym FG1?");
+        alert.setContentText("Pakiet FG1 zawiera kraje, rośliny i słowniki EPPO do szybkiego startu. Możesz też utworzyć pustą bazę.");
+
+        ButtonType createWithFg1Button = new ButtonType("Utwórz i zasil FG1");
+        ButtonType createEmptyButton = new ButtonType("Utwórz pustą");
+        ButtonType cancelButton = ButtonType.CANCEL;
+        alert.getButtonTypes().setAll(createWithFg1Button, createEmptyButton, cancelButton);
+
+        return alert.showAndWait()
+                .map(button -> {
+                    if (button == createWithFg1Button) {
+                        return StarterPackSelection.CREATE_WITH_FG1;
+                    }
+                    if (button == createEmptyButton) {
+                        return StarterPackSelection.CREATE_EMPTY;
+                    }
+                    return StarterPackSelection.CANCELLED;
+                })
+                .orElse(StarterPackSelection.CANCELLED);
+    }
+
+    private enum StarterPackSelection {
+        CREATE_WITH_FG1,
+        CREATE_EMPTY,
+        CANCELLED
+    }
+
     private String buildMissingDatabaseStatus() {
         return DatabaseConfig.getMissingRememberedDatabasePath()
                 .map(path -> {
@@ -1906,8 +1946,22 @@ public class SettingsController {
                 DialogUtil.showWarning("Nowa baza danych", "Podaj nazwę nowej bazy danych.");
                 return;
             }
-            DatabaseProfileInfo created = databaseProfileService.createAndActivateProfile(profileName);
-            DialogUtil.showSuccess("Aktywowano bazę danych: " + created.displayName());
+
+            StarterPackSelection starterPackSelection = askForStarterPackOnNewDatabase();
+            if (starterPackSelection == StarterPackSelection.CANCELLED) {
+                return;
+            }
+
+            boolean importStarterPack = starterPackSelection == StarterPackSelection.CREATE_WITH_FG1;
+            DatabaseProfileInfo created = databaseProfileService.createAndActivateProfile(profileName, importStarterPack);
+
+            if (importStarterPack) {
+                DialogUtil.showSuccess("Aktywowano bazę danych: " + created.displayName()
+                        + ". Baza została zasilona pakietem startowym FG1 (kraje, rośliny, słowniki EPPO).");
+            } else {
+                DialogUtil.showSuccess("Aktywowano bazę danych: " + created.displayName());
+            }
+
             ViewManager.refreshCurrent();
             MainController.requestRefreshSystemNews();
             return;
