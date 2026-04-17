@@ -235,84 +235,81 @@
                         <VBox spacing="16" styleClass="content-card">
                             <padding><Insets top="16" right="16" bottom="16" left="16"/></padding>
 
-                            <VBox spacing="12" styleClass="stat-card">
-                                <Label text="CSV roślin" styleClass="stat-title"/>
-                                <Label text="Lokalny podgląd importu i eksport CSV dla roślin. Ten obszar pozostaje w Ustawieniach i nie jest częścią modułu Aktualizacje." wrapText="true" styleClass="page-subtitle"/>
-                                <Label fx:id="plantsCsvColumnsLabel" wrapText="true" styleClass="page-subtitle"/>
-                                <Label fx:id="plantsCsvStatusLabel" wrapText="true" styleClass="page-subtitle"/>
-                                <HBox spacing="10">
-                                    <Button text="Podgląd importu CSV roślin" onAction="#previewPlantsCsvImport"/>
-                                    <Button fx:id="plantsCsvApplyButton" text="Importuj do bazy" onAction="#applyPlantsCsvImport" disable="true"/>
-                                    <Button text="Eksport CSV roślin" onAction="#exportPlantsCsv" styleClass="button-secondary"/>
-                                    <Button text="Wyczyść podgląd" onAction="#clearPlantsCsvPreview" styleClass="button-secondary"/>
-                                </HBox>
-                                <TextArea fx:id="plantsCsvPreviewArea" editable="false" wrapText="true" prefRowCount="16" prefHeight="320"/>
-                            </VBox>
+                            <HBox spacing="16" fillHeight="true">
+                                <VBox spacing="16" HBox.hgrow="ALWAYS">
+                                    <VBox spacing="12" styleClass="stat-card">
+                                        <Label text="CSV roślin" styleClass="stat-title"/>
+                                        <Label text="Lokalny podgląd importu i eksport CSV dla roślin. Ten obszar pozostaje w Ustawieniach i nie jest częścią modułu Aktualizacje." wrapText="true" styleClass="page-subtitle"/>
+                                        <Label fx:id="plantsCsvColumnsLabel" wrapText="true" styleClass="page-subtitle"/>
+                                        <Label fx:id="plantsCsvStatusLabel" wrapText="true" styleClass="page-subtitle"/>
+                                        <HBox spacing="10">
+                                            <Button text="Podgląd importu CSV roślin" onAction="#previewPlantsCsvImport"/>
+                                            <Button fx:id="plantsCsvApplyButton" text="Importuj do bazy" onAction="#applyPlantsCsvImport" disable="true"/>
+                                            <Button text="Eksport CSV roślin" onAction="#exportPlantsCsv" styleClass="button-secondary"/>
+                                            <Button text="Wyczyść podgląd" onAction="#clearPlantsCsvPreview" styleClass="button-secondary"/>
+                                        </HBox>
+                                        <TextArea fx:id="plantsCsvPreviewArea" editable="false" wrapText="true" prefRowCount="20" prefHeight="420" maxWidth="1.7976931348623157E308"/>
+                                    </VBox>
 
-                            <Separator/>
+                                    <VBox spacing="12" styleClass="stat-card">
+                                        <Label text="Dokumenty CSV" styleClass="stat-title"/>
+                                        <Label text="Lokalny podgląd importu i eksport CSV dla dokumentów. Format pozostaje w Ustawieniach -> Import / Eksport CSV i nie wchodzi do modułu Aktualizacje." wrapText="true" styleClass="page-subtitle"/>
+                                        <Label fx:id="documentsCsvColumnsLabel" wrapText="true" styleClass="page-subtitle"/>
+                                        <Label fx:id="documentsCsvStatusLabel" wrapText="true" styleClass="page-subtitle"/>
+                                        <HBox spacing="10">
+                                            <Button text="Podgląd importu CSV dokumentów" onAction="#previewDocumentsCsvImport"/>
+                                            <Button fx:id="documentsCsvApplyButton" text="Importuj do bazy" onAction="#applyDocumentsCsvImport" disable="true"/>
+                                            <Button text="Eksport CSV dokumentów" onAction="#exportDocumentsCsv" styleClass="button-secondary"/>
+                                            <Button text="Wyczyść podgląd" onAction="#clearDocumentsCsvPreview" styleClass="button-secondary"/>
+                                        </HBox>
+                                        <TextArea fx:id="documentsCsvPreviewArea" editable="false" wrapText="true" prefRowCount="20" prefHeight="420" maxWidth="1.7976931348623157E308"/>
+                                    </VBox>
 
-                            <VBox spacing="12" styleClass="stat-card">
-                                <Label text="CSV kontrahentów" styleClass="stat-title"/>
-                                <Label text="Lokalny podgląd importu i eksport CSV dla kontrahentów w tym samym standardzie ustawień lokalnych." wrapText="true" styleClass="page-subtitle"/>
-                                <Label fx:id="contrahentsCsvColumnsLabel" wrapText="true" styleClass="page-subtitle"/>
-                                <Label fx:id="contrahentsCsvStatusLabel" wrapText="true" styleClass="page-subtitle"/>
-                                <HBox spacing="10">
-                                    <Button text="Podgląd importu CSV kontrahentów" onAction="#previewContrahentsCsvImport"/>
-                                    <Button fx:id="contrahentsCsvApplyButton" text="Importuj do bazy" onAction="#applyContrahentsCsvImport" disable="true"/>
-                                    <Button text="Eksport CSV kontrahentów" onAction="#exportContrahentsCsv" styleClass="button-secondary"/>
-                                    <Button text="Wyczyść podgląd" onAction="#clearContrahentsCsvPreview" styleClass="button-secondary"/>
-                                </HBox>
-                                <TextArea fx:id="contrahentsCsvPreviewArea" editable="false" wrapText="true" prefRowCount="16" prefHeight="320"/>
-                            </VBox>
+                                    <VBox spacing="12" styleClass="stat-card">
+                                        <Label text="Słowniki EPPO CSV" styleClass="stat-title"/>
+                                        <Label text="Jeden lokalny plik CSV dla relacji kod EPPO → gatunek oraz kod EPPO → strefa (kraj). System dopasowuje rośliny po gatunku, więc osobne relacje kod → roślina nie są tu potrzebne." wrapText="true" styleClass="page-subtitle"/>
+                                        <Label fx:id="eppoDictionaryCsvColumnsLabel" wrapText="true" styleClass="page-subtitle"/>
+                                        <Label fx:id="eppoDictionaryCsvStatusLabel" wrapText="true" styleClass="page-subtitle"/>
+                                        <HBox spacing="10">
+                                            <Button text="Podgląd importu CSV EPPO" onAction="#previewEppoDictionaryCsvImport"/>
+                                            <Button fx:id="eppoDictionaryCsvApplyButton" text="Importuj do bazy" onAction="#applyEppoDictionaryCsvImport" disable="true"/>
+                                            <Button text="Eksport CSV EPPO" onAction="#exportEppoDictionaryCsv" styleClass="button-secondary"/>
+                                            <Button text="Wyczyść podgląd" onAction="#clearEppoDictionaryCsvPreview" styleClass="button-secondary"/>
+                                        </HBox>
+                                        <TextArea fx:id="eppoDictionaryCsvPreviewArea" editable="false" wrapText="true" prefRowCount="20" prefHeight="420" maxWidth="1.7976931348623157E308"/>
+                                    </VBox>
+                                </VBox>
 
-                            <Separator/>
+                                <VBox spacing="16" HBox.hgrow="ALWAYS">
+                                    <VBox spacing="12" styleClass="stat-card">
+                                        <Label text="CSV kontrahentów" styleClass="stat-title"/>
+                                        <Label text="Lokalny podgląd importu i eksport CSV dla kontrahentów w tym samym standardzie ustawień lokalnych." wrapText="true" styleClass="page-subtitle"/>
+                                        <Label fx:id="contrahentsCsvColumnsLabel" wrapText="true" styleClass="page-subtitle"/>
+                                        <Label fx:id="contrahentsCsvStatusLabel" wrapText="true" styleClass="page-subtitle"/>
+                                        <HBox spacing="10">
+                                            <Button text="Podgląd importu CSV kontrahentów" onAction="#previewContrahentsCsvImport"/>
+                                            <Button fx:id="contrahentsCsvApplyButton" text="Importuj do bazy" onAction="#applyContrahentsCsvImport" disable="true"/>
+                                            <Button text="Eksport CSV kontrahentów" onAction="#exportContrahentsCsv" styleClass="button-secondary"/>
+                                            <Button text="Wyczyść podgląd" onAction="#clearContrahentsCsvPreview" styleClass="button-secondary"/>
+                                        </HBox>
+                                        <TextArea fx:id="contrahentsCsvPreviewArea" editable="false" wrapText="true" prefRowCount="20" prefHeight="420" maxWidth="1.7976931348623157E308"/>
+                                    </VBox>
 
-                            <VBox spacing="12" styleClass="stat-card">
-                                <Label text="Kraje CSV" styleClass="stat-title"/>
-                                <Label text="Lokalny podgląd importu i eksport wspólnego słownika krajów używanego przez Kontrahentów, EPPO i dane podmiotu. Import działa przez wpisy własne i nie nadpisuje katalogu bazowego w kodzie." wrapText="true" styleClass="page-subtitle"/>
-                                <Label fx:id="countriesCsvColumnsLabel" wrapText="true" styleClass="page-subtitle"/>
-                                <Label fx:id="countriesCsvStatusLabel" wrapText="true" styleClass="page-subtitle"/>
-                                <HBox spacing="10">
-                                    <Button text="Podgląd importu CSV krajów" onAction="#previewCountriesCsvImport"/>
-                                    <Button fx:id="countriesCsvApplyButton" text="Importuj do słownika" onAction="#applyCountriesCsvImport" disable="true"/>
-                                    <Button text="Eksport CSV krajów" onAction="#exportCountriesCsv" styleClass="button-secondary"/>
-                                    <Button text="Wyczyść podgląd" onAction="#clearCountriesCsvPreview" styleClass="button-secondary"/>
-                                </HBox>
-                                <TextArea fx:id="countriesCsvPreviewArea" editable="false" wrapText="true" prefRowCount="18" prefHeight="360"/>
-                            </VBox>
-
-                            <Separator/>
-
-                            <VBox spacing="12" styleClass="stat-card">
-                                <Label text="Dokumenty CSV" styleClass="stat-title"/>
-                                <Label text="Lokalny podgląd importu i eksport CSV dla dokumentów. Format pozostaje w Ustawieniach -> Import / Eksport CSV i nie wchodzi do modułu Aktualizacje." wrapText="true" styleClass="page-subtitle"/>
-                                <Label fx:id="documentsCsvColumnsLabel" wrapText="true" styleClass="page-subtitle"/>
-                                <Label fx:id="documentsCsvStatusLabel" wrapText="true" styleClass="page-subtitle"/>
-                                <HBox spacing="10">
-                                    <Button text="Podgląd importu CSV dokumentów" onAction="#previewDocumentsCsvImport"/>
-                                    <Button fx:id="documentsCsvApplyButton" text="Importuj do bazy" onAction="#applyDocumentsCsvImport" disable="true"/>
-                                    <Button text="Eksport CSV dokumentów" onAction="#exportDocumentsCsv" styleClass="button-secondary"/>
-                                    <Button text="Wyczyść podgląd" onAction="#clearDocumentsCsvPreview" styleClass="button-secondary"/>
-                                </HBox>
-                                <TextArea fx:id="documentsCsvPreviewArea" editable="false" wrapText="true" prefRowCount="18" prefHeight="360"/>
-                            </VBox>
-
-
-                            <Separator/>
-
-                            <VBox spacing="12" styleClass="stat-card">
-                                <Label text="Słowniki EPPO CSV" styleClass="stat-title"/>
-                                <Label text="Jeden lokalny plik CSV dla relacji kod EPPO → gatunek oraz kod EPPO → strefa (kraj). System dopasowuje rośliny po gatunku, więc osobne relacje kod → roślina nie są tu potrzebne." wrapText="true" styleClass="page-subtitle"/>
-                                <Label fx:id="eppoDictionaryCsvColumnsLabel" wrapText="true" styleClass="page-subtitle"/>
-                                <Label fx:id="eppoDictionaryCsvStatusLabel" wrapText="true" styleClass="page-subtitle"/>
-                                <HBox spacing="10">
-                                    <Button text="Podgląd importu CSV EPPO" onAction="#previewEppoDictionaryCsvImport"/>
-                                    <Button fx:id="eppoDictionaryCsvApplyButton" text="Importuj do bazy" onAction="#applyEppoDictionaryCsvImport" disable="true"/>
-                                    <Button text="Eksport CSV EPPO" onAction="#exportEppoDictionaryCsv" styleClass="button-secondary"/>
-                                    <Button text="Wyczyść podgląd" onAction="#clearEppoDictionaryCsvPreview" styleClass="button-secondary"/>
-                                </HBox>
-                                <TextArea fx:id="eppoDictionaryCsvPreviewArea" editable="false" wrapText="true" prefRowCount="18" prefHeight="360"/>
-                            </VBox>
+                                    <VBox spacing="12" styleClass="stat-card">
+                                        <Label text="CSV partii roślin" styleClass="stat-title"/>
+                                        <Label text="Lokalny podgląd importu i eksport CSV dla partii roślin. Import działa po dopasowaniu rośliny po gatunku/odmianie/podkładce oraz źródła pochodzenia po nazwie kontrahenta." wrapText="true" styleClass="page-subtitle"/>
+                                        <Label fx:id="plantBatchesCsvColumnsLabel" wrapText="true" styleClass="page-subtitle"/>
+                                        <Label fx:id="plantBatchesCsvStatusLabel" wrapText="true" styleClass="page-subtitle"/>
+                                        <HBox spacing="10">
+                                            <Button text="Podgląd importu CSV partii" onAction="#previewPlantBatchesCsvImport"/>
+                                            <Button fx:id="plantBatchesCsvApplyButton" text="Importuj do bazy" onAction="#applyPlantBatchesCsvImport" disable="true"/>
+                                            <Button text="Eksport CSV partii" onAction="#exportPlantBatchesCsv" styleClass="button-secondary"/>
+                                            <Button text="Wyczyść podgląd" onAction="#clearPlantBatchesCsvPreview" styleClass="button-secondary"/>
+                                        </HBox>
+                                        <TextArea fx:id="plantBatchesCsvPreviewArea" editable="false" wrapText="true" prefRowCount="20" prefHeight="420" maxWidth="1.7976931348623157E308"/>
+                                    </VBox>
+                                </VBox>
+                            </HBox>
                         </VBox>
                     </content>
                 </ScrollPane>

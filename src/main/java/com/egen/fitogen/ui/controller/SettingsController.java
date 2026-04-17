@@ -4,8 +4,8 @@ import com.egen.fitogen.config.AppContext;
 import com.egen.fitogen.config.DatabaseConfig;
 import com.egen.fitogen.domain.NumberingConfig;
 import com.egen.fitogen.dto.ContrahentImportPreviewResult;
-import com.egen.fitogen.dto.CountryImportPreviewResult;
 import com.egen.fitogen.dto.EppoDictionaryImportPreviewResult;
+import com.egen.fitogen.dto.PlantBatchImportPreviewResult;
 import com.egen.fitogen.dto.CsvImportExecutionResult;
 import com.egen.fitogen.dto.PlantImportPreviewResult;
 import com.egen.fitogen.domain.NumberingSectionType;
@@ -22,8 +22,6 @@ import com.egen.fitogen.service.BackupService;
 import com.egen.fitogen.service.DatabaseProfileService;
 import com.egen.fitogen.service.ContrahentCsvExportService;
 import com.egen.fitogen.service.ContrahentCsvImportService;
-import com.egen.fitogen.service.CountryCsvExportService;
-import com.egen.fitogen.service.CountryCsvImportService;
 import com.egen.fitogen.service.CountryDirectoryService;
 import com.egen.fitogen.service.DocumentCsvExportService;
 import com.egen.fitogen.service.DocumentCsvImportService;
@@ -32,6 +30,8 @@ import com.egen.fitogen.service.EppoDictionaryCsvExportService;
 import com.egen.fitogen.service.EppoDictionaryCsvImportService;
 import com.egen.fitogen.service.NumberingConfigService;
 import com.egen.fitogen.service.PlantCsvExportService;
+import com.egen.fitogen.service.PlantBatchCsvExportService;
+import com.egen.fitogen.service.PlantBatchCsvImportService;
 import com.egen.fitogen.service.PlantCsvImportService;
 import com.egen.fitogen.ui.util.ComboBoxAutoComplete;
 import com.egen.fitogen.ui.util.CountryDirectory;
@@ -150,14 +150,15 @@ public class SettingsController {
     @FXML private Label contrahentsCsvStatusLabel;
     @FXML private TextArea contrahentsCsvPreviewArea;
     @FXML private Button contrahentsCsvApplyButton;
-    @FXML private Label countriesCsvColumnsLabel;
-    @FXML private Label countriesCsvStatusLabel;
-    @FXML private TextArea countriesCsvPreviewArea;
-    @FXML private Button countriesCsvApplyButton;
     @FXML private Label documentsCsvColumnsLabel;
     @FXML private Label documentsCsvStatusLabel;
     @FXML private TextArea documentsCsvPreviewArea;
     @FXML private Button documentsCsvApplyButton;
+
+    @FXML private Label plantBatchesCsvColumnsLabel;
+    @FXML private Label plantBatchesCsvStatusLabel;
+    @FXML private TextArea plantBatchesCsvPreviewArea;
+    @FXML private Button plantBatchesCsvApplyButton;
 
     @FXML private Label eppoDictionaryCsvColumnsLabel;
     @FXML private Label eppoDictionaryCsvStatusLabel;
@@ -187,10 +188,10 @@ public class SettingsController {
     private final PlantCsvExportService plantCsvExportService = new PlantCsvExportService(AppContext.getPlantService());
     private final ContrahentCsvImportService contrahentCsvImportService = new ContrahentCsvImportService(AppContext.getContrahentService(), AppContext.getCountryDirectoryService());
     private final ContrahentCsvExportService contrahentCsvExportService = new ContrahentCsvExportService(AppContext.getContrahentService());
-    private final CountryCsvImportService countryCsvImportService = new CountryCsvImportService(AppContext.getCountryDirectoryService(), AppContext.getAppSettingsService());
-    private final CountryCsvExportService countryCsvExportService = new CountryCsvExportService(AppContext.getCountryDirectoryService());
     private final DocumentCsvImportService documentCsvImportService = new DocumentCsvImportService(AppContext.getDocumentService(), AppContext.getContrahentService(), AppContext.getPlantBatchService(), AppContext.getAuditLogService());
     private final DocumentCsvExportService documentCsvExportService = new DocumentCsvExportService(new SqliteDocumentRepository(), new SqliteDocumentItemRepository(), AppContext.getContrahentService(), AppContext.getPlantBatchService());
+    private final PlantBatchCsvImportService plantBatchCsvImportService = new PlantBatchCsvImportService(AppContext.getPlantBatchService(), AppContext.getPlantService(), AppContext.getContrahentService());
+    private final PlantBatchCsvExportService plantBatchCsvExportService = new PlantBatchCsvExportService(AppContext.getPlantBatchService(), AppContext.getPlantService(), AppContext.getContrahentService());
 
     private final EppoDictionaryCsvImportService eppoDictionaryCsvImportService = new EppoDictionaryCsvImportService(
             AppContext.getEppoCodeService(),
@@ -223,10 +224,8 @@ public class SettingsController {
     private SortedList<com.egen.fitogen.model.AuditLogEntry> auditLogSortedData;
     private PlantImportPreviewResult lastPlantsCsvPreviewResult;
     private ContrahentImportPreviewResult lastContrahentsCsvPreviewResult;
-    private CountryImportPreviewResult lastCountriesCsvPreviewResult;
     private com.egen.fitogen.dto.DocumentImportPreviewResult lastDocumentsCsvPreviewResult;
-
-
+    private PlantBatchImportPreviewResult lastPlantBatchesCsvPreviewResult;
     private EppoDictionaryImportPreviewResult lastEppoDictionaryCsvPreviewResult;
 
 
@@ -2270,15 +2269,15 @@ public class SettingsController {
                     + UiTextUtil.NL
                     + contrahentCsvExportService.getSupportedColumnsSummary());
         }
-        if (countriesCsvColumnsLabel != null) {
-            countriesCsvColumnsLabel.setText(countryCsvImportService.getSupportedColumnsSummary()
-                    + UiTextUtil.NL
-                    + countryCsvExportService.getSupportedColumnsSummary());
-        }
         if (documentsCsvColumnsLabel != null) {
             documentsCsvColumnsLabel.setText(documentCsvImportService.getSupportedColumnsSummary()
                     + UiTextUtil.NL
                     + documentCsvExportService.getSupportedColumnsSummary());
+        }
+        if (plantBatchesCsvColumnsLabel != null) {
+            plantBatchesCsvColumnsLabel.setText(plantBatchCsvImportService.getSupportedColumnsSummary()
+                    + UiTextUtil.NL
+                    + plantBatchCsvExportService.getSupportedColumnsSummary());
         }
         if (eppoDictionaryCsvColumnsLabel != null) {
             eppoDictionaryCsvColumnsLabel.setText(eppoDictionaryCsvImportService.getSupportedColumnsSummary()
@@ -2291,24 +2290,24 @@ public class SettingsController {
         if (contrahentsCsvStatusLabel != null) {
             contrahentsCsvStatusLabel.setText(buildCsvInitialStatus("kontrahentów"));
         }
-        if (countriesCsvStatusLabel != null) {
-            countriesCsvStatusLabel.setText(buildCsvInitialStatus("krajów"));
-        }
         if (documentsCsvStatusLabel != null) {
             documentsCsvStatusLabel.setText(buildCsvInitialStatus("dokumentów"));
+        }
+        if (plantBatchesCsvStatusLabel != null) {
+            plantBatchesCsvStatusLabel.setText(buildCsvInitialStatus("partii roślin"));
         }
         if (eppoDictionaryCsvStatusLabel != null) {
             eppoDictionaryCsvStatusLabel.setText(buildCsvInitialStatus("słowników EPPO"));
         }
         clearPlantsCsvPreviewState();
         clearContrahentsCsvPreviewState();
-        clearCountriesCsvPreviewState();
         clearDocumentsCsvPreviewState();
+        clearPlantBatchesCsvPreviewState();
         clearEppoDictionaryCsvPreviewState();
         resetPlantsCsvPreview();
         resetContrahentsCsvPreview();
-        resetCountriesCsvPreview();
         resetDocumentsCsvPreview();
+        resetPlantBatchesCsvPreview();
         resetEppoDictionaryCsvPreview();
     }
 
@@ -2458,81 +2457,6 @@ public class SettingsController {
         }
     }
 
-    @FXML
-    private void previewCountriesCsvImport() {
-        Path selectedPath = chooseCsvToOpen("Wybierz plik CSV krajów");
-        if (selectedPath == null) {
-            return;
-        }
-
-        try {
-            CountryImportPreviewResult result = countryCsvImportService.preview(selectedPath);
-            lastCountriesCsvPreviewResult = result;
-            updateCountriesCsvApplyButtonState();
-            countriesCsvStatusLabel.setText(buildCountriesPreviewStatus(result));
-            countriesCsvPreviewArea.setText(buildCountriesPreviewText(result));
-        } catch (Exception e) {
-            e.printStackTrace();
-            clearCountriesCsvPreviewState();
-            countriesCsvStatusLabel.setText(buildCsvPreviewErrorStatus("krajów"));
-            DialogUtil.showError(buildCsvPreviewDialogTitle("krajów"), buildCsvPreviewErrorMessage("krajów"));
-        }
-    }
-
-    @FXML
-    private void applyCountriesCsvImport() {
-        if (lastCountriesCsvPreviewResult == null) {
-            DialogUtil.showWarning("Import CSV krajów", "Najpierw przygotuj podgląd importu krajów.");
-            return;
-        }
-        if (lastCountriesCsvPreviewResult.getImportableRowsCount() <= 0) {
-            DialogUtil.showWarning("Import CSV krajów", "Brak nowych lub aktualizowanych krajów do importu w ostatnim podglądzie.");
-            updateCountriesCsvApplyButtonState();
-            return;
-        }
-        if (!DialogUtil.confirmAction(
-                "Import CSV krajów",
-                "zaimportować do wspólnego słownika",
-                buildCsvImportConfirmationTarget("krajów", lastCountriesCsvPreviewResult.getSourceName(), lastCountriesCsvPreviewResult.getImportableRowsCount(), lastCountriesCsvPreviewResult.getMatchingExistingCount(), lastCountriesCsvPreviewResult.getInvalidRowsCount() + lastCountriesCsvPreviewResult.getDuplicateInFileCount())
-        )) {
-            return;
-        }
-
-        try {
-            CsvImportExecutionResult executionResult = countryCsvImportService.applyPreview(lastCountriesCsvPreviewResult);
-            auditLogService.log("CountryCsvImport", null, "IMPORT", buildCsvImportAuditDescription("krajów", executionResult));
-            countriesCsvStatusLabel.setText(buildCsvImportExecutionStatus("krajów", executionResult));
-            countriesCsvPreviewArea.setText(buildCsvImportExecutionText("CSV krajów", executionResult, buildCountriesPreviewText(lastCountriesCsvPreviewResult)));
-            clearCountriesCsvPreviewState();
-            loadCustomCountryEntries();
-            refreshSharedCountryCombos();
-            refreshAuditLog();
-            DialogUtil.showSuccess(buildCsvImportSuccessDialogMessage("Kraje", executionResult));
-        } catch (Exception e) {
-            e.printStackTrace();
-            countriesCsvStatusLabel.setText(buildCsvImportErrorStatus("krajów"));
-            DialogUtil.showError("Import CSV krajów", "Nie udało się wykonać importu krajów do wspólnego słownika.");
-        }
-    }
-
-    @FXML
-    private void exportCountriesCsv() {
-        Path selectedPath = chooseCsvToSave("Eksportuj kraje do CSV", "kraje-eksport.csv");
-        if (selectedPath == null) {
-            return;
-        }
-
-        try {
-            Path exported = countryCsvExportService.export(selectedPath);
-            countriesCsvStatusLabel.setText(buildCsvExportSuccessStatus("krajów", exported));
-            DialogUtil.showSuccess(buildCsvExportSuccessDialogMessage("Kraje", exported));
-        } catch (Exception e) {
-            e.printStackTrace();
-            countriesCsvStatusLabel.setText(buildCsvExportErrorStatus("krajów"));
-            DialogUtil.showError(buildCsvExportDialogTitle("krajów"), buildCsvExportErrorMessage("krajów"));
-        }
-    }
-
 
     @FXML
     private void previewDocumentsCsvImport() {
@@ -2608,7 +2532,81 @@ public class SettingsController {
     }
 
 
+    
     @FXML
+    private void previewPlantBatchesCsvImport() {
+        Path selectedPath = chooseCsvToOpen("Wybierz plik CSV partii roślin");
+        if (selectedPath == null) {
+            return;
+        }
+
+        try {
+            PlantBatchImportPreviewResult result = plantBatchCsvImportService.preview(selectedPath);
+            lastPlantBatchesCsvPreviewResult = result;
+            updatePlantBatchesCsvApplyButtonState();
+            plantBatchesCsvStatusLabel.setText(buildPlantBatchesPreviewStatus(result));
+            plantBatchesCsvPreviewArea.setText(buildPlantBatchesPreviewText(result));
+        } catch (Exception e) {
+            e.printStackTrace();
+            clearPlantBatchesCsvPreviewState();
+            plantBatchesCsvStatusLabel.setText(buildCsvPreviewErrorStatus("partii roślin"));
+            DialogUtil.showError(buildCsvPreviewDialogTitle("partii roślin"), buildCsvPreviewErrorMessage("partii roślin"));
+        }
+    }
+
+    @FXML
+    private void applyPlantBatchesCsvImport() {
+        if (lastPlantBatchesCsvPreviewResult == null) {
+            DialogUtil.showWarning("Import CSV partii roślin", "Najpierw przygotuj podgląd importu partii roślin.");
+            return;
+        }
+        if (lastPlantBatchesCsvPreviewResult.getNewRowsCount() <= 0) {
+            DialogUtil.showWarning("Import CSV partii roślin", "Brak nowych partii roślin do importu w ostatnim podglądzie.");
+            updatePlantBatchesCsvApplyButtonState();
+            return;
+        }
+        if (!DialogUtil.confirmAction(
+                "Import CSV partii roślin",
+                "zaimportować do bazy",
+                buildCsvImportConfirmationTarget("partii roślin", lastPlantBatchesCsvPreviewResult.getSourceName(), lastPlantBatchesCsvPreviewResult.getNewRowsCount(), lastPlantBatchesCsvPreviewResult.getMatchingExistingCount(), lastPlantBatchesCsvPreviewResult.getInvalidRowsCount() + lastPlantBatchesCsvPreviewResult.getDuplicateInFileCount())
+        )) {
+            return;
+        }
+
+        try {
+            CsvImportExecutionResult executionResult = plantBatchCsvImportService.applyPreview(lastPlantBatchesCsvPreviewResult);
+            auditLogService.log("PlantBatchCsvImport", null, "IMPORT", buildCsvImportAuditDescription("partii roślin", executionResult));
+            plantBatchesCsvStatusLabel.setText(buildCsvImportExecutionStatus("partii roślin", executionResult));
+            plantBatchesCsvPreviewArea.setText(buildCsvImportExecutionText("CSV partii roślin", executionResult, buildPlantBatchesPreviewText(lastPlantBatchesCsvPreviewResult)));
+            clearPlantBatchesCsvPreviewState();
+            refreshAuditLog();
+            DialogUtil.showSuccess(buildCsvImportSuccessDialogMessage("Partie roślin", executionResult));
+        } catch (Exception e) {
+            e.printStackTrace();
+            plantBatchesCsvStatusLabel.setText(buildCsvImportErrorStatus("partii roślin"));
+            DialogUtil.showError("Import CSV partii roślin", "Nie udało się wykonać importu partii roślin do bazy.");
+        }
+    }
+
+    @FXML
+    private void exportPlantBatchesCsv() {
+        Path selectedPath = chooseCsvToSave("Eksportuj partie roślin do CSV", "partie-roslin-eksport.csv");
+        if (selectedPath == null) {
+            return;
+        }
+
+        try {
+            Path exported = plantBatchCsvExportService.export(selectedPath);
+            plantBatchesCsvStatusLabel.setText(buildCsvExportSuccessStatus("partii roślin", exported));
+            DialogUtil.showSuccess(buildCsvExportSuccessDialogMessage("Partie roślin", exported));
+        } catch (Exception e) {
+            e.printStackTrace();
+            plantBatchesCsvStatusLabel.setText(buildCsvExportErrorStatus("partii roślin"));
+            DialogUtil.showError(buildCsvExportDialogTitle("partii roślin"), buildCsvExportErrorMessage("partii roślin"));
+        }
+    }
+
+@FXML
     private void previewEppoDictionaryCsvImport() {
         Path selectedPath = chooseCsvToOpen("Wybierz plik CSV słowników EPPO");
         if (selectedPath == null) {
@@ -2705,20 +2703,20 @@ public class SettingsController {
     }
 
     @FXML
-    private void clearCountriesCsvPreview() {
-        clearCountriesCsvPreviewState();
-        resetCountriesCsvPreview();
-        if (countriesCsvStatusLabel != null) {
-            countriesCsvStatusLabel.setText(buildCsvPreviewClearedStatus("krajów"));
-        }
-    }
-
-    @FXML
     private void clearDocumentsCsvPreview() {
         clearDocumentsCsvPreviewState();
         resetDocumentsCsvPreview();
         if (documentsCsvStatusLabel != null) {
             documentsCsvStatusLabel.setText(buildCsvPreviewClearedStatus("dokumentów"));
+        }
+    }
+
+    @FXML
+    private void clearPlantBatchesCsvPreview() {
+        clearPlantBatchesCsvPreviewState();
+        resetPlantBatchesCsvPreview();
+        if (plantBatchesCsvStatusLabel != null) {
+            plantBatchesCsvStatusLabel.setText(buildCsvPreviewClearedStatus("partii roślin"));
         }
     }
 
@@ -2741,14 +2739,14 @@ public class SettingsController {
         updateContrahentsCsvApplyButtonState();
     }
 
-    private void clearCountriesCsvPreviewState() {
-        lastCountriesCsvPreviewResult = null;
-        updateCountriesCsvApplyButtonState();
-    }
-
     private void clearDocumentsCsvPreviewState() {
         lastDocumentsCsvPreviewResult = null;
         updateDocumentsCsvApplyButtonState();
+    }
+
+    private void clearPlantBatchesCsvPreviewState() {
+        lastPlantBatchesCsvPreviewResult = null;
+        updatePlantBatchesCsvApplyButtonState();
     }
 
     private void clearEppoDictionaryCsvPreviewState() {
@@ -2768,15 +2766,15 @@ public class SettingsController {
         }
     }
 
-    private void updateCountriesCsvApplyButtonState() {
-        if (countriesCsvApplyButton != null) {
-            countriesCsvApplyButton.setDisable(lastCountriesCsvPreviewResult == null || lastCountriesCsvPreviewResult.getImportableRowsCount() <= 0);
-        }
-    }
-
     private void updateDocumentsCsvApplyButtonState() {
         if (documentsCsvApplyButton != null) {
             documentsCsvApplyButton.setDisable(lastDocumentsCsvPreviewResult == null || lastDocumentsCsvPreviewResult.getDocumentCount() <= 0);
+        }
+    }
+
+    private void updatePlantBatchesCsvApplyButtonState() {
+        if (plantBatchesCsvApplyButton != null) {
+            plantBatchesCsvApplyButton.setDisable(lastPlantBatchesCsvPreviewResult == null || lastPlantBatchesCsvPreviewResult.getNewRowsCount() <= 0);
         }
     }
 
@@ -2974,15 +2972,6 @@ public class SettingsController {
         }
     }
 
-    private void resetCountriesCsvPreview() {
-        if (countriesCsvPreviewArea != null) {
-            countriesCsvPreviewArea.setText(UiTextUtil.buildEmptyPreviewText(
-                    "CSV krajów",
-                    "Po uruchomieniu analizy zobaczysz tutaj podsumowanie pliku, nagłówki oraz próbkę wpisów wspólnego słownika krajów."
-            ));
-        }
-    }
-
     private void resetDocumentsCsvPreview() {
         if (documentsCsvPreviewArea != null) {
             documentsCsvPreviewArea.setText(UiTextUtil.buildEmptyPreviewText(
@@ -2992,7 +2981,25 @@ public class SettingsController {
         }
     }
 
-    private void resetEppoDictionaryCsvPreview() {
+    private void resetPlantBatchesCsvPreview() {
+        if (plantBatchesCsvPreviewArea != null) {
+            plantBatchesCsvPreviewArea.setText(UiTextUtil.buildEmptyPreviewText(
+                    "CSV partii roślin",
+                    "Po uruchomieniu analizy zobaczysz tutaj podsumowanie pliku, nagłówki oraz próbkę partii roślin wraz z dopasowaniem roślin i źródeł pochodzenia."
+            ));
+        }
+    }
+
+    private String buildPlantBatchesPreviewStatus(PlantBatchImportPreviewResult result) {
+        return "CSV partii roślin — łącznie: " + result.getTotalRowsCount()
+                + ", nowych: " + result.getNewRowsCount()
+                + ", istniejących: " + result.getMatchingExistingCount()
+                + ", duplikatów w pliku: " + result.getDuplicateInFileCount()
+                + ", błędnych: " + result.getInvalidRowsCount()
+                + ". Ocena: " + buildPlantBatchesImportReadiness(result);
+    }
+
+        private void resetEppoDictionaryCsvPreview() {
         if (eppoDictionaryCsvPreviewArea != null) {
             eppoDictionaryCsvPreviewArea.setText(UiTextUtil.buildEmptyPreviewText(
                     "CSV słowników EPPO",
@@ -3001,15 +3008,7 @@ public class SettingsController {
         }
     }
 
-    private String buildCountriesPreviewStatus(CountryImportPreviewResult result) {
-        return "Podgląd importu krajów gotowy: nowych wpisów " + result.getNewRowsCount()
-                + ", aktualizacji " + result.getUpdateRowsCount()
-                + ", istniejących " + result.getMatchingExistingCount()
-                + ", duplikatów " + result.getDuplicateInFileCount()
-                + ", błędnych " + result.getInvalidRowsCount() + ".";
-    }
-
-    private String buildCountriesPreviewText(CountryImportPreviewResult result) {
+    private String buildPlantBatchesPreviewText(PlantBatchImportPreviewResult result) {
         StringBuilder builder = new StringBuilder();
         appendPreviewFileSummary(builder,
                 result.getSourceName(),
@@ -3017,28 +3016,49 @@ public class SettingsController {
                 result.getResolvedHeaders(),
                 List.of(
                         new PreviewSummaryRow("Łącznie wierszy", result.getTotalRowsCount()),
-                        new PreviewSummaryRow("Nowe wpisy", result.getNewRowsCount()),
-                        new PreviewSummaryRow("Wpisy do aktualizacji", result.getUpdateRowsCount()),
-                        new PreviewSummaryRow("Wpisy istniejące", result.getMatchingExistingCount()),
+                        new PreviewSummaryRow("Nowe rekordy", result.getNewRowsCount()),
+                        new PreviewSummaryRow("Istniejące rekordy", result.getMatchingExistingCount()),
                         new PreviewSummaryRow("Duplikaty w pliku", result.getDuplicateInFileCount()),
                         new PreviewSummaryRow("Błędne wiersze", result.getInvalidRowsCount())
                 ));
 
         UiTextUtil.appendSectionHeader(builder, "OCENA WALIDACJI");
-        UiTextUtil.appendSummaryLine(builder, "Gotowość importu", buildCountriesImportReadiness(result));
-        UiTextUtil.appendSummaryLine(builder, "Rekomendacja", buildCountriesImportRecommendation(result));
-        UiTextUtil.appendParagraph(builder, "Import aktualizuje wspólny słownik krajów przez wpisy własne. Katalog bazowy w kodzie pozostaje nienaruszony, a import może dodawać nowe kraje lub nadpisywać kod kraju dla istniejącej nazwy.");
+        UiTextUtil.appendSummaryLine(builder, "Gotowość importu", buildPlantBatchesImportReadiness(result));
+        UiTextUtil.appendSummaryLine(builder, "Rekomendacja", buildPlantBatchesImportRecommendation(result));
+        UiTextUtil.appendEmptyLine(builder);
 
         UiTextUtil.appendSectionHeader(builder, "PRÓBKA WIERSZY");
-        int previewLimit = Math.min(result.getRows().size(), 12);
+        int previewLimit = Math.min(result.getRows().size(), 10);
         for (int i = 0; i < previewLimit; i++) {
             var row = result.getRows().get(i);
             builder.append("#").append(row.getRowNumber())
                     .append(" [").append(safe(row.getStatus())).append("] ")
-                    .append(safe(row.getCountry()))
-                    .append(" | kod: ").append(safe(row.getCountryCode()));
-            if (!safe(row.getMessage()).isBlank()) {
-                builder.append(" | uwaga: ").append(safe(row.getMessage()));
+                    .append(fallback(safe(row.getInteriorBatchNo()), fallback(safe(row.getExteriorBatchNo()), "[bez numeru]")))
+                    .append(" | gatunek: ").append(safe(row.getPlantSpecies()));
+            if (!safe(row.getPlantVariety()).isBlank()) {
+                builder.append(" | odmiana: ").append(safe(row.getPlantVariety()));
+            }
+            if (!safe(row.getPlantRootstock()).isBlank()) {
+                builder.append(" | podkładka: ").append(safe(row.getPlantRootstock()));
+            }
+            if (!safe(row.getSourceContrahentName()).isBlank()) {
+                builder.append(" | źródło: ").append(safe(row.getSourceContrahentName()));
+            }
+            builder.append(" | ilość: ").append(row.getQty())
+                    .append(" | wiek: ").append(row.getAgeYears())
+                    .append(" | data: ").append(safe(row.getCreationDate()))
+                    .append(" | wewnętrzna: ").append(row.isInternalSource() ? "tak" : "nie");
+            if (!safe(row.getManufacturerCountryCode()).isBlank()) {
+                builder.append(" | kraj: ").append(safe(row.getManufacturerCountryCode()));
+            }
+            if (!safe(row.getEppoCode()).isBlank()) {
+                builder.append(" | EPPO: ").append(safe(row.getEppoCode()));
+            }
+            if (!safe(row.getBatchStatus()).isBlank()) {
+                builder.append(" | status partii: ").append(safe(row.getBatchStatus()));
+            }
+            if (row.getMessage() != null && !row.getMessage().isBlank()) {
+                builder.append(" | uwaga: ").append(row.getMessage());
             }
             builder.append(UiTextUtil.NL);
         }
@@ -3046,8 +3066,7 @@ public class SettingsController {
         UiTextUtil.appendPreviewLimitNote(builder, previewLimit, result.getRows().size());
         List<String> problemRows = new ArrayList<>();
         for (var row : result.getRows()) {
-            if (row.getMessage() != null && !row.getMessage().isBlank()
-                    && ("INVALID".equalsIgnoreCase(row.getStatus()) || "DUPLICATE_IN_FILE".equalsIgnoreCase(row.getStatus()))) {
+            if (row.getMessage() != null && !row.getMessage().isBlank()) {
                 problemRows.add("#" + row.getRowNumber() + " [" + row.getStatus() + "] " + row.getMessage());
             }
             if (problemRows.size() >= 6) {
@@ -3058,30 +3077,39 @@ public class SettingsController {
         return builder.toString();
     }
 
-    private String buildCountriesImportReadiness(CountryImportPreviewResult result) {
+    private String buildPlantBatchesImportReadiness(PlantBatchImportPreviewResult result) {
+        if (result.getTotalRowsCount() == 0) {
+            return "plik nie zawiera danych do analizy";
+        }
         if (result.getInvalidRowsCount() > 0) {
-            return "Wymaga korekty pliku";
+            return "wymaga korekty przed importem";
         }
-        if (result.getImportableRowsCount() > 0) {
-            return "Gotowe do importu";
+        if (result.getDuplicateInFileCount() > 0) {
+            return "wymaga usunięcia duplikatów z pliku";
         }
-        if (result.getMatchingExistingCount() > 0) {
-            return "Brak zmian do wykonania";
+        if (result.getNewRowsCount() == 0) {
+            return "brak nowych partii do importu";
         }
-        return "Brak danych do importu";
+        return "gotowy do bezpiecznego importu";
     }
 
-    private String buildCountriesImportRecommendation(CountryImportPreviewResult result) {
+    private String buildPlantBatchesImportRecommendation(PlantBatchImportPreviewResult result) {
+        if (result.getTotalRowsCount() == 0) {
+            return "Sprawdź, czy plik zawiera nagłówek i co najmniej jeden wiersz danych partii.";
+        }
         if (result.getInvalidRowsCount() > 0) {
-            return "Popraw błędne lub konfliktowe wiersze przed importem wspólnego słownika krajów.";
+            return "Najpierw popraw błędne wiersze, szczególnie brak dopasowania rośliny, źródła pochodzenia lub nieprawidłową ilość, wiek i datę.";
         }
-        if (result.getImportableRowsCount() > 0) {
-            return "Możesz bezpiecznie wykonać import krajów do wspólnego słownika używanego przez Kontrahentów, EPPO i dane podmiotu.";
+        if (result.getDuplicateInFileCount() > 0) {
+            return "Usuń duplikaty partii w samym pliku CSV, aby import był przewidywalny.";
         }
-        return "Nie ma nowych ani aktualizowanych wpisów krajów do zapisania.";
+        if (result.getNewRowsCount() == 0) {
+            return "Plik nie wniesie nowych partii. Zweryfikuj, czy to właściwy eksport lub zestaw danych.";
+        }
+        return "Podgląd wygląda spójnie. Możesz zaimportować tylko te partie, które nie istnieją jeszcze w bazie.";
     }
 
-    private String buildEppoDictionaryPreviewStatus(EppoDictionaryImportPreviewResult result) {
+        private String buildEppoDictionaryPreviewStatus(EppoDictionaryImportPreviewResult result) {
         return "Podgląd importu słowników EPPO gotowy: nowych relacji " + result.getNewRowsCount()
                 + ", aktualizacji " + result.getUpdateRowsCount()
                 + ", istniejących " + result.getMatchingExistingCount()
