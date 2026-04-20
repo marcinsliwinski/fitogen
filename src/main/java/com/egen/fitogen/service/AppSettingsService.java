@@ -23,6 +23,8 @@ public class AppSettingsService {
     public static final String PLANT_FULL_CATALOG_ENABLED = "plant.full_catalog_enabled";
     public static final String PLANT_PASSPORT_REQUIRED_FOR_ALL = "plant.passport_required_for_all";
     public static final String CUSTOM_COUNTRY_DIRECTORY_ENTRIES = "dictionary.country.custom_entries";
+    public static final String IMPROVEMENT_FALLBACK_EMAIL = "improvement.fallback_email";
+    public static final String DEFAULT_IMPROVEMENT_FALLBACK_EMAIL = "contact@egenlans.eu";
 
     private final AppSettingsRepository appSettingsRepository;
     private final AuditLogService auditLogService;
@@ -198,6 +200,19 @@ public class AppSettingsService {
 
     public void setPlantPassportRequiredForAll(boolean enabled) {
         saveSetting(PLANT_PASSPORT_REQUIRED_FOR_ALL, String.valueOf(enabled));
+    }
+
+    public String getImprovementFallbackEmail() {
+        String value = getSetting(IMPROVEMENT_FALLBACK_EMAIL);
+        return notBlank(value) ? value.trim() : DEFAULT_IMPROVEMENT_FALLBACK_EMAIL;
+    }
+
+    public void saveImprovementFallbackEmail(String email) {
+        String normalized = email == null ? "" : email.trim();
+        if (normalized.isBlank()) {
+            normalized = DEFAULT_IMPROVEMENT_FALLBACK_EMAIL;
+        }
+        saveSetting(IMPROVEMENT_FALLBACK_EMAIL, normalized);
     }
 
     public boolean isIssuerProfileComplete() {

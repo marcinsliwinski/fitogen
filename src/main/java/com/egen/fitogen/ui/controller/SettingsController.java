@@ -145,6 +145,8 @@ public class SettingsController {
     @FXML private TextField issuerPhytosanitaryNumberField;
     @FXML private Label issuerStatusLabel;
     @FXML private Label issuerSummaryLabel;
+    @FXML private TextField improvementFallbackEmailField;
+    @FXML private Label improvementFallbackStatusLabel;
 
     @FXML private CheckBox plantPassportRequiredForAllCheckBox;
     @FXML private Label plantPassportModeStatusLabel;
@@ -281,6 +283,7 @@ public class SettingsController {
         refreshUsers();
         loadDefaultUser();
         loadIssuerProfile();
+        loadImprovementFallbackSettings();
         loadCustomCountryEntries();
         loadPlantPassportMode();
         loadPlantCatalogMode();
@@ -1408,6 +1411,10 @@ public class SettingsController {
         attachIssuerProfileListener(issuerStreetField);
         attachIssuerProfileListener(issuerPhytosanitaryNumberField);
 
+        if (improvementFallbackEmailField != null) {
+            improvementFallbackEmailField.textProperty().addListener((obs, oldVal, newVal) -> updateImprovementFallbackStatusLabel());
+        }
+
         if (issuerNoStreetCheckBox != null) {
             issuerNoStreetCheckBox.selectedProperty().addListener((obs, oldVal, newVal) -> {
                 updateIssuerStreetPrompt();
@@ -1611,6 +1618,43 @@ public class SettingsController {
         return profile;
     }
 
+
+    @FXML
+    private void saveImprovementFallbackSettings() {
+        try {
+            String email = improvementFallbackEmailField == null ? "" : safe(improvementFallbackEmailField.getText());
+            if (email.isBlank()) {
+                email = AppSettingsService.DEFAULT_IMPROVEMENT_FALLBACK_EMAIL;
+            }
+            appSettingsService.saveImprovementFallbackEmail(email);
+            loadImprovementFallbackSettings();
+            DialogUtil.showSuccess("Zapisano adres e-mail zgłoszeń awaryjnych.");
+        } catch (Exception e) {
+            e.printStackTrace();
+            DialogUtil.showError("Zgłoszenia ulepszeń", "Nie udało się zapisać adresu e-mail zgłoszeń awaryjnych.");
+        }
+    }
+
+    private void loadImprovementFallbackSettings() {
+        if (improvementFallbackEmailField != null) {
+            improvementFallbackEmailField.setText(appSettingsService.getImprovementFallbackEmail());
+        }
+        updateImprovementFallbackStatusLabel();
+    }
+
+    private void updateImprovementFallbackStatusLabel() {
+        if (improvementFallbackStatusLabel == null) {
+            return;
+        }
+        String email = improvementFallbackEmailField == null ? appSettingsService.getImprovementFallbackEmail() : safe(improvementFallbackEmailField.getText());
+        if (email.isBlank()) {
+            email = AppSettingsService.DEFAULT_IMPROVEMENT_FALLBACK_EMAIL;
+        }
+        improvementFallbackStatusLabel.setText(
+                "Kanał główny dla sugestii i telemetrii będzie oparty o API. Jeśli wysyłka API się nie powiedzie, system zaproponuje ręczne zgłoszenie na adres: "
+                        + email + "."
+        );
+    }
 
     private void updateIssuerStreetPrompt() {
         if (issuerStreetField == null) {
@@ -1980,6 +2024,7 @@ public class SettingsController {
                 owner,
                 "Nowa baza danych",
                 "Tworzenie nowej bazy i ładowanie pakietu startowego FG1. Proszę czekać...",
+                1380,
                 created -> {
                     DialogUtil.showSuccess("Aktywowano bazę danych: " + created.displayName()
                             + ". Baza została zasilona pakietem startowym FG1 (kraje, rośliny, słowniki EPPO). "

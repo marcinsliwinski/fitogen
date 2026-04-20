@@ -47,6 +47,7 @@
                 <Label text="SYSTEM" styleClass="sidebar-section-label"/>
                 <Button text="Ustawienia" onAction="#openSettings" styleClass="nav-button-secondary" maxWidth="1.7976931348623157E308"/>
                 <Button text="Aktualizacje" onAction="#openUpdates" styleClass="nav-button-secondary" maxWidth="1.7976931348623157E308"/>
+                <Button text="Zgłoś ulepszenie" onAction="#openImprovement" styleClass="nav-button-secondary" maxWidth="1.7976931348623157E308"/>
                 <Button text="Pomoc" onAction="#openHelp" styleClass="nav-button-secondary" maxWidth="1.7976931348623157E308"/>
             </VBox>
 

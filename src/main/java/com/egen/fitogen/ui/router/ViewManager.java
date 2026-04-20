@@ -21,6 +21,7 @@ public final class ViewManager {
     public static final String SETTINGS = "settings";
     public static final String UPDATES = "updates";
     public static final String HELP = "help";
+    public static final String IMPROVEMENT = "improvement";
     public static final String EPPO_ADMIN = "eppoAdmin";
 
     private static StackPane container;
@@ -37,6 +38,7 @@ public final class ViewManager {
         VIEWS.put(SETTINGS, "view/settings.fxml");
         VIEWS.put(UPDATES, "view/updates.fxml");
         VIEWS.put(HELP, "view/help.fxml");
+        VIEWS.put(IMPROVEMENT, "view/improvement.fxml");
         VIEWS.put(EPPO_ADMIN, "view/eppo_admin.fxml");
     }
 

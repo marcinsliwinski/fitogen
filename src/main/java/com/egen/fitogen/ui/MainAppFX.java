@@ -239,6 +239,7 @@ public class MainAppFX extends Application {
                 null,
                 "Pakiet startowy FG1",
                 "Tworzenie nowej bazy i ładowanie pakietu startowego FG1. Proszę czekać...",
+                1380,
                 ignored -> {
                     try {
                         showMainStage(stage);

@@ -16,6 +16,9 @@ import java.util.function.Consumer;
 
 public final class ProgressDialogUtil {
 
+    private static final double DEFAULT_DIALOG_WIDTH = 460;
+    private static final double DEFAULT_PROGRESS_BAR_WIDTH = 420;
+
     private ProgressDialogUtil() {
     }
 
@@ -25,9 +28,22 @@ public final class ProgressDialogUtil {
                                                String header,
                                                Consumer<T> onSuccess,
                                                Consumer<Throwable> onError) {
+        runTaskWithProgress(task, owner, title, header, DEFAULT_DIALOG_WIDTH, onSuccess, onError);
+    }
+
+    public static <T> void runTaskWithProgress(Task<T> task,
+                                               Window owner,
+                                               String title,
+                                               String header,
+                                               double dialogWidth,
+                                               Consumer<T> onSuccess,
+                                               Consumer<Throwable> onError) {
         if (task == null) {
             throw new IllegalArgumentException("Task jest wymagany.");
         }
+
+        double normalizedDialogWidth = dialogWidth <= 0 ? DEFAULT_DIALOG_WIDTH : dialogWidth;
+        double progressBarWidth = Math.max(DEFAULT_PROGRESS_BAR_WIDTH, normalizedDialogWidth - 40);
 
         Stage dialog = new Stage(StageStyle.UTILITY);
         dialog.setTitle(title == null || title.isBlank() ? "Trwa operacja" : title);
@@ -45,12 +61,12 @@ public final class ProgressDialogUtil {
         messageLabel.textProperty().bind(task.messageProperty());
 
         ProgressBar progressBar = new ProgressBar();
-        progressBar.setPrefWidth(420);
+        progressBar.setPrefWidth(progressBarWidth);
         progressBar.progressProperty().bind(task.progressProperty());
 
         VBox root = new VBox(12, headerLabel, progressBar, messageLabel);
         root.setPadding(new Insets(18));
-        root.setPrefWidth(460);
+        root.setPrefWidth(normalizedDialogWidth);
 
         dialog.setScene(new Scene(root));
         dialog.setOnCloseRequest(event -> event.consume());

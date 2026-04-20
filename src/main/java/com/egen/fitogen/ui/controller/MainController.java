@@ -90,6 +90,11 @@ public class MainController {
     }
 
     @FXML
+    private void openImprovement() {
+        navigate(ViewManager.IMPROVEMENT);
+    }
+
+    @FXML
     private void openEgenLabsWebsite() {
         try {
             if (Desktop.isDesktopSupported()) {

@@ -517,6 +517,23 @@
                                 <Label fx:id="issuerSummaryLabel" wrapText="true" styleClass="page-subtitle"/>
                             </VBox>
 
+                            <VBox spacing="10" styleClass="stat-card">
+                                <Label text="Kontakt do zgłoszeń awaryjnych" styleClass="stat-title"/>
+                                <Label text="Kanał główny dla sugestii i telemetrii będzie oparty o API. Jeśli wysyłka się nie powiedzie, system zaproponuje ręczne zgłoszenie na poniższy adres e-mail." wrapText="true" styleClass="page-subtitle"/>
+                                <GridPane hgap="12" vgap="10">
+                                    <columnConstraints>
+                                        <ColumnConstraints minWidth="180"/>
+                                        <ColumnConstraints hgrow="ALWAYS"/>
+                                    </columnConstraints>
+                                    <Label text="Adres e-mail fallbacku" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+                                    <TextField fx:id="improvementFallbackEmailField" promptText="contact@egenlans.eu" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
+                                </GridPane>
+                                <Label fx:id="improvementFallbackStatusLabel" wrapText="true" styleClass="page-subtitle"/>
+                                <HBox spacing="10" alignment="CENTER_RIGHT">
+                                    <Button text="Zapisz kontakt zgłoszeń" onAction="#saveImprovementFallbackSettings" styleClass="button-secondary"/>
+                                </HBox>
+                            </VBox>
+
                             <HBox spacing="10" alignment="CENTER_RIGHT">
                                 <Button text="Wyczyść formularz" onAction="#clearIssuerProfileForm" styleClass="button-secondary"/>
                                 <Button text="Zapisz dane podmiotu" onAction="#saveIssuerProfile"/>
