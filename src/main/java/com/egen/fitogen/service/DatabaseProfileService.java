@@ -64,6 +64,13 @@ public class DatabaseProfileService {
     }
 
     public DatabaseProfileInfo createAndActivateProfile(String profileName, boolean importStarterPackFg1) {
+        return createAndActivateProfile(profileName, importStarterPackFg1, null);
+    }
+
+    public DatabaseProfileInfo createAndActivateProfile(String profileName,
+                                                        boolean importStarterPackFg1,
+                                                        BootstrapStarterPackService.ProgressListener progressListener) {
+        notifyProgress(progressListener, "Tworzenie nowej bazy danych...", 0.04);
         String sanitized = DatabaseConfig.sanitizeProfileName(profileName);
         Path profilePath = DatabaseConfig.buildNamedProfilePath(sanitized);
         if (Files.exists(profilePath)) {
@@ -71,23 +78,41 @@ public class DatabaseProfileService {
         }
 
         Path createdPath = DatabaseConfig.createDatabaseProfile(sanitized);
+        notifyProgress(progressListener, "Inicjalizacja nowej bazy danych...", 0.10);
         DatabaseInitializer.initDatabase();
+        notifyProgress(progressListener, "Przygotowanie profilu bazy danych...", 0.16);
         seedNewProfile(createdPath, profileName);
 
         if (importStarterPackFg1) {
             BootstrapStarterPackService starterPackService = new BootstrapStarterPackService();
-            starterPackService.importFg1StarterPack();
+            starterPackService.importFg1StarterPack((message, progress) ->
+                    notifyProgress(progressListener, message, 0.18 + (progress * 0.74))
+            );
+            notifyProgress(progressListener, "Włączanie pełnego katalogu roślin...", 0.94);
             AppSettingsService settingsService = new AppSettingsService(
                     new com.egen.fitogen.database.SqliteAppSettingsRepository(),
                     com.egen.fitogen.config.AppContext.getAuditLogService()
             );
             settingsService.setPlantFullCatalogEnabled(true);
+            notifyProgress(progressListener, "Weryfikacja pakietu FG1...", 0.97);
             starterPackService.verifyFg1StarterPackImported();
         }
 
+        notifyProgress(progressListener, "Aktywacja nowej bazy danych...", 0.99);
         DatabaseConfig.switchDatabase(createdPath);
         DatabaseInitializer.initDatabase();
+        notifyProgress(progressListener, "Nowa baza danych jest gotowa.", 1.0);
         return getCurrentProfileInfo();
+    }
+
+
+    private void notifyProgress(BootstrapStarterPackService.ProgressListener progressListener,
+                                String message,
+                                double progress) {
+        if (progressListener == null) {
+            return;
+        }
+        progressListener.update(message, progress);
     }
 
     public DatabaseProfileInfo restoreAndActivateProfile(Path backupFilePath, String profileName) {

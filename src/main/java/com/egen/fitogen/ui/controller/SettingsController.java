@@ -40,6 +40,7 @@ import com.egen.fitogen.service.PlantCsvImportService;
 import com.egen.fitogen.ui.util.ComboBoxAutoComplete;
 import com.egen.fitogen.ui.util.CountryDirectory;
 import com.egen.fitogen.ui.util.DialogUtil;
+import com.egen.fitogen.ui.util.ProgressDialogUtil;
 import com.egen.fitogen.ui.router.ViewManager;
 import com.egen.fitogen.ui.util.ValidationUtil;
 import javafx.beans.property.SimpleObjectProperty;
@@ -49,6 +50,7 @@ import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
 import javafx.collections.transformation.SortedList;
 import javafx.application.Platform;
+import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
@@ -1951,6 +1953,45 @@ public class SettingsController {
         }
     }
 
+
+    private void createDatabaseWithFg1InBackground(String profileName) {
+        Window owner = settingsTabPane == null || settingsTabPane.getScene() == null
+                ? null
+                : settingsTabPane.getScene().getWindow();
+
+        Task<DatabaseProfileInfo> task = new Task<>() {
+            @Override
+            protected DatabaseProfileInfo call() {
+                updateMessage("Przygotowanie nowej bazy danych...");
+                updateProgress(0.0, 1.0);
+                return databaseProfileService.createAndActivateProfile(
+                        profileName,
+                        true,
+                        (message, progress) -> {
+                            updateMessage(message);
+                            updateProgress(progress, 1.0);
+                        }
+                );
+            }
+        };
+
+        ProgressDialogUtil.runTaskWithProgress(
+                task,
+                owner,
+                "Nowa baza danych",
+                "Tworzenie nowej bazy i ładowanie pakietu startowego FG1. Proszę czekać...",
+                created -> {
+                    DialogUtil.showSuccess("Aktywowano bazę danych: " + created.displayName()
+                            + ". Baza została zasilona pakietem startowym FG1 (kraje, rośliny, słowniki EPPO). "
+                            + "Włączono też tryb pełnej bazy roślin, aby zaimportowany pakiet był od razu widoczny w aplikacji.");
+                    loadDatabaseProfileOverview();
+                    ViewManager.refreshCurrent();
+                    MainController.requestRefreshSystemNews();
+                },
+                throwable -> DialogUtil.showError("Nowa baza danych", throwable == null ? "Nieznany błąd podczas tworzenia bazy FG1." : throwable.getMessage())
+        );
+    }
+
     @FXML
     private void applySelectedDatabaseProfile() {
         DatabaseProfileInfo selectedProfile = databaseProfileBox == null ? null : databaseProfileBox.getValue();
@@ -1972,22 +2013,18 @@ public class SettingsController {
             }
 
             boolean importStarterPack = starterPackSelection == StarterPackSelection.CREATE_WITH_FG1;
-            try {
-                DatabaseProfileInfo created = databaseProfileService.createAndActivateProfile(profileName, importStarterPack);
-
-                if (importStarterPack) {
-                    DialogUtil.showSuccess("Aktywowano bazę danych: " + created.displayName()
-                            + ". Baza została zasilona pakietem startowym FG1 (kraje, rośliny, słowniki EPPO)."
-                            + "Włączono też tryb pełnej bazy roślin, aby zaimportowany pakiet był od razu widoczny w aplikacji.");
-                } else {
+            if (importStarterPack) {
+                createDatabaseWithFg1InBackground(profileName);
+            } else {
+                try {
+                    DatabaseProfileInfo created = databaseProfileService.createAndActivateProfile(profileName, false);
                     DialogUtil.showSuccess("Aktywowano bazę danych: " + created.displayName());
+                    loadDatabaseProfileOverview();
+                    ViewManager.refreshCurrent();
+                    MainController.requestRefreshSystemNews();
+                } catch (Exception e) {
+                    DialogUtil.showError("Nowa baza danych", e.getMessage());
                 }
-
-                loadDatabaseProfileOverview();
-                ViewManager.refreshCurrent();
-                MainController.requestRefreshSystemNews();
-            } catch (Exception e) {
-                DialogUtil.showError("Nowa baza danych", e.getMessage());
             }
             return;
         }

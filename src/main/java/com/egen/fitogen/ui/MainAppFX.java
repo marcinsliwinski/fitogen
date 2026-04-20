@@ -5,8 +5,10 @@ import com.egen.fitogen.config.AppContext;
 import com.egen.fitogen.config.DatabaseConfig;
 import com.egen.fitogen.database.DatabaseInitializer;
 import com.egen.fitogen.service.BootstrapStarterPackService;
+import com.egen.fitogen.ui.util.ProgressDialogUtil;
 import com.egen.fitogen.ui.util.WindowSizingUtil;
 import javafx.application.Application;
+import javafx.concurrent.Task;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
 import javafx.scene.Scene;
@@ -35,24 +37,13 @@ public class MainAppFX extends Application {
 
         DatabaseInitializer.initDatabase();
         AppContext.init();
-        runPendingStarterPackBootstrapIfNeeded();
 
-        URL mainViewUrl = resolveResource("view/main.fxml");
-        FXMLLoader loader = new FXMLLoader(mainViewUrl);
-
-        try {
-            Scene scene = new Scene(
-                    loader.load(),
-                    WindowSizingUtil.resolveInitialWidth(1360),
-                    WindowSizingUtil.resolveInitialHeight(900)
-            );
-            stage.setTitle("Fito Gen Essentials");
-            stage.setScene(scene);
-            WindowSizingUtil.applyStageSize(stage, 1360, 900, 1180, 760);
-            stage.show();
-        } catch (Exception e) {
-            throw new IllegalStateException("Nie udało się załadować głównego widoku aplikacji: view/main.fxml", e);
+        if (pendingFg1BootstrapAfterStartup) {
+            runPendingStarterPackBootstrapWithProgress(stage);
+            return;
         }
+
+        showMainStage(stage);
     }
 
     private boolean ensureConfiguredDatabaseAvailable() {
@@ -199,25 +190,76 @@ public class MainAppFX extends Application {
         }
     }
 
-    private void runPendingStarterPackBootstrapIfNeeded() {
-        if (!pendingFg1BootstrapAfterStartup) {
-            return;
-        }
+    private void showMainStage(Stage stage) throws Exception {
+        URL mainViewUrl = resolveResource("view/main.fxml");
+        FXMLLoader loader = new FXMLLoader(mainViewUrl);
 
-        pendingFg1BootstrapAfterStartup = false;
         try {
-            BootstrapStarterPackService starterPackService = new BootstrapStarterPackService();
-            starterPackService.importFg1StarterPack();
-            AppContext.getAppSettingsService().setPlantFullCatalogEnabled(true);
-            starterPackService.verifyFg1StarterPackImported();
+            Scene scene = new Scene(
+                    loader.load(),
+                    WindowSizingUtil.resolveInitialWidth(1360),
+                    WindowSizingUtil.resolveInitialHeight(900)
+            );
+            stage.setTitle("Fito Gen Essentials");
+            stage.setScene(scene);
+            WindowSizingUtil.applyStageSize(stage, 1360, 900, 1180, 760);
+            stage.show();
         } catch (Exception e) {
-            Alert alert = new Alert(Alert.AlertType.WARNING);
-            alert.setTitle("Pakiet startowy FG1");
-            alert.setHeaderText("Nie udało się zasilić nowej bazy pakietem FG1.");
-            alert.setContentText(e.getMessage());
-            configureStartupAlert(alert);
-            alert.showAndWait();
+            throw new IllegalStateException("Nie udało się załadować głównego widoku aplikacji: view/main.fxml", e);
         }
+    }
+
+    private void runPendingStarterPackBootstrapWithProgress(Stage stage) {
+        pendingFg1BootstrapAfterStartup = false;
+
+        Task<Void> task = new Task<>() {
+            @Override
+            protected Void call() {
+                updateMessage("Przygotowanie importu FG1...");
+                updateProgress(0.0, 1.0);
+                BootstrapStarterPackService starterPackService = new BootstrapStarterPackService();
+                starterPackService.importFg1StarterPack((message, progress) -> {
+                    updateMessage(message);
+                    updateProgress(progress, 1.0);
+                });
+                updateMessage("Włączanie pełnego katalogu roślin...");
+                updateProgress(0.96, 1.0);
+                AppContext.getAppSettingsService().setPlantFullCatalogEnabled(true);
+                updateMessage("Weryfikacja pakietu FG1...");
+                updateProgress(0.99, 1.0);
+                starterPackService.verifyFg1StarterPackImported();
+                updateMessage("Pakiet FG1 gotowy.");
+                updateProgress(1.0, 1.0);
+                return null;
+            }
+        };
+
+        ProgressDialogUtil.runTaskWithProgress(
+                task,
+                null,
+                "Pakiet startowy FG1",
+                "Tworzenie nowej bazy i ładowanie pakietu startowego FG1. Proszę czekać...",
+                ignored -> {
+                    try {
+                        showMainStage(stage);
+                    } catch (Exception e) {
+                        throw new IllegalStateException(e);
+                    }
+                },
+                throwable -> {
+                    Alert alert = new Alert(Alert.AlertType.WARNING);
+                    alert.setTitle("Pakiet startowy FG1");
+                    alert.setHeaderText("Nie udało się zasilić nowej bazy pakietem FG1.");
+                    alert.setContentText(throwable == null ? "Nieznany błąd podczas importu FG1." : throwable.getMessage());
+                    configureStartupAlert(alert);
+                    alert.showAndWait();
+                    try {
+                        showMainStage(stage);
+                    } catch (Exception e) {
+                        throw new IllegalStateException(e);
+                    }
+                }
+        );
     }
 
     private URL resolveResource(String relativeResourcePath) {

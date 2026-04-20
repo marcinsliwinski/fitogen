@@ -24,6 +24,11 @@ import com.egen.fitogen.database.SqlitePlantRepository;
 
 public class BootstrapStarterPackService {
 
+    @FunctionalInterface
+    public interface ProgressListener {
+        void update(String message, double progress);
+    }
+
     public static final String FG1_PACKAGE_CODE = "FG1";
     public static final String COUNTRIES_RESOURCE = "/bootstrap/fg1/kraje-import-fg1.csv";
     public static final String PLANTS_RESOURCE = "/bootstrap/fg1/rosliny-import-fg1.csv";
@@ -36,6 +41,11 @@ public class BootstrapStarterPackService {
     }
 
     public String importFg1StarterPack() {
+        return importFg1StarterPack(null);
+    }
+
+    public String importFg1StarterPack(ProgressListener progressListener) {
+        notifyProgress(progressListener, "Przygotowanie pakietu startowego FG1...", 0.02);
         if (!isFg1PackageAvailable()) {
             throw new IllegalStateException("Nie znaleziono pełnego pakietu startowego FG1 w zasobach aplikacji.");
         }
@@ -59,11 +69,22 @@ public class BootstrapStarterPackService {
         PlantImportPreviewResult plantsPreview;
         EppoDictionaryImportPreviewResult eppoPreview;
 
-        try (Reader countriesReader = openResourceReader(COUNTRIES_RESOURCE);
-             Reader plantsReader = openResourceReader(PLANTS_RESOURCE);
-             Reader eppoReader = openResourceReader(EPPO_RESOURCE)) {
+        try (Reader countriesReader = openResourceReader(COUNTRIES_RESOURCE)) {
+            notifyProgress(progressListener, "Analiza pliku krajów FG1...", 0.12);
             countriesPreview = countryImportService.preview(countriesReader, resourceFileName(COUNTRIES_RESOURCE));
+        } catch (IOException e) {
+            throw new IllegalStateException("Nie udało się odczytać pakietu startowego FG1.", e);
+        }
+
+        try (Reader plantsReader = openResourceReader(PLANTS_RESOURCE)) {
+            notifyProgress(progressListener, "Analiza pliku roślin FG1...", 0.26);
             plantsPreview = plantImportService.preview(plantsReader, resourceFileName(PLANTS_RESOURCE));
+        } catch (IOException e) {
+            throw new IllegalStateException("Nie udało się odczytać pakietu startowego FG1.", e);
+        }
+
+        try (Reader eppoReader = openResourceReader(EPPO_RESOURCE)) {
+            notifyProgress(progressListener, "Analiza słowników EPPO FG1...", 0.40);
             eppoPreview = eppoImportService.preview(eppoReader, resourceFileName(EPPO_RESOURCE));
         } catch (IOException e) {
             throw new IllegalStateException("Nie udało się odczytać pakietu startowego FG1.", e);
@@ -80,10 +101,14 @@ public class BootstrapStarterPackService {
         validatePreview(eppoPreview.getInvalidRowsCount() == 0 && eppoPreview.getDuplicateInFileCount() == 0,
                 "Pakiet słowników EPPO FG1 zawiera błędne lub zduplikowane rekordy.");
 
+        notifyProgress(progressListener, "Sprawdzanie spójności pakietu FG1...", 0.52);
         validateCrossPackageConsistency(countriesPreview, plantsPreview, eppoPreview);
 
+        notifyProgress(progressListener, "Import krajów FG1...", 0.64);
         CsvImportExecutionResult countriesResult = countryImportService.applyPreview(countriesPreview);
+        notifyProgress(progressListener, "Import roślin FG1...", 0.76);
         CsvImportExecutionResult plantsResult = plantImportService.applyPreview(plantsPreview);
+        notifyProgress(progressListener, "Import słowników EPPO FG1...", 0.88);
         CsvImportExecutionResult eppoResult = eppoImportService.applyPreview(eppoPreview);
 
         validateExecution(countriesResult, "Pakiet krajów FG1");
@@ -96,6 +121,7 @@ public class BootstrapStarterPackService {
         if (AppContext.getAuditLogService() != null) {
             AppContext.getAuditLogService().log("SYSTEM", null, "IMPORT", summary);
         }
+        notifyProgress(progressListener, "Pakiet startowy FG1 został zaimportowany.", 1.0);
         return summary;
     }
 
@@ -164,6 +190,14 @@ public class BootstrapStarterPackService {
         if (!problems.isEmpty()) {
             throw new IllegalStateException("Pakiet startowy FG1 nie jest spójny: " + String.join(" | ", problems));
         }
+    }
+
+
+    private void notifyProgress(ProgressListener progressListener, String message, double progress) {
+        if (progressListener == null) {
+            return;
+        }
+        progressListener.update(message, progress);
     }
 
     private void validateExecution(CsvImportExecutionResult result, String sectionLabel) {
