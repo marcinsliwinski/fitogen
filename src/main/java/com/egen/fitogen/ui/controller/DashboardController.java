@@ -444,8 +444,8 @@ public class DashboardController {
         ModalViewUtil.openModal(
                 "/view/plant_form.fxml",
                 "Dodaj roślinę",
-                860, 760,
-                820, 700,
+                940, 820,
+                860, 740,
                 (PlantFormController controller) -> controller.setPlantService(plantService)
         );
         refreshDashboard();
@@ -456,8 +456,8 @@ public class DashboardController {
         ModalViewUtil.openModal(
                 "/view/contrahent_form.fxml",
                 "Dodaj kontrahenta",
+                940, 720,
                 860, 660,
-                820, 620,
                 (ContrahentFormController controller) -> {
                 }
         );

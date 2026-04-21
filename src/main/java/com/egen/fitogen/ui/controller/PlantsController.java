@@ -319,8 +319,8 @@ public class PlantsController {
         ModalViewUtil.openModal(
                 "/view/plant_form.fxml",
                 "Dodaj roślinę",
-                860, 760,
-                820, 700,
+                940, 820,
+                860, 740,
                 (PlantFormController controller) -> controller.setPlantService(plantService)
         );
         refresh();
@@ -337,8 +337,8 @@ public class PlantsController {
         ModalViewUtil.openModal(
                 "/view/plant_form.fxml",
                 "Edytuj roślinę",
-                860, 760,
-                820, 700,
+                940, 820,
+                860, 740,
                 (PlantFormController controller) -> {
                     controller.setPlantService(plantService);
                     controller.setPlant(selected);

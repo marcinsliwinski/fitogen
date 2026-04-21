@@ -210,8 +210,8 @@ public class ContrahentController {
         ModalViewUtil.openModal(
                 "/view/contrahent_form.fxml",
                 "Dodaj kontrahenta",
+                940, 720,
                 860, 660,
-                820, 620,
                 (ContrahentFormController controller) -> {
                 }
         );
@@ -229,8 +229,8 @@ public class ContrahentController {
         ModalViewUtil.openModal(
                 "/view/contrahent_form.fxml",
                 "Edytuj kontrahenta",
+                940, 720,
                 860, 660,
-                820, 620,
                 (ContrahentFormController controller) -> controller.setContrahent(selected)
         );
         refresh();

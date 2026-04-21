@@ -5,15 +5,14 @@ import com.egen.fitogen.config.AppContext;
 import com.egen.fitogen.config.DatabaseConfig;
 import com.egen.fitogen.database.DatabaseInitializer;
 import com.egen.fitogen.service.BootstrapStarterPackService;
+import com.egen.fitogen.ui.util.DialogUtil;
 import com.egen.fitogen.ui.util.ProgressDialogUtil;
 import com.egen.fitogen.ui.util.WindowSizingUtil;
 import javafx.application.Application;
 import javafx.concurrent.Task;
 import javafx.fxml.FXMLLoader;
-import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
-import javafx.scene.control.Button;
 import javafx.scene.control.ButtonBar;
 import javafx.scene.control.ButtonType;
 import javafx.stage.Stage;
@@ -172,22 +171,7 @@ public class MainAppFX extends Application {
     }
 
     private void configureStartupAlert(Alert alert) {
-        if (alert == null || alert.getDialogPane() == null) {
-            return;
-        }
-
-        alert.setResizable(true);
-        alert.getDialogPane().setMinWidth(780);
-        alert.getDialogPane().setPrefWidth(820);
-
-        for (ButtonType buttonType : alert.getButtonTypes()) {
-            Node node = alert.getDialogPane().lookupButton(buttonType);
-            if (node instanceof Button button) {
-                button.setMinWidth(180);
-                button.setPrefWidth(220);
-                button.setWrapText(true);
-            }
-        }
+        DialogUtil.applyReadableDecisionDialog(alert, 860, 940, 170, 205);
     }
 
     private void showMainStage(Stage stage) throws Exception {
@@ -197,12 +181,12 @@ public class MainAppFX extends Application {
         try {
             Scene scene = new Scene(
                     loader.load(),
-                    WindowSizingUtil.resolveInitialWidth(1360),
-                    WindowSizingUtil.resolveInitialHeight(900)
+                    WindowSizingUtil.resolveInitialWidth(1420),
+                    WindowSizingUtil.resolveInitialHeight(940)
             );
             stage.setTitle("Fito Gen Essentials");
             stage.setScene(scene);
-            WindowSizingUtil.applyStageSize(stage, 1360, 900, 1180, 760);
+            WindowSizingUtil.applyStageSize(stage, 1420, 940, 1220, 780);
             stage.show();
         } catch (Exception e) {
             throw new IllegalStateException("Nie udało się załadować głównego widoku aplikacji: view/main.fxml", e);
@@ -239,7 +223,7 @@ public class MainAppFX extends Application {
                 null,
                 "Pakiet startowy FG1",
                 "Tworzenie nowej bazy i ładowanie pakietu startowego FG1. Proszę czekać...",
-                1380,
+                960,
                 ignored -> {
                     try {
                         showMainStage(stage);

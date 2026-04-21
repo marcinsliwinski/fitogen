@@ -1556,6 +1556,7 @@ public class SettingsController {
             List<String> validationIssues = getIssuerProfileValidationIssues(profile);
             appSettingsService.saveIssuerProfile(profile);
             loadIssuerProfile();
+            MainController.requestRefreshSystemNews();
 
             if (validationIssues.isEmpty()) {
                 DialogUtil.showSuccess("Dane podmiotu zostały zapisane.");
@@ -1894,6 +1895,7 @@ public class SettingsController {
         ButtonType createEmptyButton = new ButtonType("Utwórz pustą");
         ButtonType cancelButton = ButtonType.CANCEL;
         alert.getButtonTypes().setAll(createWithFg1Button, createEmptyButton, cancelButton);
+        DialogUtil.applyReadableDecisionDialog(alert, 820, 900, 170, 205);
 
         return alert.showAndWait()
                 .map(button -> {
@@ -2024,7 +2026,7 @@ public class SettingsController {
                 owner,
                 "Nowa baza danych",
                 "Tworzenie nowej bazy i ładowanie pakietu startowego FG1. Proszę czekać...",
-                1380,
+                960,
                 created -> {
                     DialogUtil.showSuccess("Aktywowano bazę danych: " + created.displayName()
                             + ". Baza została zasilona pakietem startowym FG1 (kraje, rośliny, słowniki EPPO). "
@@ -2923,6 +2925,7 @@ public class SettingsController {
             refreshAuditLog();
             loadIssuerProfile();
             updateIssuerStatusLabel();
+            MainController.requestRefreshSystemNews();
             DialogUtil.showSuccess(buildCsvImportSuccessDialogMessage("Dane podmiotu", executionResult));
         } catch (Exception e) {
             e.printStackTrace();

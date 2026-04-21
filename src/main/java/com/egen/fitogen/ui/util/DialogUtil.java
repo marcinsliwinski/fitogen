@@ -1,7 +1,10 @@
 package com.egen.fitogen.ui.util;
 
+import javafx.scene.Node;
 import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
+import javafx.scene.control.Label;
 
 import java.util.Optional;
 
@@ -36,6 +39,31 @@ public final class DialogUtil {
 
         Optional<ButtonType> result = alert.showAndWait();
         return result.isPresent() && result.get() == ButtonType.OK;
+    }
+
+    public static void applyReadableDecisionDialog(Alert alert, double minWidth, double prefWidth, double minButtonWidth, double prefButtonWidth) {
+        if (alert == null || alert.getDialogPane() == null) {
+            return;
+        }
+
+        alert.setResizable(true);
+        alert.getDialogPane().setMinWidth(Math.max(640, minWidth));
+        alert.getDialogPane().setPrefWidth(Math.max(alert.getDialogPane().getMinWidth(), prefWidth));
+        alert.getDialogPane().setMinHeight(240);
+
+        Node contentNode = alert.getDialogPane().lookup(".content.label");
+        if (contentNode instanceof Label label) {
+            label.setWrapText(true);
+        }
+
+        for (ButtonType buttonType : alert.getButtonTypes()) {
+            Node node = alert.getDialogPane().lookupButton(buttonType);
+            if (node instanceof Button button) {
+                button.setMinWidth(Math.max(150, minButtonWidth));
+                button.setPrefWidth(Math.max(button.getMinWidth(), prefButtonWidth));
+                button.setWrapText(true);
+            }
+        }
     }
 
     private static String buildDiscardChangesMessage(String formLabel) {
