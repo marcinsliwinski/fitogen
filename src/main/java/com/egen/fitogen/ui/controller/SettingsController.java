@@ -1895,7 +1895,7 @@ public class SettingsController {
         ButtonType createEmptyButton = new ButtonType("Utwórz pustą");
         ButtonType cancelButton = ButtonType.CANCEL;
         alert.getButtonTypes().setAll(createWithFg1Button, createEmptyButton, cancelButton);
-        DialogUtil.applyReadableDecisionDialog(alert, 820, 900, 170, 205);
+        DialogUtil.applyReadableDecisionDialog(alert, 1260, 1340, 170, 205);
 
         return alert.showAndWait()
                 .map(button -> {

@@ -181,12 +181,12 @@ public class MainAppFX extends Application {
         try {
             Scene scene = new Scene(
                     loader.load(),
-                    WindowSizingUtil.resolveInitialWidth(1420),
-                    WindowSizingUtil.resolveInitialHeight(940)
+                    WindowSizingUtil.resolveInitialWidth(1600),
+                    WindowSizingUtil.resolveInitialHeight(1040)
             );
             stage.setTitle("Fito Gen Essentials");
             stage.setScene(scene);
-            WindowSizingUtil.applyStageSize(stage, 1420, 940, 1220, 780);
+            WindowSizingUtil.applyStageSize(stage, 1600, 1040, 1360, 860);
             stage.show();
         } catch (Exception e) {
             throw new IllegalStateException("Nie udało się załadować głównego widoku aplikacji: view/main.fxml", e);
@@ -223,7 +223,7 @@ public class MainAppFX extends Application {
                 null,
                 "Pakiet startowy FG1",
                 "Tworzenie nowej bazy i ładowanie pakietu startowego FG1. Proszę czekać...",
-                960,
+                1380,
                 ignored -> {
                     try {
                         showMainStage(stage);

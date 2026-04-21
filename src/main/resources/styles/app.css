@@ -229,7 +229,7 @@
 
 .dashboard-cards-pane {
     -fx-padding: 2 0 2 0;
-    -fx-alignment: center-left;
+    -fx-alignment: top-left;
 }
 
 .dashboard-stat-card {

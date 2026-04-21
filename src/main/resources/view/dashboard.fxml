@@ -26,7 +26,7 @@
             </VBox>
 
             <HBox spacing="12" fillHeight="false" styleClass="dashboard-cards-pane">
-                <VBox fx:id="backupCardBox" styleClass="stat-card dashboard-stat-card dashboard-clickable-card dashboard-primary-card" maxWidth="1.7976931348623157E308" minWidth="180" spacing="8" prefHeight="118" maxHeight="118" alignment="TOP_LEFT" HBox.hgrow="ALWAYS" onMouseClicked="#openBackupSettings">
+                <VBox fx:id="backupCardBox" styleClass="stat-card dashboard-stat-card dashboard-clickable-card dashboard-primary-card" maxWidth="1.7976931348623157E308" minWidth="210" spacing="8" prefHeight="118" maxHeight="118" alignment="TOP_LEFT" HBox.hgrow="ALWAYS" onMouseClicked="#openBackupSettings">
                     <Label text="Kopia zapasowa" styleClass="stat-title"/>
                     <Label fx:id="backupStatusValueLabel" text="—" styleClass="stat-value" wrapText="true"/>
                     <Label fx:id="backupStatusNoteLabel" text="Stan kopii zapasowej bieżącej bazy." styleClass="stat-note" wrapText="true"/>
